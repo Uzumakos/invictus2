@@ -1,0 +1,954 @@
+{
+  "settings": {
+    "trainingEnabled": true,
+    "profileImageUrl": "https://ik.imagekit.io/tche25kem/B-day1.png",
+    "adminPath": "/admin",
+    "socialLinks": {
+      "github": "https://github.com",
+      "linkedin": "https://linkedin.com",
+      "twitter": "https://twitter.com"
+    }
+  },
+  "paymentConfig": {
+    "methods": [
+      {
+        "id": "moncash",
+        "name": "MonCash",
+        "type": "mobile",
+        "enabled": true,
+        "logoUrl": "https://ik.imagekit.io/tche25kem/moncash.png?updatedAt=1749917382215",
+        "phoneNumber": "+50937054727"
+      },
+      {
+        "id": "natcash",
+        "name": "Natcash",
+        "type": "mobile",
+        "enabled": true,
+        "logoUrl": "https://ik.imagekit.io/tche25kem/natcash2.png?updatedAt=1749917382215",
+        "phoneNumber": "+50933669954"
+      },
+      {
+        "id": "unibank",
+        "name": "Unibank",
+        "type": "bank",
+        "enabled": true,
+        "logoUrl": "https://ik.imagekit.io/tche25kem/Unibank%20logo%201.png?updatedAt=1752244982369",
+        "accountNumber": "210-2009-19789018",
+        "accountHolder": "Amedee Erns Baptiste"
+      },
+      {
+        "id": "sogebank",
+        "name": "Sogebank",
+        "type": "bank",
+        "enabled": true,
+        "logoUrl": "https://ik.imagekit.io/tche25kem/Sogebank%20asset%20logo%202.png?updatedAt=1752245563344",
+        "accountNumber": "3401175892",
+        "accountHolder": "Amedee Erns Baptiste"
+      },
+      {
+        "id": "wise",
+        "name": "Wise",
+        "type": "international",
+        "enabled": false,
+        "logoUrl": "",
+        "email": ""
+      },
+      {
+        "id": "paypal",
+        "name": "PayPal",
+        "type": "international",
+        "enabled": true,
+        "logoUrl": "https://ik.imagekit.io/tche25kem/imPAypal.png?updatedAt=1770813912257",
+        "email": "erns@lekolalez.com"
+      }
+    ]
+  },
+  "organizations": [
+    {
+      "id": "org-1",
+      "name": "NEXA Group",
+      "logoUrl": "",
+      "website": ""
+    },
+    {
+      "id": "org-2",
+      "name": "Lumina University",
+      "logoUrl": "",
+      "website": ""
+    },
+    {
+      "id": "org-3",
+      "name": "CWO Logistics",
+      "logoUrl": "",
+      "website": ""
+    },
+    {
+      "id": "org-4",
+      "name": "Caribe Transit",
+      "logoUrl": "",
+      "website": ""
+    },
+    {
+      "id": "org-5",
+      "name": "Lyanza Finance",
+      "logoUrl": "",
+      "website": ""
+    }
+  ],
+  "bookings": [
+    {
+      "id": "b_seed_1",
+      "clientId": "client_123",
+      "clientName": "Jean-Rene Noel",
+      "clientEmail": "jr.noel@haitistartups.com",
+      "serviceId": "software-architecture",
+      "serviceTitle": {
+        "en": "Software Architecture & System Design",
+        "fr": "Architecture Logicielle & Conception de Systèmes"
+      },
+      "packageType": "Standard Consulting",
+      "language": "fr",
+      "date": "2026-07-15",
+      "time": "10:00",
+      "timezone": "EST",
+      "questionnaire": {
+        "goals": "Audit our existing legacy database for scalability.",
+        "legacy": "PostgreSQL with Node.js on Heroku"
+      },
+      "status": "confirmed",
+      "amount": 350,
+      "paymentMethod": "moncash",
+      "paymentReference": "b_seed_1",
+      "createdAt": "2026-07-02T15:36:15.890Z"
+    },
+    {
+      "id": "b_seed_2",
+      "clientId": "client_456",
+      "clientName": "Sarah Peterson",
+      "clientEmail": "speterson@agritech-ventures.org",
+      "serviceId": "ai-integration-strategy",
+      "serviceTitle": {
+        "en": "AI Strategy & Implementation Planning",
+        "fr": "Stratégie d'Intégration de l'IA & Planification"
+      },
+      "packageType": "Strategy Audit Tier",
+      "language": "en",
+      "date": "2026-07-20",
+      "time": "14:00",
+      "timezone": "PST",
+      "questionnaire": {
+        "goals": "Integrate vector-based search on soil databases.",
+        "tech_stack": "Python, FastAPI"
+      },
+      "status": "awaiting_payment",
+      "amount": 450,
+      "paymentMethod": "paypal",
+      "paymentReference": "b_seed_2",
+      "createdAt": "2026-07-02T15:36:15.917Z"
+    },
+    {
+      "id": "b_98428932",
+      "clientId": "client_fba23a677389",
+      "clientName": "Andre Mlareau",
+      "clientEmail": "malreaux@gmail.com",
+      "serviceId": "software-architecture",
+      "serviceTitle": {
+        "en": "Software Architecture & System Design",
+        "fr": "Architecture Logicielle & Conception de Systèmes"
+      },
+      "packageType": "Strategic Sprint Tier",
+      "language": "fr",
+      "date": "2026-07-09",
+      "time": "16:00",
+      "timezone": "EST",
+      "questionnaire": {
+        "goals": "isbbb ,aindbosb ",
+        "technical_context": "hdsbb sodhbisbdibiubsdbuoj"
+      },
+      "status": "awaiting_payment",
+      "amount": 350,
+      "paymentMethod": "paypal",
+      "paymentReference": "b_98428932",
+      "createdAt": "2026-07-02T19:21:54.032Z"
+    }
+  ],
+  "leads": [
+    {
+      "id": "lead_seed_1",
+      "company": "TechVentures Haiti",
+      "contactName": "Marc Antoine",
+      "email": "m.antoine@techventures.ht",
+      "industry": "Technology",
+      "budget": "$10k - $25k",
+      "notes": "Looking for a full CRM system with mobile integration.",
+      "source": "General Contact Form",
+      "status": "proposal",
+      "createdAt": "2026-07-02T15:36:15.917Z"
+    },
+    {
+      "id": "lead_4aa9f7c96b5f9e7d",
+      "company": "Andre Mlareau Org",
+      "contactName": "Andre Mlareau",
+      "email": "malreaux@gmail.com",
+      "industry": "Consultation Request",
+      "budget": "$350 (Awaiting payment)",
+      "notes": "Booked Software Architecture & System Design for 2026-07-09 at 16:00 (EST). Method: paypal. Goals: isbbb ,aindbosb ",
+      "source": "Consultation Booking",
+      "status": "discovery",
+      "createdAt": "2026-07-02T19:21:54.058Z"
+    }
+  ],
+  "discoveries": [],
+  "recommendationRules": [
+    {
+      "id": "rule_saas_scale",
+      "name": "SaaS + High Users",
+      "priority": 10,
+      "conditionOperator": "AND",
+      "conditions": [
+        {
+          "field": "projectTypes",
+          "operator": "includes",
+          "value": "SaaS"
+        },
+        {
+          "field": "expectedUsers",
+          "operator": "greater_than",
+          "value": 10000
+        }
+      ],
+      "actions": [
+        {
+          "type": "recommend_service",
+          "value": "Software Architecture & System Design"
+        },
+        {
+          "type": "recommend_service",
+          "value": "Scalability Assessment"
+        },
+        {
+          "type": "recommend_service",
+          "value": "Database Design & Optimization"
+        },
+        {
+          "type": "set_complexity",
+          "value": "High"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "rule_government",
+      "name": "Government Project",
+      "priority": 9,
+      "conditionOperator": "AND",
+      "conditions": [
+        {
+          "field": "orgType",
+          "operator": "equals",
+          "value": "Government"
+        }
+      ],
+      "actions": [
+        {
+          "type": "recommend_feature",
+          "value": "RBAC & Role Management"
+        },
+        {
+          "type": "recommend_feature",
+          "value": "Audit Logs"
+        },
+        {
+          "type": "recommend_feature",
+          "value": "Accessibility Review"
+        },
+        {
+          "type": "recommend_service",
+          "value": "Security Assessment & Audit"
+        },
+        {
+          "type": "recommend_service",
+          "value": "Technical Audit"
+        },
+        {
+          "type": "add_note",
+          "value": "Government projects require strict security, accessibility compliance, and audit trail capabilities."
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "rule_ai_integration",
+      "name": "AI Integration Requested",
+      "priority": 8,
+      "conditionOperator": "OR",
+      "conditions": [
+        {
+          "field": "features",
+          "operator": "includes",
+          "value": "AI Ready"
+        },
+        {
+          "field": "needsAI",
+          "operator": "is_true",
+          "value": true
+        },
+        {
+          "field": "projectTypes",
+          "operator": "includes",
+          "value": "AI Integration"
+        }
+      ],
+      "actions": [
+        {
+          "type": "recommend_service",
+          "value": "AI Strategy & Integration Planning"
+        },
+        {
+          "type": "recommend_service",
+          "value": "AI Product Strategy"
+        },
+        {
+          "type": "add_note",
+          "value": "AI readiness assessment recommended before development begins."
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "rule_digital_transformation",
+      "name": "Digital Transformation",
+      "priority": 7,
+      "conditionOperator": "OR",
+      "conditions": [
+        {
+          "field": "projectTypes",
+          "operator": "includes",
+          "value": "Digital Transformation"
+        },
+        {
+          "field": "businessGoals",
+          "operator": "includes",
+          "value": "Digital Transformation"
+        }
+      ],
+      "actions": [
+        {
+          "type": "recommend_service",
+          "value": "Digital Transformation Consulting"
+        },
+        {
+          "type": "recommend_service",
+          "value": "Technical Audit"
+        },
+        {
+          "type": "recommend_service",
+          "value": "CTO as a Service"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "rule_small_budget_complex",
+      "name": "Small Budget + Complex Project",
+      "priority": 6,
+      "conditionOperator": "AND",
+      "conditions": [
+        {
+          "field": "budgetRange",
+          "operator": "equals",
+          "value": "Under $2k"
+        },
+        {
+          "field": "projectTypes",
+          "operator": "includes_any",
+          "value": [
+            "SaaS",
+            "Marketplace",
+            "ERP",
+            "CRM"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "type": "set_complexity",
+          "value": "Critical"
+        },
+        {
+          "type": "add_note",
+          "value": "Budget may not match project scope — a scoping consultation is strongly recommended before committing."
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "rule_ecommerce",
+      "name": "E-Commerce Platform",
+      "priority": 5,
+      "conditionOperator": "OR",
+      "conditions": [
+        {
+          "field": "projectTypes",
+          "operator": "includes",
+          "value": "E-commerce"
+        },
+        {
+          "field": "projectTypes",
+          "operator": "includes",
+          "value": "Marketplace"
+        }
+      ],
+      "actions": [
+        {
+          "type": "recommend_feature",
+          "value": "Payments Integration"
+        },
+        {
+          "type": "recommend_feature",
+          "value": "Inventory Management"
+        },
+        {
+          "type": "recommend_service",
+          "value": "Web Application Development"
+        },
+        {
+          "type": "recommend_service",
+          "value": "Product Strategy"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "rule_marketing_training",
+      "name": "Marketing or Training Request",
+      "priority": 4,
+      "conditionOperator": "OR",
+      "conditions": [
+        {
+          "field": "projectTypes",
+          "operator": "includes",
+          "value": "Marketing Strategy"
+        },
+        {
+          "field": "projectTypes",
+          "operator": "includes",
+          "value": "Training Program"
+        }
+      ],
+      "actions": [
+        {
+          "type": "recommend_service",
+          "value": "Digital Marketing Strategy"
+        },
+        {
+          "type": "recommend_service",
+          "value": "Training Programs & Workshops"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "rule_ngo_university",
+      "name": "NGO or University",
+      "priority": 3,
+      "conditionOperator": "OR",
+      "conditions": [
+        {
+          "field": "orgType",
+          "operator": "equals",
+          "value": "NGO"
+        },
+        {
+          "field": "orgType",
+          "operator": "equals",
+          "value": "University"
+        }
+      ],
+      "actions": [
+        {
+          "type": "recommend_service",
+          "value": "Digital Transformation Consulting"
+        },
+        {
+          "type": "recommend_service",
+          "value": "Training Programs & Workshops"
+        },
+        {
+          "type": "recommend_feature",
+          "value": "Multilingual Support"
+        },
+        {
+          "type": "add_note",
+          "value": "NGO and university projects often qualify for tailored pricing. Mention this in the consultation."
+        }
+      ],
+      "enabled": true
+    }
+  ],
+  "portalTasks": [],
+  "portalDocuments": [],
+  "portalProjects": [],
+  "portalPayments": [],
+  "portalConsultations": [],
+  "portalMessages": [
+    {
+      "id": "msg_2730fb87b40e",
+      "createdAt": "2026-07-02T19:22:44.851Z",
+      "clientEmail": "malreaux@gmail.com",
+      "sender": "client",
+      "text": "hello",
+      "timestamp": "2026-07-02T19:22:44.718Z"
+    }
+  ],
+  "portalNotifications": [
+    {
+      "id": "notif_2759fde0e66e2a48",
+      "clientEmail": "malreaux@gmail.com",
+      "text": "New consultation booked: 'Software Architecture & System Design' on 2026-07-09 at 16:00 (EST). Status: Awaiting Payment.",
+      "type": "meeting",
+      "timestamp": "2026-07-02T19:21:54.077Z",
+      "read": false
+    }
+  ],
+  "notifyList": [],
+  "adminRateLimit": {},
+  "testimonials": [
+    {
+      "id": "t1",
+      "name": "Jean-Claude Moreau",
+      "role": {
+        "en": "CEO & Co-Founder",
+        "fr": "PDG & Co-Fondateur"
+      },
+      "company": "NEXA Group",
+      "avatar": "",
+      "content": {
+        "en": "Amedee transformed our entire digital infrastructure. What was a fragile monolith became a scalable microservices platform. His technical depth and business acumen are rare.",
+        "fr": "Amedee a transformé toute notre infrastructure numérique. Ce qui était un monolithe fragile est devenu une plateforme microservices évolutive. Sa profondeur technique et sa vision business sont rares."
+      },
+      "rating": 5
+    },
+    {
+      "id": "t2",
+      "name": "Sarah Peterson",
+      "role": {
+        "en": "Director of Innovation",
+        "fr": "Directrice de l'Innovation"
+      },
+      "company": "AgriTech Ventures",
+      "avatar": "",
+      "content": {
+        "en": "The AI integration strategy Amedee delivered exceeded all expectations. He helped us understand not just what to build, but why and how — with clear ROI projections.",
+        "fr": "La stratégie d'intégration IA qu'Amedee a livrée a dépassé toutes les attentes. Il nous a aidé à comprendre non seulement quoi construire, mais pourquoi et comment — avec des projections ROI claires."
+      },
+      "rating": 5
+    },
+    {
+      "id": "t3",
+      "name": "Dr. Marie-Claire Dubois",
+      "role": {
+        "en": "Dean of Digital Programs",
+        "fr": "Doyenne des Programmes Numériques"
+      },
+      "company": "Lumina University",
+      "avatar": "",
+      "content": {
+        "en": "The digital literacy training Amedee delivered to our faculty was exceptional. Our educators went from basic users to confident digital practitioners in 3 weeks.",
+        "fr": "La formation en littératie numérique qu'Amedee a dispensée à notre corps enseignant était exceptionnelle. Nos éducateurs sont passés d'utilisateurs basiques à praticiens numériques confiants en 3 semaines."
+      },
+      "rating": 5
+    }
+  ],
+  "faqItems": [
+    {
+      "id": "faq1",
+      "question": {
+        "en": "How does a consultation work?",
+        "fr": "Comment fonctionne une consultation?"
+      },
+      "answer": {
+        "en": "After booking, you'll complete a brief questionnaire to help me prepare. We meet via video call for the scheduled duration. You receive a written summary with recommendations, action items, and next steps within 24 hours.",
+        "fr": "Après la réservation, vous complétez un court questionnaire pour m'aider à me préparer. Nous nous rencontrons par appel vidéo pour la durée prévue. Vous recevez un résumé écrit avec des recommandations, des actions et des prochaines étapes dans les 24 heures."
+      }
+    },
+    {
+      "id": "faq2",
+      "question": {
+        "en": "What languages do you consult in?",
+        "fr": "Dans quelles langues consultez-vous?"
+      },
+      "answer": {
+        "en": "I offer consultations in English and French. You can select your preferred language during the booking process.",
+        "fr": "Je propose des consultations en anglais et en français. Vous pouvez sélectionner votre langue préférée lors du processus de réservation."
+      }
+    },
+    {
+      "id": "faq3",
+      "question": {
+        "en": "How do I pay for a consultation?",
+        "fr": "Comment puis-je payer une consultation?"
+      },
+      "answer": {
+        "en": "After selecting your service and schedule, you'll choose your payment method: Mobile Money (MonCash, Natcash), Bank Transfer (Unibank, Sogebank), Wise, or PayPal. For PayPal, you'll receive a secure payment link within 24 hours.",
+        "fr": "Après avoir sélectionné votre service et votre horaire, vous choisissez votre mode de paiement: Mobile Money (MonCash, Natcash), Virement Bancaire (Unibank, Sogebank), Wise ou PayPal. Pour PayPal, vous recevrez un lien de paiement sécurisé dans les 24 heures."
+      }
+    },
+    {
+      "id": "faq4",
+      "question": {
+        "en": "Can I get a refund if I cancel?",
+        "fr": "Puis-je obtenir un remboursement si j'annule?"
+      },
+      "answer": {
+        "en": "Cancellations made more than 48 hours before the scheduled consultation are fully refunded. Cancellations within 48 hours are eligible for a one-time reschedule.",
+        "fr": "Les annulations effectuées plus de 48 heures avant la consultation prévue sont entièrement remboursées. Les annulations dans les 48 heures donnent droit à un report unique."
+      }
+    },
+    {
+      "id": "faq5",
+      "question": {
+        "en": "Do you work with international clients?",
+        "fr": "Travaillez-vous avec des clients internationaux?"
+      },
+      "answer": {
+        "en": "Yes, absolutely. I work with clients across North America, Europe, the Caribbean, and Africa. All consultations are conducted remotely via video call.",
+        "fr": "Oui, absolument. Je travaille avec des clients en Amérique du Nord, en Europe, dans les Caraïbes et en Afrique. Toutes les consultations se déroulent à distance par appel vidéo."
+      }
+    },
+    {
+      "id": "faq6",
+      "question": {
+        "en": "What is the Smart Project Discovery?",
+        "fr": "Qu'est-ce que la Découverte Intelligente de Projet?"
+      },
+      "answer": {
+        "en": "The Smart Project Discovery is a guided 13-step questionnaire that collects information about your project, goals, budget, and technical context. It generates a professional project summary and service recommendations to help prepare for an efficient consultation — no AI required.",
+        "fr": "La Découverte Intelligente de Projet est un questionnaire guidé en 13 étapes qui collecte des informations sur votre projet, vos objectifs, votre budget et votre contexte technique. Il génère un résumé professionnel du projet et des recommandations de services pour préparer une consultation efficace — sans IA."
+      }
+    }
+  ],
+  "projects": [
+    {
+      "id": "nexa-games",
+      "title": "NEXA Games Platform",
+      "category": {
+        "en": "Web3 & Game Architecture",
+        "fr": "Web3 & Architecture de Jeu"
+      },
+      "image": "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=800",
+      "technologies": [
+        "React",
+        "Node.js",
+        "Solidity",
+        "TailwindCSS",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "description": {
+        "en": "High-performance gaming launcher and distribution system integrated with automated smart contracts.",
+        "fr": "Lanceur de jeux haute performance et système de distribution intégré à des contrats intelligents automatisés."
+      },
+      "problem": {
+        "en": "Traditional gaming distribution channels impose high platform fees (30%) and suffer from slow microtransaction processing times for cross-border global creators.",
+        "fr": "Les canaux traditionnels de distribution de jeux imposent des frais de plateforme élevés (30%) et souffrent de délais de traitement lents pour les microtransactions des créateurs internationaux."
+      },
+      "research": {
+        "en": "Analyzed gas-efficient Ethereum Layer 2 solutions and designed custom caching layers to maintain sub-second rendering for up to 100k concurrent active players.",
+        "fr": "Analyse des solutions Ethereum Layer 2 économes en gaz et conception de couches de mise en cache personnalisées pour maintenir un rendu en moins d'une seconde pour 100 000 joueurs actifs."
+      },
+      "architecture": {
+        "en": "Decoupled Microservices, Express.js gateway, Redis session stores, PostgreSQL primary clustering, and ERC-1155 smart contract logic for in-game item trading.",
+        "fr": "Microservices découplés, passerelle Express.js, sessions Redis, clustering PostgreSQL et contrats intelligents ERC-1155 pour l'échange d'objets en jeu."
+      },
+      "challenges": {
+        "en": "Handling high concurrency peaks during tournament launches and securing real-time ledger audits.",
+        "fr": "Gérer les pics de connexion lors des lancements de tournois et sécuriser les audits de registres en temps réel."
+      },
+      "solutions": {
+        "en": "Implemented rate-limiting proxies, database read-replicas, and optimized smart-contract code to reduce gas expenditure by 43%.",
+        "fr": "Mise en œuvre de serveurs mandataires de limitation de débit, réplicas de lecture de base de données, et code de contrat intelligent optimisé pour réduire le coût en gaz de 43%."
+      },
+      "results": {
+        "en": "Served over 120,000 active players, slashed transaction overheads to under $0.05, and successfully closed Series A funding rounds.",
+        "fr": "Plus de 120 000 joueurs actifs servis, frais de transaction réduits à moins de 0,05 $ et clôture réussie de la levée de fonds Série A."
+      },
+      "lessons": {
+        "en": "Strict modularity of contract logic is vital for rolling upgrades. Edge caching saved 60% in backend infrastructure spending.",
+        "fr": "La modularité stricte de la logique contractuelle est vitale pour les mises à jour. Le cache Edge a permis d'économiser 60% sur l'infrastructure."
+      }
+    },
+    {
+      "id": "cwo-transportation",
+      "title": "CWO Transportation Logistics",
+      "category": {
+        "en": "Enterprise Fleet & Transit Systems",
+        "fr": "Système Logistique de Transport"
+      },
+      "image": "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?auto=format&fit=crop&q=80&w=800",
+      "technologies": [
+        "React",
+        "Express",
+        "PostgreSQL",
+        "Google Maps API",
+        "Socket.io",
+        "TailwindCSS"
+      ],
+      "description": {
+        "en": "Real-time dispatch system managing fleet routing, driver schedules, and automated billing for 300+ commercial assets.",
+        "fr": "Système de répartition en temps réel gérant les itinéraires, les plannings des chauffeurs et la facturation automatique de 300+ véhicules."
+      },
+      "problem": {
+        "en": "Manual dispatcher intervention caused routing conflicts, idle asset losses, and an average 18% lag in customer delivery timelines.",
+        "fr": "L'intervention manuelle des répartiteurs causait des conflits d'itinéraires, des pertes de temps et un retard moyen de 18% sur les livraisons."
+      },
+      "research": {
+        "en": "Mapped delivery topologies, studied traffic predictive models, and interviewed 40 truck drivers to align on terminal UX specifications.",
+        "fr": "Cartographie des topologies de livraison, étude des modèles prédictifs de trafic et entretiens avec 40 chauffeurs pour harmoniser l'UX des terminaux."
+      },
+      "architecture": {
+        "en": "Event-driven architecture utilizing WebSocket for active location sharing, Node worker pools for routing calculations, and robust ACID database design.",
+        "fr": "Architecture événementielle utilisant WebSocket pour le partage de position, des pools de threads Node pour les calculs d'itinéraires et une base ACID robuste."
+      },
+      "challenges": {
+        "en": "Maintaining steady real-time connections through low-bandwidth cellular dead zones.",
+        "fr": "Maintenir des connexions temps réel stables dans les zones de couverture mobile faible."
+      },
+      "solutions": {
+        "en": "Implemented an offline-first indexedDB buffer on driver terminals that automatically synchronizes once cellular signal strength passes critical parameters.",
+        "fr": "Mise en œuvre d'un tampon IndexedDB hors ligne sur les terminaux des chauffeurs qui se synchronise dès que le signal mobile est rétabli."
+      },
+      "results": {
+        "en": "Boosted fleet efficiency by 26%, reduced empty mileage, and increased on-time delivery metric to 99.4%.",
+        "fr": "Efficacité de la flotte améliorée de 26%, réduction des kilomètres à vide et taux de livraison à l'heure porté à 99,4%."
+      },
+      "lessons": {
+        "en": "Human factors in field conditions dictate UI density. Large click targets and voice confirmations greatly increased system adoption rates.",
+        "fr": "Les facteurs humains sur le terrain imposent une interface épurée. Les grandes cibles de clic et la synthèse vocale ont grandement favorisé l'adoption."
+      }
+    },
+    {
+      "id": "lyanza",
+      "title": "Lyanza Smart Commerce",
+      "category": {
+        "en": "Cloud API & Payment Hubs",
+        "fr": "Hub de Paiements & API Cloud"
+      },
+      "image": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800",
+      "technologies": [
+        "React",
+        "Go",
+        "Docker",
+        "Stripe API",
+        "Google Cloud Platform",
+        "TailwindCSS"
+      ],
+      "description": {
+        "en": "High-volume transactional system facilitating seamless multi-vendor checkout, invoice automation, and instant payouts.",
+        "fr": "Système transactionnel à haut volume facilitant le paiement multi-vendeurs, la facturation automatique et les virements instantanés."
+      },
+      "problem": {
+        "en": "Fragmented regional payment gateways prevented local merchants from accessing international debit, credit, and mobile money services.",
+        "fr": "Le fractionnement des passerelles de paiement régionales empêchait les commerçants d'accéder aux services de cartes bancaires internationales et de mobile money."
+      },
+      "research": {
+        "en": "Consulted financial compliance regulations, PCI-DSS guidelines, and analyzed network latency patterns across three major telecommunication companies.",
+        "fr": "Consultation des réglementations de conformité financière, directives PCI-DSS et analyse de la latence réseau chez trois opérateurs majeurs."
+      },
+      "architecture": {
+        "en": "Distributed API Gateway with secure token vaults, high-throughput message brokers (RabbitMQ), and double-entry accounting databases.",
+        "fr": "Passerelle API distribuée avec coffres-forts de jetons sécurisés, courtiers de messages à haut débit (RabbitMQ) et base de comptabilité en partie double."
+      },
+      "challenges": {
+        "en": "Preventing race conditions during multi-threaded flash sale checkout events.",
+        "fr": "Prévenir les situations de concurrence (race conditions) lors des événements de vente flash à fort trafic."
+      },
+      "solutions": {
+        "en": "Utilized distributed locks in Redis and isolated transactional states with absolute rollbacks on failure.",
+        "fr": "Utilisation de verrous distribués dans Redis et isolation des transactions avec retour à l'état initial (rollback) immédiat en cas d'erreur."
+      },
+      "results": {
+        "en": "Processed over $15 Million in annual transaction volume with 99.99% system uptime, helping 450 regional merchants scale globally.",
+        "fr": "Plus de 15 millions de dollars de volume de transactions annuelles traités avec une disponibilité de 99,99%, aidant 450 commerçants à se développer."
+      },
+      "lessons": {
+        "en": "Never roll custom cryptography. Standard audited token vaults are mandatory for modern compliance and client confidence.",
+        "fr": "Ne jamais concevoir de cryptographie maison. Les coffres-forts de jetons audités sont indispensables pour la conformité et la confiance."
+      }
+    },
+    {
+      "id": "ai-transformation-framework",
+      "title": "AI-Powered Enterprise Suite",
+      "category": {
+        "en": "AI Product Strategy & Integrations",
+        "fr": "Stratégie Produit IA & Intégrations"
+      },
+      "image": "https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800",
+      "technologies": [
+        "React",
+        "Express",
+        "Google Gemini API",
+        "Vector Databases",
+        "LangChain",
+        "Node.js"
+      ],
+      "description": {
+        "en": "A comprehensive AI framework designed for automatic proposal generation, knowledge extraction, and customer intelligence.",
+        "fr": "Un framework d'IA complet conçu pour la génération automatique de propositions, l'extraction de connaissances et l'intelligence client."
+      },
+      "problem": {
+        "en": "Consulting groups waste thousands of hours manually reviewing corporate request documents and drafting lengthy technical architecture proposals.",
+        "fr": "Les cabinets de conseil perdent des milliers d'heures à examiner manuellement les appels d'offres et à rédiger de longues propositions d'architecture technique."
+      },
+      "research": {
+        "en": "Studied LLM prompt optimization frameworks, vector embedding dimensions, and context-window limitations to guarantee high proposal accuracy and relevance.",
+        "fr": "Étude des frameworks d'optimisation de prompts LLM, des dimensions d'embeddings vectoriels et des limites de fenêtres de contexte pour garantir l'exactitude des propositions."
+      },
+      "architecture": {
+        "en": "Retrieval-Augmented Generation (RAG) system utilizing vector databases, server-side Google Gemini SDK pipelines, and Markdown processing filters.",
+        "fr": "Système RAG (Retrieval-Augmented Generation) utilisant des bases de données vectorielles, des pipelines de serveurs Gemini SDK et des filtres de traitement Markdown."
+      },
+      "challenges": {
+        "en": "Preventing model hallucinations and enforcing strict corporate data privacy bounds.",
+        "fr": "Prévenir les hallucinations du modèle et imposer des limites strictes de confidentialité des données de l'entreprise."
+      },
+      "solutions": {
+        "en": "Enforced strict system instructions, injected verified corporate knowledge schemas, and ran client verification loops prior to document generation.",
+        "fr": "Instructions système strictes imposées, injection de schémas de connaissances vérifiés et boucles de vérification client avant la génération de documents."
+      },
+      "results": {
+        "en": "Slashed corporate response drafting times from 5 days to under 4 minutes, increasing qualified sales pipelines by 340%.",
+        "fr": "Délai de rédaction des propositions réduit de 5 jours à moins de 4 minutes, augmentant les opportunités de vente de 340%."
+      },
+      "lessons": {
+        "en": "AI is not a replacement for domain experts. The optimal workflow is 'AI assists, Senior expert approves'.",
+        "fr": "L'IA ne remplace pas les experts du domaine. Le flux de travail optimal est 'L'IA assiste, l'expert senior approuve'."
+      }
+    }
+  ],
+  "articles": [
+    {
+      "id": "a1",
+      "publishedAt": "2026-05-12",
+      "readingTime": "5 min read",
+      "tags": [
+        "Software Engineering",
+        "Architecture",
+        "Redis"
+      ],
+      "category": "engineering",
+      "title": {
+        "en": "Preventing Race Conditions in Modern Distributed Commerce",
+        "fr": "Prévenir les Situations de Concurrence dans le Commerce Moderne"
+      },
+      "excerpt": {
+        "en": "How to leverage distributed locks in Redis and isolate database write transactions under high consumer peaks.",
+        "fr": "Comment exploiter les verrous distribués dans Redis et isoler les transactions d'écriture lors des pics de trafic."
+      },
+      "content": {
+        "en": "Distributed locks are essential for microservices. When multiple concurrent checkout flows request inventory decreases simultaneously, traditional auto-incrementing queries fall victim to race conditions. To prevent double-spending and stock over-drafts: 1. Use Redis SETNX to acquire a lock key specific to the product resource. 2. Establish a clear key TTL to prevent deadlocks in case of container restarts. 3. Group the transaction in your relational database with rigorous ACID rollbacks.",
+        "fr": "Les verrous distribués sont essentiels pour les microservices. Lorsque plusieurs flux de paiement concurrents demandent des infractions d'inventaire simultanément, les requêtes traditionnelles d'auto-incrémentation sont victimes de race conditions. Pour éviter cela : 1. Utilisez Redis SETNX pour acquérir un verrou spécifique au produit. 2. Établissez une durée de vie TTL claire pour éviter les blocages. 3. Regroupez les écritures avec des retours à l'état initial (rollbacks) rigoureux."
+      }
+    },
+    {
+      "id": "a2",
+      "publishedAt": "2026-06-02",
+      "readingTime": "7 min read",
+      "tags": [
+        "Gemini API",
+        "Artificial Intelligence",
+        "RAG"
+      ],
+      "category": "ai",
+      "title": {
+        "en": "Supercharging RAG Architectures with Google Gemini 3.5 Flash",
+        "fr": "Booster les Architectures RAG avec Google Gemini 3.5 Flash"
+      },
+      "excerpt": {
+        "en": "A step-by-step technical guide to build high-relevance automated document summary pipelines with low latency.",
+        "fr": "Guide technique étape par étape pour créer des pipelines de synthèse documentaire hautement pertinents à faible latence."
+      },
+      "content": {
+        "en": "Retrieval-Augmented Generation (RAG) bridges the gap between static models and your private enterprise documents. Leveraging the modern Google Gemini SDK on the server ensures secure model calls. Key design principles: 1. Chunk documents into logical semantic clusters with overlapping boundaries. 2. Embed chunks into vector dimensions and save them to your database. 3. Query the vector database on query arrivals, and inject the matching document context into your model systemInstruction.",
+        "fr": "Le RAG comble le fossé entre les modèles statiques et vos documents d'entreprise privés. L'utilisation du SDK Google Gemini moderne sur le serveur garantit des appels sécurisés. Principes clés : 1. Découper les documents en blocs sémantiques. 2. Enregistrer ces blocs dans des dimensions vectorielles. 3. Interroger la base vectorielle lors de la requête et injecter le contexte dans le systemInstruction du modèle."
+      }
+    }
+  ],
+  "trainingPrograms": [
+    {
+      "id": "digital-marketing-pro",
+      "title": {
+        "en": "Digital Marketing Masterclass",
+        "fr": "Masterclass en Marketing Digital"
+      },
+      "duration": "6 Weeks (Virtual & Live Coaching)",
+      "audience": {
+        "en": "Entrepreneurs, Marketing Managers, and Sales Teams.",
+        "fr": "Entrepreneurs, responsables marketing et équipes commerciales."
+      },
+      "description": {
+        "en": "Comprehensive training covering paid ads (Google, Meta), sales funnels, SEO architecture, and cold acquisition automation.",
+        "fr": "Formation complète couvrant la publicité payante (Google, Meta), les tunnels de vente, le SEO et l'automatisation de l'acquisition."
+      },
+      "syllabus": [
+        "Module 1: Landing Page Architecture & CRO",
+        "Module 2: Advanced Meta & Google Ad Pipelines",
+        "Module 3: Inbound Content Strategy & SEO Secrets",
+        "Module 4: Marketing Automation & CRM integration"
+      ]
+    },
+    {
+      "id": "educator-literacy",
+      "title": {
+        "en": "Digital Literacy Program for Educators",
+        "fr": "Alphabétisation Numérique pour Enseignants"
+      },
+      "duration": "4 Weeks (Hands-on Classrooms)",
+      "audience": {
+        "en": "School Principals, University Professors, and Independent Trainers.",
+        "fr": "Directeurs d'écoles, professeurs d'université et formateurs indépendants."
+      },
+      "description": {
+        "en": "Empowering educators with digital tools to build engaging visual lectures, manage virtual classrooms, and leverage AI responsibly.",
+        "fr": "Donner aux enseignants les outils numériques pour créer des cours visuels captivants, gérer les classes virtuelles et utiliser l'IA de manière responsable."
+      },
+      "syllabus": [
+        "Module 1: Google Workspace & Classroom Management",
+        "Module 2: Visual Lesson Design using modern software",
+        "Module 3: Introduction to Generative AI for grading & planning",
+        "Module 4: Online Student Engagement Strategies"
+      ]
+    },
+    {
+      "id": "ai-product-workshop",
+      "title": {
+        "en": "AI Product Builder Intensive",
+        "fr": "Atelier Intensif de Création de Produits IA"
+      },
+      "duration": "3-Day Practical Bootcamp",
+      "audience": {
+        "en": "Product Managers, Developers, and Tech Founders.",
+        "fr": "Chefs de produit, développeurs et fondateurs techniques."
+      },
+      "description": {
+        "en": "A hands-on, zero-fluff workshop to build functional AI applications leveraging the Gemini SDK, vector store search, and microservice backends.",
+        "fr": "Un atelier pratique pour créer des applications d'IA fonctionnelles exploitant le SDK Gemini, la recherche vectorielle et les microservices."
+      },
+      "syllabus": [
+        "Day 1: Prompt Engineering, API Structures & Client Limits",
+        "Day 2: Vector Stores & RAG Database Pipelines",
+        "Day 3: Building & Deploying Full Stack AI Web Agents"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "u_seed_1",
+      "name": "Admin User",
+      "email": "admin@invictus.com",
+      "passwordHash": "$2b$12$4VrUqXA2Fmyd/3xOC.FcVOFC5Hcb5toQSMhM2AuoyTGJ0ddrKV5Sm",
+      "role": "admin",
+      "createdAt": "2026-07-02T16:00:00.000Z"
+    }
+  ]
+}

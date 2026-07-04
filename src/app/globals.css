@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Custom brand color variables mapping to the specified Color System */
+  --color-brand-primary: #27187E;       /* CTA buttons, active states, links, interactive elements */
+  --color-brand-dark: #121A1B;          /* Typography, navigation, footer, dark sections */
+  --color-brand-bg: #F7F7FF;            /* Main background, cards, sections */
+  --color-brand-neutral: #CDD4DD;       /* Borders, dividers, secondary surfaces */
+  --color-brand-accent: #27187E;        /* Active interactive elements */
+  --color-brand-muted: #64748B;         /* Muted Slate Gray for secondary text */
+  --color-brand-panel: #E2E2F0;         /* Muted indigo-gray background panel */
+  --color-brand-card: #FFFFFF;          /* High-contrast crisp white cards */
+}
+
+/* Custom scrollbar matching requested Color System */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-brand-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-brand-neutral);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-primary);
+}
+
+body {
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-dark);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+.glow-card {
+  position: relative;
+}
+.glow-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-neutral));
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.glow-card:hover::after {
+  opacity: 0.4;
+}
+
+/* Disable Next.js dev overlay in local environment to prevent extension-injected hydration overlays */
+nextjs-portal {
+  display: none !important;
+}
