@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const db = loadDB();
+    const db = await loadDB();
     const users = (db.users as any[]) || [];
     const publicUsers = users.map(({ passwordHash, ...rest }) => rest);
     return NextResponse.json(publicUsers);
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const db = loadDB();
+    const db = await loadDB();
     const users = (db.users as any[]) || [];
 
     if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     users.push(newUser);
     db.users = users;
-    saveDB(db);
+    await saveDB(db);
 
     const { passwordHash: _, ...publicUser } = newUser;
     return NextResponse.json(publicUser, { status: 201 });
@@ -66,3 +66,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

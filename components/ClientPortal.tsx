@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { Shield, Lock, Send, FileText, CheckCircle2, Circle, Calendar, MessageSquare, Plus, Check, Loader2, DollarSign } from "lucide-react";
+import { Shield, Lock, Send, FileText, CheckCircle2, Circle, Calendar, MessageSquare, Plus, Check, Loader2, DollarSign, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 import { 

@@ -173,7 +173,7 @@ export default function AIDiscovery({ onSectionChange }: AIDiscoveryProps) {
   const getDynamicQuestionForType = (type: string) => {
     switch (type) {
       case "Website":
-        return "What is your primary conversion goal? (e.g. capture email leads, portfolio, direct sales)";
+        return "What is your primary conversion goal? (e.g. capture email leads, services showcase, direct sales)";
       case "E-commerce":
         return "What shipping processors or payment gateways are needed? (e.g. Stripe, local cash, Sogebank)";
       case "SaaS":
@@ -588,9 +588,9 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                           </span>
                           <input
                             type="text"
-                            value={formData.customAnswers[type] || ""}
+                            value={(formData.customAnswers && formData.customAnswers[type]) || ""}
                             onChange={(e) => {
-                              const newAnswers = { ...formData.customAnswers, [type]: e.target.value };
+                              const newAnswers = { ...(formData.customAnswers || {}), [type]: e.target.value };
                               updateField("customAnswers", newAnswers);
                             }}
                             placeholder="Add brief details..."

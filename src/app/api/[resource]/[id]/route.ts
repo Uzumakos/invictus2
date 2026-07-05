@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateInCollection } from "@/lib/db";
+import { updateInCollection, deleteFromCollection } from "@/lib/db";
 
 const ALLOWED_RESOURCES = [
   "tasks",
   "consultations",
   "leads",
   "notifications",
-  "discoveries"
+  "discoveries",
+  "payments",
+  "translations",
+  "case-studies",
+  "testimonials",
+  "faq-items",
+  "training-programs",
+  "organizations",
+  "consulting-services"
 ];
 
 export async function PATCH(
@@ -27,8 +35,15 @@ export async function PATCH(
     if (resource === "leads") collectionKey = "leads";
     if (resource === "notifications") collectionKey = "portalNotifications";
     if (resource === "discoveries") collectionKey = "discoveries";
+    if (resource === "payments") collectionKey = "portalPayments";
 
-    const updated = updateInCollection(collectionKey, id, body);
+    // CMS collections
+    if (resource === "case-studies") collectionKey = "projects";
+    if (resource === "faq-items") collectionKey = "faqItems";
+    if (resource === "training-programs") collectionKey = "trainingPrograms";
+    if (resource === "consulting-services") collectionKey = "consultingServices";
+
+    const updated = await updateInCollection(collectionKey, id, body);
     if (!updated) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
@@ -39,3 +54,41 @@ export async function PATCH(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ resource: string; id: string }> }
+) {
+  try {
+    const { resource, id } = await params;
+    if (!ALLOWED_RESOURCES.includes(resource)) {
+      return NextResponse.json({ error: "Resource not found or read-only" }, { status: 404 });
+    }
+
+    let collectionKey = resource;
+    if (resource === "tasks") collectionKey = "portalTasks";
+    if (resource === "consultations") collectionKey = "portalConsultations";
+    if (resource === "leads") collectionKey = "leads";
+    if (resource === "notifications") collectionKey = "portalNotifications";
+    if (resource === "discoveries") collectionKey = "discoveries";
+    if (resource === "payments") collectionKey = "portalPayments";
+
+    // CMS collections
+    if (resource === "case-studies") collectionKey = "projects";
+    if (resource === "faq-items") collectionKey = "faqItems";
+    if (resource === "training-programs") collectionKey = "trainingPrograms";
+    if (resource === "consulting-services") collectionKey = "consultingServices";
+
+    const deleted = await deleteFromCollection(collectionKey, id);
+    if (!deleted) {
+      return NextResponse.json({ error: "Item not found or failed to delete" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+

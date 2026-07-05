@@ -4,7 +4,7 @@ import { SiteSettings } from "@/lib/types";
 
 export async function GET() {
   try {
-    const db = loadDB();
+    const db = await loadDB();
     const settings = db.settings || {};
     return NextResponse.json(settings);
   } catch (err) {
@@ -16,14 +16,14 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const db = loadDB();
+    const db = await loadDB();
 
     db.settings = {
       ...((db.settings as Record<string, unknown>) || {}),
       ...body,
     };
 
-    saveDB(db);
+    await saveDB(db);
     return NextResponse.json(db.settings);
   } catch (err) {
     console.error(err);
@@ -33,3 +33,4 @@ export async function PATCH(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   return PATCH(req);
 }
+

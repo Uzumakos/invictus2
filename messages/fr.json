@@ -10,7 +10,7 @@
     "discovery": "Découverte de Projet"
   },
   "hero": {
-    "tagline": "Ingénieur Logiciel construisant des produits numériques évolutifs, des solutions IA et des stratégies de transformation digitale.",
+    "tagline": "Consultant Technologique Senior construisant des produits numériques évolutifs, des solutions IA et des stratégies de transformation digitale.",
     "sub": "Consultant Senior, Formateur en Marketing Digital et Stratège Produit IA délivrant l'excellence internationale.",
     "ctaPrimary": "Réserver une Consultation",
     "ctaSecondary": "Explorer les Projets",
@@ -31,13 +31,13 @@
   "about": {
     "title": "L'Esprit Professionnel",
     "subtitle": "Associer une exécution technique de pointe à une vision stratégique des affaires.",
-    "bio": "Amedee Erns Baptiste est un ingénieur logiciel senior chevronné, architecte technologique et créateur de produits. Avec une expertise reconnue pour accompagner les startups, les ONG, les universités et les organisations internationales vers l'ère de l'intelligence artificielle, Amedee est spécialisé dans le conseil en transformation digitale, le rôle de CTO-as-a-Service et le développement sur mesure.",
+    "bio": "Amedee Erns Baptiste est un consultant technologique senior chevronné, stratège en transformation digitale et conseiller CTO. Avec une expertise reconnue pour accompagner les startups, les ONG, les universités et les organisations internationales vers l'ère de l'intelligence artificielle, Amedee est spécialisé dans le conseil en transformation digitale, le rôle de CTO-as-a-Service et le développement sur mesure.",
     "roles": [
-      "Ingénieur Logiciel Senior",
+      "Consultant Technologique Senior",
       "Stratège Produit IA",
       "Leader de la Transformation Digitale",
       "Formateur Expert en Marketing",
-      "Créateur de Produits"
+      "Conseiller CTO"
     ],
     "techLabel": "Technologies Vérifiées",
     "capabilitiesLabel": "Compétences Clés",
@@ -150,19 +150,39 @@
     "readingProgress": "Progression de Lecture"
   },
   "discovery": {
-    "title": "Découverte Intelligente de Projet",
+    "title": "Moteur Intelligent de Découverte de Projet",
     "subtitle": "Répondez à quelques questions pour obtenir un résumé professionnel et des recommandations de services — sans IA.",
     "startCta": "Démarrer la Découverte",
     "resumeCta": "Reprendre la Découverte",
     "step": "Étape",
     "of": "sur",
     "back": "Retour",
-    "next": "Suivant",
+    "next": "Continuer",
     "skip": "Passer",
     "complete": "Terminer",
     "estimated": "Durée estimée: 5–8 minutes",
     "autosave": "Progression sauvegardée automatiquement",
     "privacy": "Vos informations sont strictement confidentielles et utilisées uniquement pour préparer votre consultation.",
+    "reset": "Réinitialiser le Questionnaire",
+    "progress": "Progression",
+    "stepLabel": "Étape",
+    "prev": "Retour",
+    "submit": "Transmettre le Brief de Cadrage",
+    "steps": {
+      "welcome": "Introduction",
+      "projectType": "Portée du Projet",
+      "organization": "Détails de l'Organisation",
+      "goals": "Valeur & Objectifs",
+      "context": "Contexte & Goulots",
+      "audience": "Cible d'Audience",
+      "features": "Catalogue de Fonctionnalités",
+      "technical": "Pile & Préférences",
+      "budget": "Limites Financières",
+      "timeline": "Calendrier du Projet",
+      "language": "Préférences de Réunion",
+      "additional": "Références Externes",
+      "summary": "Schéma Prêt pour l'IA"
+    },
     "welcome": {
       "title": "Comprenons Votre Projet",
       "subtitle": "Ce questionnaire guidé aide à préparer une consultation personnalisée et un résumé professionnel du projet. Sans IA — juste une analyse intelligente.",
@@ -360,29 +380,29 @@
     "view": "View",
     "all": "All"
   },
-  "discovery": {
-    "title": "Moteur Intelligent de Découverte de Projet",
-    "welcome": "Évaluation Architecturale au Niveau CTO",
-    "reset": "Réinitialiser le Questionnaire",
-    "progress": "Progression",
-    "stepLabel": "Étape",
-    "prev": "Retour",
-    "next": "Continuer",
-    "submit": "Transmettre le Brief de Cadrage",
-    "steps": {
-      "welcome": "Introduction",
-      "projectType": "Portée du Projet",
-      "organization": "Détails de l'Organisation",
-      "goals": "Valeur & Objectifs",
-      "context": "Contexte & Points Sensibles",
-      "audience": "Cible d'Audience",
-      "features": "Catalogue des Fonctionnalités Core",
-      "technical": "Stack & Préférences",
-      "budget": "Limites Financières",
-      "timeline": "Calendrier du Projet",
-      "language": "Préférences de Réunion",
-      "additional": "Références Externes",
-      "summary": "Schéma Prêt pour l'IA"
-    }
+  "payments": {
+    "title": "Portail de Paiement de Consultation",
+    "subtitle": "Soumettez votre reçu ou complétez votre référence de paiement pour confirmer votre service.",
+    "clientName": "Votre Nom",
+    "clientEmail": "Votre Adresse Email",
+    "selectService": "Sélectionner un Service",
+    "amount": "Montant (USD)",
+    "paymentMethod": "Sélectionner le Mode de Paiement",
+    "referenceNumber": "Numéro de Référence de la Transaction",
+    "uploadScreenshot": "Télécharger la Capture d'Écran du Paiement",
+    "screenshotLabel": "Glissez-déposez la capture d'écran du reçu, ou cliquez pour parcourir",
+    "submit": "Soumettre le Reçu de Paiement",
+    "submitting": "Traitement de la Soumission...",
+    "successTitle": "Reçu Soumis avec Succès",
+    "successDesc": "Amedee va vérifier votre reçu et vous envoyer une confirmation. Merci !",
+    "errorTitle": "Échec de la Soumission",
+    "moncashInstructions": "Veuillez transférer le montant par MonCash :",
+    "natcashInstructions": "Veuillez transférer le montant par Natcash :",
+    "bankInstructions": "Veuillez transférer sur notre Compte Bancaire :"
+  },
+  "seo": {
+    "title": "Amedee Erns Baptiste — Consultant Principal en Technologie & Conseiller en Transformation Digitale",
+    "description": "Conseiller CTO et Consultant Principal en Technologie offrant l'excellence internationale en Architecture Logicielle, Systèmes d'IA et Migration Cloud.",
+    "keywords": "Consultant en Technologie, Architecture Logicielle, Conseiller CTO, Intégration de l'IA, Migration Cloud, Transformation Digitale"
   }
 }

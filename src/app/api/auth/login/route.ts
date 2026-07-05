@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     let user = null;
     let isCorrect = false;
     try {
-      const db = loadDB();
+      const db = await loadDB();
       const users = (db.users as any[]) || [];
       user = users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.role === "admin");
     } catch (dbErr) {

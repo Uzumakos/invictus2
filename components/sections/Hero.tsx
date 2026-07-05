@@ -29,7 +29,7 @@ export default function Hero({ profileImageUrl }: HeroProps) {
       opacity: 1,
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 100,
         damping: 18,
       },
@@ -42,7 +42,7 @@ export default function Hero({ profileImageUrl }: HeroProps) {
       opacity: 1,
       scale: 1,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 200,
         damping: 15,
       },
@@ -56,7 +56,7 @@ export default function Hero({ profileImageUrl }: HeroProps) {
       scale: 1,
       rotate: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 80,
         damping: 20,
         delay: 0.4,

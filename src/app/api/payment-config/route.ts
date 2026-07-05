@@ -4,7 +4,7 @@ import { PaymentConfig } from "@/lib/types";
 
 export async function GET() {
   try {
-    const db = loadDB();
+    const db = await loadDB();
     const paymentConfig = db.paymentConfig || { methods: [] };
     return NextResponse.json(paymentConfig);
   } catch (err) {
@@ -16,7 +16,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json(); // Expected Partial<PaymentConfig> or { methods: PaymentMethod[] }
-    const db = loadDB();
+    const db = await loadDB();
 
     if (!db.paymentConfig) {
       db.paymentConfig = { methods: [] };
@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest) {
       ...body,
     };
 
-    saveDB(db);
+    await saveDB(db);
     return NextResponse.json(db.paymentConfig);
   } catch (err) {
     console.error(err);
@@ -37,3 +37,4 @@ export async function PATCH(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   return PATCH(req);
 }
+

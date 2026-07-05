@@ -169,12 +169,15 @@ CREATE INDEX IF NOT EXISTS idx_projects_email ON portal_projects(client_email);
 CREATE TABLE IF NOT EXISTS portal_payments (
     id VARCHAR(100) PRIMARY KEY,
     client_email VARCHAR(255) NOT NULL,
+    client_name VARCHAR(255) DEFAULT 'Anonymous',
     amount NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(10) DEFAULT 'USD',
     service VARCHAR(255) NOT NULL,
     date DATE NOT NULL,
     status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('paid', 'pending', 'overdue')),
     invoice_url TEXT,
     payment_method VARCHAR(100),
+    payment_reference VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

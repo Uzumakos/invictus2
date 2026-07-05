@@ -10,7 +10,7 @@
     "discovery": "Project Discovery"
   },
   "hero": {
-    "tagline": "Software Engineer building scalable digital products, AI-powered solutions & digital transformation strategies.",
+    "tagline": "Senior Technology Consultant building scalable digital products, AI-powered solutions & digital transformation strategies.",
     "sub": "Senior Consultant, Digital Marketing Trainer, and AI Product Strategist delivering international excellence.",
     "ctaPrimary": "Book a Consultation",
     "ctaSecondary": "Explore Case Studies",
@@ -31,13 +31,13 @@
   "about": {
     "title": "The Professional Mind",
     "subtitle": "Bridging deep technical execution with forward-thinking business strategy.",
-    "bio": "Amedee Erns Baptiste is a seasoned Senior Software Engineer, technology architect, and product builder. With a proven track record of helping startups, NGOs, universities, and international brands transition into the AI era, Amedee specializes in digital transformation consulting, CTO-as-a-Service, and custom engineering.",
+    "bio": "Amedee Erns Baptiste is a seasoned Senior Technology Consultant, digital transformation strategist, and CTO advisor. With a proven track record of helping startups, NGOs, universities, and international brands transition into the AI era, Amedee specializes in digital transformation consulting, CTO-as-a-Service, and custom engineering.",
     "roles": [
-      "Senior Software Engineer",
+      "Senior Technology Consultant",
       "AI Product Strategist",
       "Digital Transformation Leader",
       "Expert Marketing Trainer",
-      "Product Builder"
+      "CTO Advisor"
     ],
     "techLabel": "Verified Ecosystem Technologies",
     "capabilitiesLabel": "Core Capabilities",
@@ -150,19 +150,39 @@
     "readingProgress": "Reading Progress"
   },
   "discovery": {
-    "title": "Smart Project Discovery",
+    "title": "Smart Project Discovery Engine",
     "subtitle": "Answer a few questions to get a professional project summary and service recommendations — no AI required.",
     "startCta": "Start Discovery",
     "resumeCta": "Resume Discovery",
     "step": "Step",
     "of": "of",
     "back": "Back",
-    "next": "Next",
+    "next": "Continue",
     "skip": "Skip",
     "complete": "Complete",
     "estimated": "Estimated time: 5–8 minutes",
     "autosave": "Progress saved automatically",
     "privacy": "Your information is kept strictly confidential and used only to prepare your consultation.",
+    "reset": "Reset Questionnaire",
+    "progress": "Progress",
+    "stepLabel": "Step",
+    "prev": "Back",
+    "submit": "Transmit Scoping Brief",
+    "steps": {
+      "welcome": "Introduction",
+      "projectType": "Project Scope",
+      "organization": "Organization Details",
+      "goals": "Value & Goals",
+      "context": "Context & Pain-points",
+      "audience": "Audience Target",
+      "features": "Core Feature Catalog",
+      "technical": "Stack & Preferences",
+      "budget": "Financial Bounds",
+      "timeline": "Project Timeline",
+      "language": "Meeting Preferences",
+      "additional": "External References",
+      "summary": "AI-Ready Blueprint"
+    },
     "welcome": {
       "title": "Let's Understand Your Project",
       "subtitle": "This guided questionnaire helps prepare a tailored consultation and professional project summary. No AI — just smart analysis.",
@@ -360,29 +380,29 @@
     "view": "View",
     "all": "All"
   },
-  "discovery": {
-    "title": "Smart Project Discovery Engine",
-    "welcome": "CTO-level Architectural Evaluation",
-    "reset": "Reset Questionnaire",
-    "progress": "Progress",
-    "stepLabel": "Step",
-    "prev": "Back",
-    "next": "Continue",
-    "submit": "Transmit Scoping Brief",
-    "steps": {
-      "welcome": "Introduction",
-      "projectType": "Project Scope",
-      "organization": "Organization Details",
-      "goals": "Value & Goals",
-      "context": "Context & Pain-points",
-      "audience": "Audience Target",
-      "features": "Core Feature Catalog",
-      "technical": "Stack & Preferences",
-      "budget": "Financial Bounds",
-      "timeline": "Project Timeline",
-      "language": "Meeting Preferences",
-      "additional": "External References",
-      "summary": "AI-Ready Blueprint"
-    }
+  "payments": {
+    "title": "Consulting Payment Portal",
+    "subtitle": "Submit your receipt or complete your payment reference to secure your service.",
+    "clientName": "Your Name",
+    "clientEmail": "Your Email Address",
+    "selectService": "Select Service",
+    "amount": "Amount (USD)",
+    "paymentMethod": "Select Payment Method",
+    "referenceNumber": "Transaction Reference Number",
+    "uploadScreenshot": "Upload Payment Screenshot",
+    "screenshotLabel": "Drag & drop your payment screenshot here, or click to browse",
+    "submit": "Submit Payment Receipt",
+    "submitting": "Processing Submission...",
+    "successTitle": "Receipt Submitted Successfully",
+    "successDesc": "Amedee will verify your screenshot and send an official receipt shortly. Thank you!",
+    "errorTitle": "Submission Failed",
+    "moncashInstructions": "Please transfer the amount to MonCash:",
+    "natcashInstructions": "Please transfer the amount to Natcash:",
+    "bankInstructions": "Please transfer to our Bank Account:"
+  },
+  "seo": {
+    "title": "Amedee Erns Baptiste — Senior Technology Consultant & Digital Transformation Advisor",
+    "description": "CTO Advisor and Senior Technology Consultant delivering international excellence in Software Architecture, AI Systems, and Cloud Migration.",
+    "keywords": "Technology Consultant, Software Architecture, CTO Advisor, AI Integration, Cloud Migration, Digital Transformation"
   }
 }

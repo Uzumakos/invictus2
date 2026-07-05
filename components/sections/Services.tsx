@@ -34,6 +34,7 @@ export default function Services({ onSectionChange }: ServicesProps) {
   const [chosenTier, setChosenTier] = useState<{ name: string; multiplier: number; extraFeatures: string[] } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [servicesList, setServicesList] = useState<Service[]>(consultingOffers);
 
   // Form states
   const [clientName, setClientName] = useState("");
@@ -51,17 +52,29 @@ export default function Services({ onSectionChange }: ServicesProps) {
   const [generatedBookingId, setGeneratedBookingId] = useState("");
   const [linkedDiscoveryId, setLinkedDiscoveryId] = useState<string | undefined>(undefined);
 
-  // Fetch payment config on mount
+  // Fetch payment config and consulting services on mount
   useEffect(() => {
     fetch("/api/payment-config")
       .then((res) => res.json())
       .then((data) => {
         setPaymentConfig(data);
         // Default to first enabled payment method
-        const firstEnabled = data.methods?.find((m: PaymentMethod) => m.enabled);
+        const firstEnabled = data.methods?.find((m: any) => m.enabled);
         if (firstEnabled) setSelectedPaymentId(firstEnabled.id);
       })
       .catch((err) => console.error("Error loading payment config:", err));
+
+    fetch("/api/consulting-services")
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error();
+      })
+      .then((data) => {
+        if (data && data.length > 0) {
+          setServicesList(data);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Listen for auto-fill event from Project Discovery Engine
@@ -81,9 +94,9 @@ export default function Services({ onSectionChange }: ServicesProps) {
           }
           
           // Match consulting offer
-          const matchedOffer = consultingOffers.find(
+          const matchedOffer = servicesList.find(
             (o) => o.id === payload.serviceId || (o.title?.en ?? "").toLowerCase().includes((payload.serviceTitle || "").toLowerCase())
-          ) || consultingOffers[0];
+          ) || servicesList[0];
           
           setSelectedService(matchedOffer);
           setChosenTier(tiers[0]);
@@ -279,7 +292,7 @@ export default function Services({ onSectionChange }: ServicesProps) {
 
         {/* Services Grid layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          {consultingOffers.map((service) => (
+          {servicesList.map((service) => (
             <motion.div
               key={service.id}
               className="bg-white border border-[var(--color-brand-neutral)]/20 p-8 rounded-3xl flex flex-col justify-between relative overflow-hidden shadow-2xs"

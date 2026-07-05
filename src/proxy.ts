@@ -6,8 +6,13 @@ import { routing } from "@/lib/i18n/routing";
 // next-intl middleware for locale routing
 const intlMiddleware = createMiddleware(routing);
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ── Skip proxy/i18n for API routes ───────────────────────────────────────
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
 
   // ── Admin route protection ───────────────────────────────────────────────
   if (pathname.startsWith("/admin")) {
@@ -32,7 +37,8 @@ export async function proxy(request: NextRequest) {
         return response;
       }
       return NextResponse.next();
-    } catch {
+    } catch (err) {
+      console.error("PROXY ADMIN VERIFICATION ERROR:", err);
       const response = NextResponse.redirect(
         new URL("/admin/login", request.url)
       );

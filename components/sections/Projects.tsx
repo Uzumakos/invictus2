@@ -22,7 +22,7 @@ export default function Projects({ projects }: ProjectsProps) {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
+      transition: { duration: 0.6, ease: "easeOut" as const }
     }
   };
 
@@ -41,7 +41,7 @@ export default function Projects({ projects }: ProjectsProps) {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { type: "spring", stiffness: 80, damping: 15 },
+      transition: { type: "spring" as const, stiffness: 80, damping: 15 },
     },
   };
 
@@ -75,8 +75,12 @@ export default function Projects({ projects }: ProjectsProps) {
           viewport={{ once: true, margin: "-100px" }}
         >
           {projects.map((proj) => {
-            const cat = proj.category[currentLanguage] || proj.category["en"];
-            const desc = proj.description[currentLanguage] || proj.description["en"];
+            const cat = typeof proj.category === "object" && proj.category 
+              ? (proj.category[currentLanguage] || proj.category["en"] || "") 
+              : (proj.category || "");
+            const desc = typeof proj.description === "object" && proj.description 
+              ? (proj.description[currentLanguage] || proj.description["en"] || "") 
+              : (proj.description || "");
 
             return (
               <motion.div
@@ -106,12 +110,12 @@ export default function Projects({ projects }: ProjectsProps) {
                       {desc}
                     </p>
                     <div className="flex flex-wrap gap-1.5 pt-2">
-                      {proj.technologies.slice(0, 4).map((tech, idx) => (
+                      {(proj.technologies || []).slice(0, 4).map((tech, idx) => (
                         <span key={idx} className="bg-[var(--color-brand-bg)] text-[var(--color-brand-dark)] border border-[var(--color-brand-neutral)]/25 px-2 py-1 rounded text-[10px] font-mono font-medium">
                           {tech}
                         </span>
                       ))}
-                      {proj.technologies.length > 4 && (
+                      {proj.technologies && proj.technologies.length > 4 && (
                         <span className="text-[10px] font-mono font-bold text-[var(--color-brand-primary)] pt-1 pl-1">
                           +{proj.technologies.length - 4} more
                         </span>
@@ -228,7 +232,7 @@ export default function Projects({ projects }: ProjectsProps) {
                           {t("technologies")}
                         </h4>
                         <div className="flex flex-wrap gap-2">
-                          {activeProject.technologies.map((t, idx) => (
+                          {(activeProject.technologies || []).map((t, idx) => (
                             <span key={idx} className="bg-white border border-[var(--color-brand-neutral)]/30 text-[var(--color-brand-dark)] px-2.5 py-1 rounded text-xs font-mono font-medium shadow-3xs">
                               {t}
                             </span>

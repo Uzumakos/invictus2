@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 export async function GET() {
   try {
-    const bookings = getCollection<Booking>("bookings");
+    const bookings = await getCollection<Booking>("bookings");
     return NextResponse.json(bookings);
   } catch (err) {
     console.error(err);
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    addToCollection("bookings", newBooking);
+    await addToCollection("bookings", newBooking);
 
     // Feed booking as a lead in CRM pipeline
     const titleText = typeof serviceTitle === "object"
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       status: "discovery",
       createdAt: new Date().toISOString(),
     };
-    addToCollection("leads", newLead);
+    await addToCollection("leads", newLead);
 
     // Generate client portal notification
     const newNotif: PortalNotification = {
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
       read: false,
     };
-    addToCollection("portalNotifications", newNotif);
+    await addToCollection("portalNotifications", newNotif);
 
     return NextResponse.json(newBooking, { status: 201 });
   } catch (err) {
@@ -99,3 +99,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

@@ -4,19 +4,17 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { motion, AnimatePresence } from "motion/react";
 import { Menu, X, Globe, ChevronDown } from "lucide-react";
-import { usePathname, useRouter } from "@/lib/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/lib/i18n/navigation";
 import Logo from "./Logo";
-import Link from "next/link";
 
 const NAV_SECTIONS = [
-  { key: "about", href: "#about" },
-  { key: "services", href: "#services" },
-  { key: "projects", href: "#projects" },
-  { key: "training", href: "#training" },
-  { key: "blog", href: "#blog" },
-  { key: "portal", href: "#portal" },
-  { key: "discovery", href: "#discovery" },
-  { key: "contact", href: "#contact" },
+  { key: "about", href: "/about" },
+  { key: "services", href: "/consulting" },
+  { key: "projects", href: "/case-studies" },
+  { key: "training", href: "/training" },
+  { key: "portal", href: "/#portal" },
+  { key: "discovery", href: "/#discovery" },
+  { key: "contact", href: "/#contact" },
 ] as const;
 
 export default function Header() {
@@ -62,13 +60,22 @@ export default function Header() {
   const handleNavClick = useCallback(
     (href: string) => {
       setMobileOpen(false);
-      const id = href.replace("#", "");
-      const el = document.getElementById(id);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (href.startsWith("/") && !href.includes("#")) {
+        router.push(href);
+        return;
+      }
+
+      const hash = href.split("#")[1];
+      if (pathname === "/") {
+        const el = document.getElementById(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      } else {
+        router.push(href);
       }
     },
-    []
+    [router, pathname]
   );
 
   const switchLocale = useCallback(

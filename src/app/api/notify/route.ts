@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
-    const currentList = getCollection<NotifyEntry>("notifyList");
+    const currentList = await getCollection<NotifyEntry>("notifyList");
     const exists = currentList.some((entry) => entry.email.toLowerCase() === email.toLowerCase());
 
     if (exists) {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    addToCollection("notifyList", entry);
+    await addToCollection("notifyList", entry);
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -31,3 +31,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

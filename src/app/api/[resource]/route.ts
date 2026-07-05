@@ -11,7 +11,14 @@ const ALLOWED_RESOURCES = [
   "consultations",
   "notifications",
   "leads",
-  "discoveries"
+  "discoveries",
+  "translations",
+  "case-studies",
+  "testimonials",
+  "faq-items",
+  "training-programs",
+  "organizations",
+  "consulting-services"
 ];
 
 export async function GET(
@@ -35,7 +42,13 @@ export async function GET(
     if (resource === "notifications") collectionKey = "portalNotifications";
     if (resource === "discoveries") collectionKey = "discoveries";
 
-    const items = getCollection(collectionKey);
+    // CMS collections
+    if (resource === "case-studies") collectionKey = "projects";
+    if (resource === "faq-items") collectionKey = "faqItems";
+    if (resource === "training-programs") collectionKey = "trainingPrograms";
+    if (resource === "consulting-services") collectionKey = "consultingServices";
+
+    const items = await getCollection(collectionKey);
     return NextResponse.json(items);
   } catch (err) {
     console.error(err);
@@ -67,13 +80,31 @@ export async function POST(
     if (resource === "leads") { collectionKey = "leads"; prefix = "lead"; }
     if (resource === "discoveries") { collectionKey = "discoveries"; prefix = "disc"; }
 
-    const newItem = {
-      id: `${prefix}_${crypto.randomBytes(6).toString("hex")}`,
-      createdAt: new Date().toISOString(),
-      ...body,
-    };
+    // CMS collections
+    if (resource === "case-studies") { collectionKey = "projects"; prefix = "proj"; }
+    if (resource === "testimonials") { collectionKey = "testimonials"; prefix = "test"; }
+    if (resource === "faq-items") { collectionKey = "faqItems"; prefix = "faq"; }
+    if (resource === "training-programs") { collectionKey = "trainingPrograms"; prefix = "train"; }
+    if (resource === "organizations") { collectionKey = "organizations"; prefix = "org"; }
+    if (resource === "consulting-services") { collectionKey = "consultingServices"; prefix = "srv"; }
+    if (resource === "translations") { collectionKey = "translations"; }
 
-    addToCollection(collectionKey, newItem);
+    let newItem: any;
+    if (resource === "translations") {
+      newItem = {
+        key: body.key,
+        en: body.en,
+        fr: body.fr
+      };
+    } else {
+      newItem = {
+        id: body.id || `${prefix}_${crypto.randomBytes(6).toString("hex")}`,
+        createdAt: new Date().toISOString(),
+        ...body,
+      };
+    }
+
+    await addToCollection(collectionKey, newItem);
 
     return NextResponse.json(newItem, { status: 201 });
   } catch (err) {
@@ -81,3 +112,4 @@ export async function POST(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

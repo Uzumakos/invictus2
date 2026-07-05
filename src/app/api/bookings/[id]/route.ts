@@ -10,7 +10,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json();
 
-    const updated = updateInCollection<Booking>("bookings", id, body);
+    const updated = await updateInCollection<Booking>("bookings", id, body);
     if (!updated) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
@@ -21,3 +21,4 @@ export async function PATCH(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

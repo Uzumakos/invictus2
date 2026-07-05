@@ -19,7 +19,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    const db = loadDB();
+    const db = await loadDB();
     const users = (db.users as any[]) || [];
 
     const index = users.findIndex((u) => u.id === id);
@@ -34,7 +34,7 @@ export async function DELETE(
 
     users.splice(index, 1);
     db.users = users;
-    saveDB(db);
+    await saveDB(db);
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -42,3 +42,4 @@ export async function DELETE(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
