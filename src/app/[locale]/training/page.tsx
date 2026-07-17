@@ -16,7 +16,7 @@ export default async function TrainingPage({ params }: PageProps) {
   setRequestLocale(locale);
 
   const db = (await loadDB()) as any;
-  const programs = db.trainingPrograms || [];
+  const programs = (db.trainingPrograms || []).filter((p: any) => p.status === "published" || !p.status);
   const settings = db.settings;
   const trainingEnabled = settings?.trainingEnabled ?? true;
   const socialLinks = settings?.socialLinks || {};

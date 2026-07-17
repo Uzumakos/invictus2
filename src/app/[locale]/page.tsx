@@ -11,6 +11,7 @@ import Organizations from "@/components/sections/Organizations";
 import Testimonials from "@/components/sections/Testimonials";
 import FAQ from "@/components/sections/FAQ";
 import Contact from "@/components/sections/Contact";
+import AIDiscovery from "@/components/sections/AIDiscovery";
 import { loadDB } from "@/lib/db";
 
 interface PageProps {
@@ -363,6 +364,9 @@ export default async function HomePage({ params }: PageProps) {
             </div>
           </section>
         )}
+
+        {/* Smart Features */}
+        <AIDiscovery />
 
         {/* 9. Testimonials & FAQs & Contact Forms */}
         <Testimonials testimonials={(db.testimonials as any[]) || []} />

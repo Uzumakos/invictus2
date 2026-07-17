@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCollection, addToCollection } from "@/lib/db";
+import { verifyToken } from "@/lib/auth";
 import crypto from "crypto";
 
 const ALLOWED_RESOURCES = [
@@ -18,7 +19,16 @@ const ALLOWED_RESOURCES = [
   "faq-items",
   "training-programs",
   "organizations",
-  "consulting-services"
+  "consulting-services",
+  "media",
+  "sections",
+  "business-profile",
+  "client-billing-profiles",
+  "consulting-hours",
+  "client-milestones",
+  "client-digital-scores",
+  "brand-assets",
+  "seo-metadata"
 ];
 
 export async function GET(
@@ -42,13 +52,40 @@ export async function GET(
     if (resource === "notifications") collectionKey = "portalNotifications";
     if (resource === "discoveries") collectionKey = "discoveries";
 
-    // CMS collections
+    // CMS, ERP & Telemetry collections
     if (resource === "case-studies") collectionKey = "projects";
     if (resource === "faq-items") collectionKey = "faqItems";
     if (resource === "training-programs") collectionKey = "trainingPrograms";
     if (resource === "consulting-services") collectionKey = "consultingServices";
+    if (resource === "media") collectionKey = "mediaLibrary";
+    if (resource === "sections") collectionKey = "pageSections";
+    if (resource === "business-profile") collectionKey = "businessProfile";
+    if (resource === "client-billing-profiles") collectionKey = "clientBillingProfiles";
+    if (resource === "consulting-hours") collectionKey = "consultingHours";
+    if (resource === "client-milestones") collectionKey = "clientMilestones";
+    if (resource === "client-digital-scores") collectionKey = "clientDigitalScores";
+    if (resource === "brand-assets") collectionKey = "brandAssets";
+    if (resource === "seo-metadata") collectionKey = "seoMetadata";
 
-    const items = await getCollection(collectionKey);
+    let items = await getCollection(collectionKey);
+
+    // Dynamic filtering for public users vs administrators
+    const adminToken = req.cookies.get("admin_token")?.value;
+    let isAdmin = false;
+    if (adminToken) {
+      try {
+        const payload = await verifyToken(adminToken);
+        if (payload) isAdmin = true;
+      } catch {}
+    }
+
+    // If public request, filter out draft or archived status records
+    if (!isAdmin) {
+      if (["projects", "trainingPrograms", "consultingServices"].includes(collectionKey)) {
+        items = items.filter((item: any) => item.status === "published" || !item.status);
+      }
+    }
+
     return NextResponse.json(items);
   } catch (err) {
     console.error(err);
@@ -80,7 +117,7 @@ export async function POST(
     if (resource === "leads") { collectionKey = "leads"; prefix = "lead"; }
     if (resource === "discoveries") { collectionKey = "discoveries"; prefix = "disc"; }
 
-    // CMS collections
+    // CMS, ERP & Telemetry collections
     if (resource === "case-studies") { collectionKey = "projects"; prefix = "proj"; }
     if (resource === "testimonials") { collectionKey = "testimonials"; prefix = "test"; }
     if (resource === "faq-items") { collectionKey = "faqItems"; prefix = "faq"; }
@@ -88,6 +125,15 @@ export async function POST(
     if (resource === "organizations") { collectionKey = "organizations"; prefix = "org"; }
     if (resource === "consulting-services") { collectionKey = "consultingServices"; prefix = "srv"; }
     if (resource === "translations") { collectionKey = "translations"; }
+    if (resource === "media") { collectionKey = "mediaLibrary"; prefix = "med"; }
+    if (resource === "sections") { collectionKey = "pageSections"; prefix = "sec"; }
+    if (resource === "business-profile") { collectionKey = "businessProfile"; prefix = "biz"; }
+    if (resource === "client-billing-profiles") { collectionKey = "clientBillingProfiles"; prefix = "cli"; }
+    if (resource === "consulting-hours") { collectionKey = "consultingHours"; prefix = "hrs"; }
+    if (resource === "client-milestones") { collectionKey = "clientMilestones"; prefix = "mst"; }
+    if (resource === "client-digital-scores") { collectionKey = "clientDigitalScores"; prefix = "ds"; }
+    if (resource === "brand-assets") { collectionKey = "brandAssets"; prefix = "brand"; }
+    if (resource === "seo-metadata") { collectionKey = "seoMetadata"; prefix = "seo"; }
 
     let newItem: any;
     if (resource === "translations") {
@@ -97,9 +143,28 @@ export async function POST(
         fr: body.fr
       };
     } else {
+      const isUuidResource = [
+        "client-billing-profiles",
+        "client-milestones",
+        "client-digital-scores",
+        "consulting-hours",
+        "documents",
+        "brand-assets",
+        "seo-metadata",
+        "testimonials",
+        "sections",
+        "business-profile"
+      ].includes(resource);
+
+      const hasNoCreatedAt = [
+        "business-profile",
+        "brand-assets",
+        "seo-metadata"
+      ].includes(resource);
+
       newItem = {
-        id: body.id || `${prefix}_${crypto.randomBytes(6).toString("hex")}`,
-        createdAt: new Date().toISOString(),
+        id: body.id || (isUuidResource ? crypto.randomUUID() : `${prefix}_${crypto.randomBytes(6).toString("hex")}`),
+        ...(hasNoCreatedAt ? {} : { createdAt: new Date().toISOString() }),
         ...body,
       };
     }
@@ -112,4 +177,3 @@ export async function POST(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-

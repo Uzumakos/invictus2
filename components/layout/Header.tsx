@@ -12,7 +12,7 @@ const NAV_SECTIONS = [
   { key: "services", href: "/consulting" },
   { key: "projects", href: "/case-studies" },
   { key: "training", href: "/training" },
-  { key: "portal", href: "/#portal" },
+  { key: "portal", href: "/portal" },
   { key: "discovery", href: "/#discovery" },
   { key: "contact", href: "/#contact" },
 ] as const;
@@ -98,9 +98,15 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <button
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            onClick={() => {
+              if (pathname === "/") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              } else {
+                router.push("/");
+              }
+            }}
             className="flex items-center gap-3 group"
-            aria-label="Back to top"
+            aria-label="Back to homepage"
             id="header-logo-btn"
           >
             <Logo size={36} />

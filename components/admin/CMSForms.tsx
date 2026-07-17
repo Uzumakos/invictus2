@@ -1,13 +1,45 @@
 "use client";
 
 import React, { useState } from "react";
+import { AlertCircle, Save, X } from "lucide-react";
 
+// Tab selector sub-component for reusable forms
+function FormLanguageTabs({ active, onChange }: { active: "en" | "fr"; onChange: (lang: "en" | "fr") => void }) {
+  return (
+    <div className="flex border-b border-[#CDD4DD]/10 mb-4">
+      <button
+        type="button"
+        onClick={() => onChange("en")}
+        className={`px-4 py-2 text-[10px] font-bold uppercase border-b-2 transition-all ${
+          active === "en" ? "border-[#FF7A00] text-white" : "border-transparent text-gray-500 hover:text-gray-300"
+        }`}
+      >
+        English Copy (EN)
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("fr")}
+        className={`px-4 py-2 text-[10px] font-bold uppercase border-b-2 transition-all ${
+          active === "fr" ? "border-[#FF7A00] text-white" : "border-transparent text-gray-500 hover:text-gray-300"
+        }`}
+      >
+        French Copy (FR)
+      </button>
+    </div>
+  );
+}
+
+// 1. PROJECT / CASE STUDY FORM
 export function ProjectEditForm({ project, onSave, onCancel }: { project: any; onSave: (data: any) => void; onCancel: () => void }) {
   const [id, setId] = useState(project?.id || "");
   const [title, setTitle] = useState(project?.title || "");
   const [image, setImage] = useState(project?.image || "");
+  const [status, setStatus] = useState(project?.status || "draft");
   const [technologies, setTechnologies] = useState(project?.technologies?.join(", ") || "");
   
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"en" | "fr">("en");
+
   // Category EN/FR
   const [categoryEn, setCategoryEn] = useState(project?.category?.en || "");
   const [categoryFr, setCategoryFr] = useState(project?.category?.fr || "");
@@ -38,6 +70,7 @@ export function ProjectEditForm({ project, onSave, onCancel }: { project: any; o
       id: id || undefined,
       title,
       image,
+      status,
       technologies: techArray,
       category: { en: categoryEn, fr: categoryFr },
       description: { en: descEn, fr: descFr },
@@ -52,8 +85,8 @@ export function ProjectEditForm({ project, onSave, onCancel }: { project: any; o
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 text-xs bg-[#121A1B] p-6 rounded-2xl border border-[#CDD4DD]/10">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-5 text-xs bg-[#121A1B] p-6 rounded-2xl border border-[#CDD4DD]/10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Unique ID key (e.g. nexa-games)</label>
           <input
@@ -74,6 +107,18 @@ export function ProjectEditForm({ project, onSave, onCancel }: { project: any; o
             onChange={(e) => setTitle(e.target.value)}
             className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
           />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Publishing Status</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+          >
+            <option value="draft">Draft (Private)</option>
+            <option value="published">Published (Public)</option>
+            <option value="archived">Archived</option>
+          </select>
         </div>
       </div>
 
@@ -99,102 +144,116 @@ export function ProjectEditForm({ project, onSave, onCancel }: { project: any; o
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Category (EN)</label>
-          <input
-            type="text"
-            required
-            value={categoryEn}
-            onChange={(e) => setCategoryEn(e.target.value)}
-            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Category (FR)</label>
-          <input
-            type="text"
-            required
-            value={categoryFr}
-            onChange={(e) => setCategoryFr(e.target.value)}
-            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
-          />
-        </div>
-      </div>
+      {/* Language tab switcher */}
+      <FormLanguageTabs active={activeTab} onChange={setActiveTab} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-[#CDD4DD]/5 pt-4">
-        <div className="space-y-4">
-          <h5 className="font-bold text-[#FF7A00] uppercase text-[9px]">English Content</h5>
+      {activeTab === "en" ? (
+        <div className="space-y-4 animate-fadeIn">
           <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Description (EN)</label>
-            <textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            <label className="block text-[8px] font-bold text-[#CDD4DD]/40 mb-1.5 uppercase">Category (EN)</label>
+            <input
+              type="text"
+              required={activeTab === "en"}
+              value={categoryEn}
+              onChange={(e) => setCategoryEn(e.target.value)}
+              className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+            />
           </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">The Problem / Challenge (EN)</label>
-            <textarea value={probEn} onChange={(e) => setProbEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Description (EN)</label>
+              <textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">The Problem / Challenge (EN)</label>
+              <textarea value={probEn} onChange={(e) => setProbEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
           </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Research & Discovery (EN)</label>
-            <textarea value={resEn} onChange={(e) => setResEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Research & Discovery (EN)</label>
+              <textarea value={resEn} onChange={(e) => setResEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Architecture & Stack (EN)</label>
+              <textarea value={archEn} onChange={(e) => setArchEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
           </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Architecture & Stack (EN)</label>
-            <textarea value={archEn} onChange={(e) => setArchEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Technical Challenges (EN)</label>
+              <textarea value={challEn} onChange={(e) => setChallEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Engineering Solution (EN)</label>
+              <textarea value={solEn} onChange={(e) => setSolEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
           </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Technical Challenges (EN)</label>
-            <textarea value={challEn} onChange={(e) => setChallEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-          </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Engineering Solution (EN)</label>
-            <textarea value={solEn} onChange={(e) => setSolEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-          </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Business Impact & Results (EN)</label>
-            <textarea value={resulEn} onChange={(e) => setResulEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-          </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Lessons Learned (EN)</label>
-            <textarea value={lessEn} onChange={(e) => setLessEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-          </div>
-        </div>
-
-        <div className="space-y-4 border-l border-[#CDD4DD]/5 pl-4">
-          <h5 className="font-bold text-[#FF7A00] uppercase text-[9px]">French Content</h5>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Description (FR)</label>
-            <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-          </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">The Problem / Challenge (FR)</label>
-            <textarea value={probFr} onChange={(e) => setProbFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-          </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Research & Discovery (FR)</label>
-            <textarea value={resFr} onChange={(e) => setResFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-          </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Architecture & Stack (FR)</label>
-            <textarea value={archFr} onChange={(e) => setArchFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-          </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Technical Challenges (FR)</label>
-            <textarea value={challFr} onChange={(e) => setChallFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-          </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Engineering Solution (FR)</label>
-            <textarea value={solFr} onChange={(e) => setSolFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-          </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Business Impact & Results (FR)</label>
-            <textarea value={resulFr} onChange={(e) => setResulFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-          </div>
-          <div>
-            <label className="block text-[8px] text-gray-400 mb-1">Lessons Learned (FR)</label>
-            <textarea value={lessFr} onChange={(e) => setLessFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Business Impact & Results (EN)</label>
+              <textarea value={resulEn} onChange={(e) => setResulEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Lessons Learned (EN)</label>
+              <textarea value={lessEn} onChange={(e) => setLessEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-4 animate-fadeIn">
+          <div>
+            <label className="block text-[8px] font-bold text-[#CDD4DD]/40 mb-1.5 uppercase">Category (FR)</label>
+            <input
+              type="text"
+              required={activeTab === "fr"}
+              value={categoryFr}
+              onChange={(e) => setCategoryFr(e.target.value)}
+              className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Description (FR)</label>
+              <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">The Problem / Challenge (FR)</label>
+              <textarea value={probFr} onChange={(e) => setProbFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Research & Discovery (FR)</label>
+              <textarea value={resFr} onChange={(e) => setResFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Architecture & Stack (FR)</label>
+              <textarea value={archFr} onChange={(e) => setArchFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Technical Challenges (FR)</label>
+              <textarea value={challFr} onChange={(e) => setChallFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Engineering Solution (FR)</label>
+              <textarea value={solFr} onChange={(e) => setSolFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Business Impact & Results (FR)</label>
+              <textarea value={resulFr} onChange={(e) => setResulFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+            <div>
+              <label className="block text-[8px] text-gray-400 mb-1">Lessons Learned (FR)</label>
+              <textarea value={lessFr} onChange={(e) => setLessFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 border-t border-[#CDD4DD]/5 pt-4">
         <button
@@ -215,14 +274,20 @@ export function ProjectEditForm({ project, onSave, onCancel }: { project: any; o
   );
 }
 
+// 2. TRAINING PROGRAM FORM
 export function TrainingEditForm({ program, onSave, onCancel }: { program: any; onSave: (data: any) => void; onCancel: () => void }) {
   const [id, setId] = useState(program?.id || "");
-  const [titleEn, setTitleEn] = useState(program?.title?.en || "");
-  const [titleFr, setTitleFr] = useState(program?.title?.fr || "");
   const [duration, setDuration] = useState(program?.duration || "");
   const [category, setCategory] = useState(program?.category || "marketing");
+  const [status, setStatus] = useState(program?.status || "draft");
   const [syllabus, setSyllabus] = useState(program?.syllabus?.join("\n") || "");
   
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"en" | "fr">("en");
+
+  // Localized fields
+  const [titleEn, setTitleEn] = useState(program?.title?.en || "");
+  const [titleFr, setTitleFr] = useState(program?.title?.fr || "");
   const [audienceEn, setAudienceEn] = useState(program?.audience?.en || "");
   const [audienceFr, setAudienceFr] = useState(program?.audience?.fr || "");
   const [descEn, setDescEn] = useState(program?.description?.en || "");
@@ -234,20 +299,21 @@ export function TrainingEditForm({ program, onSave, onCancel }: { program: any; 
 
     onSave({
       id: id || undefined,
-      title: { en: titleEn, fr: titleFr },
       duration,
       category,
+      status,
       syllabus: syllabusArray,
+      title: { en: titleEn, fr: titleFr },
       audience: { en: audienceEn, fr: audienceFr },
       description: { en: descEn, fr: descFr }
     });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 text-xs bg-[#121A1B] p-6 rounded-2xl border border-[#CDD4DD]/10">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-5 text-xs bg-[#121A1B] p-6 rounded-2xl border border-[#CDD4DD]/10">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Unique ID Key (e.g. prompt-engineering)</label>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Unique ID Key</label>
           <input
             type="text"
             required
@@ -258,7 +324,7 @@ export function TrainingEditForm({ program, onSave, onCancel }: { program: any; 
           />
         </div>
         <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Duration (e.g. 6 weeks, 2 days)</label>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Duration (e.g. 6 weeks)</label>
           <input
             type="text"
             required
@@ -267,9 +333,6 @@ export function TrainingEditForm({ program, onSave, onCancel }: { program: any; 
             className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
           />
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Program Category</label>
           <select
@@ -282,40 +345,54 @@ export function TrainingEditForm({ program, onSave, onCancel }: { program: any; 
             <option value="strategy">Tech Leadership</option>
           </select>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Title (EN)</label>
-          <input type="text" required value={titleEn} onChange={(e) => setTitleEn(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
-        </div>
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Title (FR)</label>
-          <input type="text" required value={titleFr} onChange={(e) => setTitleFr(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Audience (EN)</label>
-          <input type="text" value={audienceEn} onChange={(e) => setAudienceEn(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
-        </div>
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Audience (FR)</label>
-          <input type="text" value={audienceFr} onChange={(e) => setAudienceFr(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Status</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+          >
+            <option value="draft">Draft (Private)</option>
+            <option value="published">Published (Public)</option>
+            <option value="archived">Archived</option>
+          </select>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Description / Overview (EN)</label>
-          <textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={4} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+      {/* Language tab switcher */}
+      <FormLanguageTabs active={activeTab} onChange={setActiveTab} />
+
+      {activeTab === "en" ? (
+        <div className="space-y-4 animate-fadeIn">
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Title (EN)</label>
+            <input type="text" required={activeTab === "en"} value={titleEn} onChange={(e) => setTitleEn(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
+          </div>
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Audience (EN)</label>
+            <input type="text" value={audienceEn} onChange={(e) => setAudienceEn(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
+          </div>
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Description / Overview (EN)</label>
+            <textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          </div>
         </div>
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Description / Overview (FR)</label>
-          <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} rows={4} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+      ) : (
+        <div className="space-y-4 animate-fadeIn">
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Title (FR)</label>
+            <input type="text" required={activeTab === "fr"} value={titleFr} onChange={(e) => setTitleFr(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
+          </div>
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Audience (FR)</label>
+            <input type="text" value={audienceFr} onChange={(e) => setAudienceFr(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
+          </div>
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Description / Overview (FR)</label>
+            <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Syllabus Curriculum (One item per line)</label>
@@ -323,7 +400,7 @@ export function TrainingEditForm({ program, onSave, onCancel }: { program: any; 
           value={syllabus}
           onChange={(e) => setSyllabus(e.target.value)}
           placeholder="Module 1: Search Optimization&#10;Module 2: Conversion attribution"
-          rows={5}
+          rows={4}
           className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white focus:outline-none font-mono"
         />
       </div>
@@ -336,17 +413,22 @@ export function TrainingEditForm({ program, onSave, onCancel }: { program: any; 
   );
 }
 
+// 3. CONSULTING SERVICE FORM
 export function ServiceEditForm({ service, onSave, onCancel }: { service: any; onSave: (data: any) => void; onCancel: () => void }) {
   const [id, setId] = useState(service?.id || "");
-  const [titleEn, setTitleEn] = useState(service?.title?.en || "");
-  const [titleFr, setTitleFr] = useState(service?.title?.fr || "");
   const [price, setPrice] = useState(service?.price || "");
   const [duration, setDuration] = useState(service?.duration || "60");
   const [category, setCategory] = useState(service?.category || "engineering");
+  const [status, setStatus] = useState(service?.status || "draft");
   
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"en" | "fr">("en");
+
+  // Localized fields
+  const [titleEn, setTitleEn] = useState(service?.title?.en || "");
+  const [titleFr, setTitleFr] = useState(service?.title?.fr || "");
   const [descEn, setDescEn] = useState(service?.description?.en || "");
   const [descFr, setDescFr] = useState(service?.description?.fr || "");
-  
   const [featuresEn, setFeaturesEn] = useState(service?.features?.en?.join("\n") || "");
   const [featuresFr, setFeaturesFr] = useState(service?.features?.fr?.join("\n") || "");
 
@@ -357,20 +439,21 @@ export function ServiceEditForm({ service, onSave, onCancel }: { service: any; o
 
     onSave({
       id: id || undefined,
-      title: { en: titleEn, fr: titleFr },
       price: Number(price),
       duration: Number(duration),
       category,
+      status,
+      title: { en: titleEn, fr: titleFr },
       description: { en: descEn, fr: descFr },
       features: { en: featEnArray, fr: featFrArray }
     });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 text-xs bg-[#121A1B] p-6 rounded-2xl border border-[#CDD4DD]/10">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-5 text-xs bg-[#121A1B] p-6 rounded-2xl border border-[#CDD4DD]/10">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Unique Service ID Key (e.g. Software-architecture)</label>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Unique Service Key</label>
           <input
             type="text"
             required
@@ -400,6 +483,18 @@ export function ServiceEditForm({ service, onSave, onCancel }: { service: any; o
             className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
           />
         </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Status</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+          >
+            <option value="draft">Draft (Private)</option>
+            <option value="published">Published (Public)</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -417,38 +512,40 @@ export function ServiceEditForm({ service, onSave, onCancel }: { service: any; o
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Title (EN)</label>
-          <input type="text" required value={titleEn} onChange={(e) => setTitleEn(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
-        </div>
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Title (FR)</label>
-          <input type="text" required value={titleFr} onChange={(e) => setTitleFr(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
-        </div>
-      </div>
+      {/* Language tab switcher */}
+      <FormLanguageTabs active={activeTab} onChange={setActiveTab} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Description (EN)</label>
-          <textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+      {activeTab === "en" ? (
+        <div className="space-y-4 animate-fadeIn">
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Title (EN)</label>
+            <input type="text" required={activeTab === "en"} value={titleEn} onChange={(e) => setTitleEn(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
+          </div>
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Description (EN)</label>
+            <textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          </div>
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Features Included (EN - One per line)</label>
+            <textarea value={featuresEn} onChange={(e) => setFeaturesEn(e.target.value)} placeholder="1-Hour Interactive Session&#10;Architecture Blueprint Diagram" rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          </div>
         </div>
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Description (FR)</label>
-          <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+      ) : (
+        <div className="space-y-4 animate-fadeIn">
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Title (FR)</label>
+            <input type="text" required={activeTab === "fr"} value={titleFr} onChange={(e) => setTitleFr(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
+          </div>
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Description (FR)</label>
+            <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          </div>
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Features Included (FR - One per line)</label>
+            <textarea value={featuresFr} onChange={(e) => setFeaturesFr(e.target.value)} placeholder="Session interactive de 1 heure&#10;Schéma d'architecture détaillé" rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Features Included (EN - One per line)</label>
-          <textarea value={featuresEn} onChange={(e) => setFeaturesEn(e.target.value)} placeholder="1-Hour Interactive Session&#10;Architecture Blueprint Diagram" rows={4} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-        </div>
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Features Included (FR - One per line)</label>
-          <textarea value={featuresFr} onChange={(e) => setFeaturesFr(e.target.value)} placeholder="Session interactive de 1 heure&#10;Schéma d'architecture détaillé" rows={4} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
-        </div>
-      </div>
+      )}
 
       <div className="flex justify-end gap-2 border-t border-[#CDD4DD]/5 pt-4">
         <button type="button" onClick={onCancel} className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 text-white cursor-pointer">Cancel</button>
@@ -458,8 +555,14 @@ export function ServiceEditForm({ service, onSave, onCancel }: { service: any; o
   );
 }
 
+// 4. FAQ ITEM FORM
 export function FAQEditForm({ faq, onSave, onCancel }: { faq: any; onSave: (data: any) => void; onCancel: () => void }) {
   const [id, setId] = useState(faq?.id || "");
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"en" | "fr">("en");
+
+  // Localized fields
   const [questEn, setQuestEn] = useState(faq?.question?.en || "");
   const [questFr, setQuestFr] = useState(faq?.question?.fr || "");
   const [ansEn, setAnsEn] = useState(faq?.answer?.en || "");
@@ -475,7 +578,7 @@ export function FAQEditForm({ faq, onSave, onCancel }: { faq: any; onSave: (data
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 text-xs bg-[#121A1B] p-6 rounded-2xl border border-[#CDD4DD]/10">
+    <form onSubmit={handleSubmit} className="space-y-5 text-xs bg-[#121A1B] p-6 rounded-2xl border border-[#CDD4DD]/10">
       <div>
         <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Unique FAQ Key/ID (e.g. faq-consultation-process)</label>
         <input
@@ -488,27 +591,32 @@ export function FAQEditForm({ faq, onSave, onCancel }: { faq: any; onSave: (data
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Question (EN)</label>
-          <input type="text" required value={questEn} onChange={(e) => setQuestEn(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
-        </div>
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Question (FR)</label>
-          <input type="text" required value={questFr} onChange={(e) => setQuestFr(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
-        </div>
-      </div>
+      {/* Language tab switcher */}
+      <FormLanguageTabs active={activeTab} onChange={setActiveTab} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Answer (EN)</label>
-          <textarea value={ansEn} onChange={(e) => setAnsEn(e.target.value)} rows={4} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+      {activeTab === "en" ? (
+        <div className="space-y-4 animate-fadeIn">
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Question (EN)</label>
+            <input type="text" required={activeTab === "en"} value={questEn} onChange={(e) => setQuestEn(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
+          </div>
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Answer (EN)</label>
+            <textarea value={ansEn} onChange={(e) => setAnsEn(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          </div>
         </div>
-        <div>
-          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Answer (FR)</label>
-          <textarea value={ansFr} onChange={(e) => setAnsFr(e.target.value)} rows={4} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+      ) : (
+        <div className="space-y-4 animate-fadeIn">
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Question (FR)</label>
+            <input type="text" required={activeTab === "fr"} value={questFr} onChange={(e) => setQuestFr(e.target.value)} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white" />
+          </div>
+          <div>
+            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Answer (FR)</label>
+            <textarea value={ansFr} onChange={(e) => setAnsFr(e.target.value)} rows={3} className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl p-3 text-xs text-white" />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex justify-end gap-2 border-t border-[#CDD4DD]/5 pt-4">
         <button type="button" onClick={onCancel} className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 text-white cursor-pointer">Cancel</button>
@@ -517,3 +625,346 @@ export function FAQEditForm({ faq, onSave, onCancel }: { faq: any; onSave: (data
     </form>
   );
 }
+
+// ==========================================
+// 5. BUSINESS PROFILE FORM (ERP)
+// ==========================================
+export function BusinessProfileForm() {
+  const [profileId, setProfileId] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [legalName, setLegalName] = useState("");
+  const [address, setAddress] = useState("");
+  const [country, setCountry] = useState("Haiti");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
+  const [taxNumber, setTaxNumber] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [bankAccount, setBankAccount] = useState("");
+  const [bankSwift, setBankSwift] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [signatureUrl, setSignatureUrl] = useState("");
+  const [stampUrl, setStampUrl] = useState("");
+  const [invoiceFooter, setInvoiceFooter] = useState("");
+
+  const [statusText, setStatusText] = useState<"saved" | "saving" | "error" | "idle">("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetch("/api/business-profile")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          const profile = data[0];
+          setProfileId(profile.id);
+          setBusinessName(profile.businessName || "");
+          setLegalName(profile.legalName || "");
+          setAddress(profile.address || "");
+          setCountry(profile.country || "Haiti");
+          setPhone(profile.phone || "");
+          setEmail(profile.email || "");
+          setWebsite(profile.website || "");
+          setTaxNumber(profile.taxNumber || "");
+          setRegistrationNumber(profile.registrationNumber || "");
+          const bank = profile.bankInformation || {};
+          setBankName(bank.bankName || "");
+          setBankAccount(bank.bankAccount || "");
+          setBankSwift(bank.bankSwift || "");
+          setLogoUrl(profile.logoUrl || "");
+          setSignatureUrl(profile.signatureUrl || "");
+          setStampUrl(profile.stampUrl || "");
+          setInvoiceFooter(profile.invoiceFooter || "");
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
+
+  const saveProfile = async (overrides = {}) => {
+    setStatusText("saving");
+    setErrorMsg(null);
+    try {
+      const payload = {
+        businessName,
+        legalName,
+        address,
+        country,
+        phone,
+        email,
+        website,
+        taxNumber,
+        registrationNumber,
+        bankInformation: {
+          bankName,
+          bankAccount,
+          bankSwift
+        },
+        logoUrl,
+        signatureUrl,
+        stampUrl,
+        invoiceFooter,
+        ...overrides
+      };
+
+      const url = profileId ? `/api/business-profile/${profileId}` : "/api/business-profile";
+      const method = profileId ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to auto-save business settings.");
+      }
+      
+      const saved = await res.json();
+      if (!profileId && saved.id) {
+        setProfileId(saved.id);
+      }
+      setStatusText("saved");
+      setTimeout(() => setStatusText("idle"), 2500);
+    } catch (err: any) {
+      setErrorMsg(err.message);
+      setStatusText("error");
+    }
+  };
+
+  const handleBlur = () => {
+    saveProfile();
+  };
+
+  return (
+    <div className="space-y-6 text-xs bg-[#121A1B] p-6 rounded-2xl border border-[#CDD4DD]/10 text-gray-300">
+      <div className="flex justify-between items-center border-b border-[#CDD4DD]/10 pb-3">
+        <div>
+          <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">PLATFORM SETTINGS</span>
+          <h3 className="font-serif font-bold text-lg text-white">Business Settings Profile</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          {statusText === "saving" && (
+            <span className="text-gray-500 font-mono text-[9px] uppercase animate-pulse">Auto-saving...</span>
+          )}
+          {statusText === "saved" && (
+            <span className="text-emerald-400 font-bold font-mono text-[9px] uppercase">All Changes Saved</span>
+          )}
+          {statusText === "error" && (
+            <span className="text-red-400 font-bold font-mono text-[9px] uppercase">Error Saving</span>
+          )}
+          <button
+            type="button"
+            onClick={() => saveProfile()}
+            className="bg-[#FF7A00] hover:bg-opacity-80 px-4 py-2 rounded-xl text-white font-bold cursor-pointer border-0 flex items-center gap-1"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>Save Profile</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Business Name *</label>
+          <input
+            type="text"
+            required
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g. Invictus Consulting"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Legal Name</label>
+          <input
+            type="text"
+            value={legalName}
+            onChange={(e) => setLegalName(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g. Amedee Erns Baptiste Consulting E.I.R.L."
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Email *</label>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g. contact@invictus.com"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Address *</label>
+          <input
+            type="text"
+            required
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g. 100 Rue de la Paix"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Country *</label>
+          <input
+            type="text"
+            required
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g. Haiti"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Phone Number</label>
+          <input
+            type="text"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="+509 3700-0000"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Website</label>
+          <input
+            type="text"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="https://www.invictus.com"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Tax Number / NIF</label>
+          <input
+            type="text"
+            value={taxNumber}
+            onChange={(e) => setTaxNumber(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g. 000-123-456-7"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Registration / Patente No.</label>
+          <input
+            type="text"
+            value={registrationNumber}
+            onChange={(e) => setRegistrationNumber(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g. Reg-789012"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Company Logo URL</label>
+          <input
+            type="text"
+            value={logoUrl}
+            onChange={(e) => setLogoUrl(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="https://.../logo.png"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-[#CDD4DD]/5">
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Bank Name</label>
+          <input
+            type="text"
+            value={bankName}
+            onChange={(e) => setBankName(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g. Sogebank"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Account Number (IBAN)</label>
+          <input
+            type="text"
+            value={bankAccount}
+            onChange={(e) => setBankAccount(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g. HT45 SOGE 0012 3456 7890"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">SWIFT / BIC Code</label>
+          <input
+            type="text"
+            value={bankSwift}
+            onChange={(e) => setBankSwift(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g. SOGEHTPP"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-[#CDD4DD]/5">
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Signature Image URL</label>
+          <input
+            type="text"
+            value={signatureUrl}
+            onChange={(e) => setSignatureUrl(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="https://.../signature.png"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Stamp Image URL</label>
+          <input
+            type="text"
+            value={stampUrl}
+            onChange={(e) => setStampUrl(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="https://.../stamp.png"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase font-bold">Default Document Footer</label>
+          <input
+            type="text"
+            value={invoiceFooter}
+            onChange={(e) => setInvoiceFooter(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g. Thank you for your business!"
+            className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {errorMsg && (
+        <div className="bg-red-950/40 border border-red-500/20 p-3 rounded-xl text-red-400 text-[10px] flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+

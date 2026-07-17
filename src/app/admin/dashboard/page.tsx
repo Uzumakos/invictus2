@@ -6,17 +6,32 @@ import {
   Shield, TrendingUp, DollarSign, Users, Calendar, ArrowRight, 
   RefreshCw, Layers, Check, X, AlertCircle, Search, Filter, 
   Download, Brain, Clipboard, ChevronRight, Cpu, Building2, Trash2,
-  Settings, Image, Globe, CheckCircle2, Save, LogOut, Plus, Edit
+  Settings, Image as ImageIcon, Globe, CheckCircle2, Save, LogOut, Plus, Edit,
+  LayoutDashboard, UserCheck, FileText, BookOpen, HelpCircle, FolderKanban, Link
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { Booking, CRMLead, ProjectDiscovery, PaymentMethod, PaymentConfig, SiteSettings } from "@/lib/types";
-import { consultingOffers } from "@/lib/data";
-import { ProjectEditForm, TrainingEditForm, ServiceEditForm, FAQEditForm } from "@/components/admin/CMSForms";
+import { Booking, CRMLead, ProjectDiscovery, PaymentConfig, SiteSettings } from "@/lib/types";
+import { ProjectEditForm, TrainingEditForm, ServiceEditForm, FAQEditForm, BusinessProfileForm } from "@/components/admin/CMSForms";
+import MediaLibrary from "@/components/admin/MediaLibrary";
+import WebsiteBuilder from "@/components/admin/WebsiteBuilder";
+import InvoiceManager from "@/components/admin/InvoiceManager";
+import ClientBillingManager from "@/components/admin/ClientBillingManager";
+import TestimonialsManager from "@/components/admin/TestimonialsManager";
+import BrandAssetsForm from "@/components/admin/BrandAssetsForm";
+import SEOCenterForm from "@/components/admin/SEOCenterForm";
+
+type DashboardTab = 
+  | "analytics" | "crm" | "bookings" | "discoveries" | "payments" 
+  | "cms_sections" | "cms_case_studies" | "cms_training" | "cms_services" | "cms_faqs" | "cms_translations" | "cms_media"
+  | "cms_invoices" | "cms_billing_profiles" | "cms_business_profile"
+  | "cms_seo" | "cms_brand" | "cms_testimonials"
+  | "users" | "settings";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"analytics" | "crm" | "bookings" | "discoveries" | "payments" | "settings" | "users" | "cms">("analytics");
+  const [activeTab, setActiveTab] = useState<DashboardTab>("analytics");
+  const [globalSearchQuery, setGlobalSearchQuery] = useState("");
 
   // Server state data
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -24,6 +39,23 @@ export default function AdminDashboardPage() {
   const [discoveries, setDiscoveries] = useState<ProjectDiscovery[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+
+  // BI Center & Consulting states (V3)
+  const [biData, setBiData] = useState<any>({
+    mtdRevenue: 0,
+    ytdRevenue: 0,
+    pipelineValue: 0,
+    consultingHours: 0,
+    trainingRegistrations: 0,
+    revenueByMonth: [],
+    leadsPipeline: []
+  });
+  const [billingProfiles, setBillingProfiles] = useState<any[]>([]);
+  const [consultingLogs, setConsultingLogs] = useState<any[]>([]);
+  const [logClientId, setLogClientId] = useState("");
+  const [logHours, setLogHours] = useState("");
+  const [logDesc, setLogDesc] = useState("");
+  const [logDate, setLogDate] = useState(new Date().toISOString().split("T")[0]);
 
   // CMS state data
   const [translations, setTranslations] = useState<any[]>([]);
@@ -67,7 +99,6 @@ export default function AdminDashboardPage() {
   const [generatedLink, setGeneratedLink] = useState("");
 
   // CMS Editor States
-  const [cmsSubTab, setCmsSubTab] = useState<"translations" | "projects" | "training" | "services" | "faqs">("translations");
   const [transSearch, setTransSearch] = useState("");
   const [editingTransKey, setEditingTransKey] = useState<string | null>(null);
   const [editingTransEn, setEditingTransEn] = useState("");
@@ -89,21 +120,17 @@ export default function AdminDashboardPage() {
   const [isFAQFormOpen, setIsFAQFormOpen] = useState(false);
 
   useEffect(() => {
-
     checkAuthAndLoad();
   }, []);
 
   const checkAuthAndLoad = async () => {
     setLoading(true);
     try {
-      // 1. Verify status
       const authRes = await fetch("/api/auth/status");
       if (!authRes.ok) {
         router.push("/admin/login");
         return;
       }
-
-      // 2. Load all datasets
       await fetchAdminData();
     } catch (err) {
       console.error(err);
@@ -142,81 +169,144 @@ export default function AdminDashboardPage() {
       setUsers(usersRes.ok ? await usersRes.json() : []);
       setPayments(paymentsRes.ok ? await paymentsRes.json() : []);
       
+      // V3 BI Fetching
+      const biRes = await fetch("/api/analytics/bi");
+      if (biRes.ok) {
+        setBiData(await biRes.json());
+      }
+      const bpRes = await fetch("/api/client-billing-profiles");
+      if (bpRes.ok) {
+        setBillingProfiles(await bpRes.json());
+      }
+      const chRes = await fetch("/api/consulting-hours");
+      if (chRes.ok) {
+        setConsultingLogs(await chRes.json());
+      }
+
       setTranslations(transRes.ok ? await transRes.json() : []);
       setCmsProjects(projectsRes.ok ? await projectsRes.json() : []);
       setTrainingPrograms(trainingRes.ok ? await trainingRes.json() : []);
       setFaqItems(faqRes.ok ? await faqRes.json() : []);
       setConsultingServices(servicesRes.ok ? await servicesRes.json() : []);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to sync databases.");
+      setError(err.message || "Failed to load database records.");
     }
   };
 
-  // CMS CRUD Actions
-  const handleAddTranslation = async (e: React.FormEvent) => {
+  const handleLogHours = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTransKey || !newTransEn || !newTransFr) {
-      setError("Please fill all translation fields.");
-      return;
-    }
-    setError(null);
+    if (!logClientId || !logHours) return;
     try {
-      const res = await fetch("/api/translations", {
+      const res = await fetch("/api/consulting-hours", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          key: newTransKey,
-          en: newTransEn,
-          fr: newTransFr
-        }),
+          clientId: logClientId,
+          hoursLogged: Number(logHours),
+          description: logDesc,
+          activityDate: logDate
+        })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create translation.");
-      setTranslations([data, ...translations]);
-      setNewTransKey("");
-      setNewTransEn("");
-      setNewTransFr("");
-      showToast("Translation added successfully!");
-    } catch (err: any) {
-      setError(err.message || "Failed to add translation.");
+      if (res.ok) {
+        setLogHours("");
+        setLogDesc("");
+        fetchAdminData();
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const handleSaveTranslation = async (key: string, en: string, fr: string) => {
+  const handleDeleteLog = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this time entry?")) return;
+    try {
+      const res = await fetch(`/api/consulting-hours/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchAdminData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Secure Cache Invalidation (ISR) Trigger
+  const triggerRevalidation = async () => {
+    try {
+      const res = await fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: "/[locale]", type: "layout" })
+      });
+      if (res.ok) {
+        console.log("Next.js Page Cache purged successfully.");
+      }
+    } catch (err) {
+      console.error("ISR revalidation failed:", err);
+    }
+  };
+
+  const showToast = (msg: string) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(null), 3000);
+  };
+
+  // Translations CRUD
+  const handleSaveTranslation = async (key: string, enVal: string, frVal: string) => {
     setError(null);
     try {
       const res = await fetch(`/api/translations/${key}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ en, fr }),
+        body: JSON.stringify({ en: enVal, fr: frVal }),
+      });
+      if (!res.ok) throw new Error("Failed to save translation.");
+      const updated = await res.json();
+      setTranslations(translations.map((t) => (t.key === key ? updated : t)));
+      setEditingTransKey(null);
+      showToast("Translation updated successfully!");
+      triggerRevalidation();
+    } catch (err: any) {
+      setError(err.message || "Failed to save translation.");
+    }
+  };
+
+  const handleAddTranslation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      const res = await fetch("/api/translations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: newTransKey, en: newTransEn, fr: newTransFr }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update translation.");
-      setTranslations(translations.map((t) => (t.key === key ? data : t)));
-      setEditingTransKey(null);
-      showToast("Translation saved!");
+      if (!res.ok) throw new Error(data.error || "Failed to add translation.");
+      setTranslations([data, ...translations]);
+      setNewTransKey("");
+      setNewTransEn("");
+      setNewTransFr("");
+      showToast("Translation key registered!");
+      triggerRevalidation();
     } catch (err: any) {
-      setError(err.message || "Failed to update translation.");
+      setError(err.message || "Failed to add translation.");
     }
   };
 
   const handleDeleteTranslation = async (key: string) => {
-    if (!confirm(`Are you sure you want to delete translation for key: ${key}?`)) return;
+    if (!confirm("Are you sure you want to delete this translation key?")) return;
     setError(null);
     try {
-      const res = await fetch(`/api/translations/${key}`, {
-        method: "DELETE"
-      });
+      const res = await fetch(`/api/translations/${key}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete translation.");
       setTranslations(translations.filter((t) => t.key !== key));
       showToast("Translation deleted!");
+      triggerRevalidation();
     } catch (err: any) {
       setError(err.message || "Failed to delete translation.");
     }
   };
 
-  // Case Studies (Projects) CRUD
+  // Case Studies CRUD
   const handleSaveProject = async (projectData: any) => {
     setError(null);
     const isNew = !projectData.id;
@@ -240,6 +330,7 @@ export default function AdminDashboardPage() {
       setIsProjectFormOpen(false);
       setSelectedProject(null);
       showToast("Case study saved successfully!");
+      triggerRevalidation();
     } catch (err: any) {
       setError(err.message || "Failed to save project.");
     }
@@ -253,6 +344,7 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error("Failed to delete project.");
       setCmsProjects(cmsProjects.filter((p) => p.id !== id));
       showToast("Case study deleted!");
+      triggerRevalidation();
     } catch (err: any) {
       setError(err.message || "Failed to delete project.");
     }
@@ -282,6 +374,7 @@ export default function AdminDashboardPage() {
       setIsTrainingFormOpen(false);
       setSelectedTraining(null);
       showToast("Training program saved successfully!");
+      triggerRevalidation();
     } catch (err: any) {
       setError(err.message || "Failed to save training program.");
     }
@@ -295,6 +388,7 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error("Failed to delete training program.");
       setTrainingPrograms(trainingPrograms.filter((t) => t.id !== id));
       showToast("Training program deleted!");
+      triggerRevalidation();
     } catch (err: any) {
       setError(err.message || "Failed to delete training program.");
     }
@@ -324,6 +418,7 @@ export default function AdminDashboardPage() {
       setIsServiceFormOpen(false);
       setSelectedServiceCMS(null);
       showToast("Consulting service saved successfully!");
+      triggerRevalidation();
     } catch (err: any) {
       setError(err.message || "Failed to save service.");
     }
@@ -337,6 +432,7 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error("Failed to delete service.");
       setConsultingServices(consultingServices.filter((s) => s.id !== id));
       showToast("Consulting service deleted!");
+      triggerRevalidation();
     } catch (err: any) {
       setError(err.message || "Failed to delete service.");
     }
@@ -366,6 +462,7 @@ export default function AdminDashboardPage() {
       setIsFAQFormOpen(false);
       setSelectedFAQ(null);
       showToast("FAQ saved successfully!");
+      triggerRevalidation();
     } catch (err: any) {
       setError(err.message || "Failed to save FAQ.");
     }
@@ -379,6 +476,7 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error("Failed to delete FAQ.");
       setFaqItems(faqItems.filter((f) => f.id !== id));
       showToast("FAQ deleted!");
+      triggerRevalidation();
     } catch (err: any) {
       setError(err.message || "Failed to delete FAQ.");
     }
@@ -529,12 +627,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const showToast = (msg: string) => {
-    setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(null), 3000);
-  };
-
-  // Save Settings Tab
   const handleSaveSettings = async () => {
     setError(null);
     setSuccessMsg(null);
@@ -573,7 +665,6 @@ export default function AdminDashboardPage() {
         setPayments(payments.map(p => p.id === paymentId ? updated : p));
         showToast("Payment verified and marked as PAID.");
 
-        // Automatically approve and confirm matching bookings!
         const matchingBooking = bookings.find(
           b => b.paymentReference === updated.paymentReference || b.id === updated.paymentReference
         );
@@ -621,7 +712,6 @@ export default function AdminDashboardPage() {
     }
 
     const host = typeof window !== "undefined" ? window.location.origin : "";
-    // Since locale routes are structured as /[locale]/payments, default to /en/payments
     const link = `${host}/en/payments?serviceId=${encodeURIComponent(serviceParam)}&amount=${amountParam}&email=${encodeURIComponent(genEmail)}&clientName=${encodeURIComponent(genClientName)}&currency=${genCurrency}`;
     setGeneratedLink(link);
     showToast("Invoice link generated successfully.");
@@ -634,7 +724,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Export CSV
   const handleExportCSV = () => {
     try {
       const headers = ["ID", "Company", "Industry", "Country", "Budget", "Timeline", "Complexity"];
@@ -650,11 +739,10 @@ export default function AdminDashboardPage() {
 
       const csvContent = "data:text/csv;charset=utf-8," 
         + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-      
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "Amedee_Roadmaps_Export.csv");
+      link.setAttribute("download", `Invictus_Discoveries_${Date.now()}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -675,952 +763,1327 @@ export default function AdminDashboardPage() {
     { id: "lost", label: "Lost" },
   ];
 
+  // Global Search Filter logic
+  const isSearchActive = globalSearchQuery.trim().length >= 2;
+  const searchResults = {
+    bookings: bookings.filter(b => 
+      b.clientName?.toLowerCase().includes(globalSearchQuery.toLowerCase()) ||
+      b.clientEmail?.toLowerCase().includes(globalSearchQuery.toLowerCase())
+    ),
+    leads: leads.filter(l => 
+      l.company?.toLowerCase().includes(globalSearchQuery.toLowerCase()) ||
+      l.contactName?.toLowerCase().includes(globalSearchQuery.toLowerCase()) ||
+      l.email?.toLowerCase().includes(globalSearchQuery.toLowerCase())
+    ),
+    projects: cmsProjects.filter(p => 
+      p.title?.toLowerCase().includes(globalSearchQuery.toLowerCase()) ||
+      p.id?.toLowerCase().includes(globalSearchQuery.toLowerCase())
+    ),
+    training: trainingPrograms.filter(t => 
+      t.title?.en?.toLowerCase().includes(globalSearchQuery.toLowerCase()) ||
+      t.title?.fr?.toLowerCase().includes(globalSearchQuery.toLowerCase())
+    ),
+    services: consultingServices.filter(s => 
+      s.title?.en?.toLowerCase().includes(globalSearchQuery.toLowerCase()) ||
+      s.title?.fr?.toLowerCase().includes(globalSearchQuery.toLowerCase())
+    ),
+    payments: payments.filter(p => 
+      p.clientName?.toLowerCase().includes(globalSearchQuery.toLowerCase()) ||
+      p.clientEmail?.toLowerCase().includes(globalSearchQuery.toLowerCase()) ||
+      p.paymentReference?.toLowerCase().includes(globalSearchQuery.toLowerCase())
+    )
+  };
+
+  const totalSearchResults = Object.values(searchResults).reduce((sum, arr) => sum + arr.length, 0);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#121A1B] flex items-center justify-center">
-        <RefreshCw className="w-8 h-8 text-[#27187E] animate-spin" />
+        <RefreshCw className="w-8 h-8 text-[#FF7A00] animate-spin" />
       </div>
     );
   }
 
+  // Workspaces groups for Left Sidebar
+  const sidebarGroups = [
+    {
+      title: "Business Operations",
+      items: [
+        { id: "analytics", label: "Executive Dashboard", icon: LayoutDashboard },
+        { id: "crm", label: "CRM", icon: TrendingUp },
+        { id: "bookings", label: "Client Bookings", icon: Calendar },
+        { id: "discoveries", label: "Discovery Roadmaps", icon: Brain },
+        { id: "payments", label: "Payment Center", icon: DollarSign },
+        { id: "cms_invoices", label: "Invoice Center", icon: FileText },
+        { id: "cms_billing_profiles", label: "Client Workspace Registry", icon: Users },
+      ]
+    },
+    {
+      title: "Content Studio (CMS)",
+      items: [
+        { id: "cms_sections", label: "Website Builder", icon: Layers },
+        { id: "cms_media", label: "Media Center", icon: ImageIcon },
+        { id: "cms_seo", label: "SEO Center", icon: Globe },
+        { id: "cms_brand", label: "Brand Assets", icon: Layers },
+        { id: "cms_testimonials", label: "Testimonials", icon: CheckCircle2 },
+        { id: "cms_training", label: "Training", icon: BookOpen },
+        { id: "cms_case_studies", label: "Insights", icon: FolderKanban },
+        { id: "cms_faqs", label: "FAQs", icon: HelpCircle },
+        { id: "cms_translations", label: "Translations", icon: Globe },
+      ]
+    },
+    {
+      title: "Platform Management",
+      items: [
+        { id: "users", label: "User Control", icon: UserCheck },
+        { id: "cms_business_profile", label: "Business Profile", icon: Building2 },
+        { id: "settings", label: "Console Settings", icon: Settings },
+      ]
+    }
+  ];
+
   return (
-    <section className="py-24 bg-[#121A1B] text-white min-h-screen relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6">
-        
-        {/* Toast Alerts */}
-        <AnimatePresence>
-          {successMsg && (
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="fixed top-6 right-6 z-50 p-4 bg-emerald-950/90 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl flex items-center gap-2 shadow-xl"
-            >
-              <CheckCircle2 className="w-4.5 h-4.5" />
-              <span>{successMsg}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Dashboard Header */}
-        <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
-          <div>
-            <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">SECURED CORE WORKSPACE</span>
-            <h2 className="font-serif font-bold text-2xl text-white">Administrator Control Panel</h2>
-            <span className="text-[10px] text-[#CDD4DD]/40 font-mono">Managing system ledgers and settings</span>
-          </div>
-
-          <div className="flex gap-2 shrink-0">
-            <button
-              onClick={fetchAdminData}
-              className="bg-white/5 border border-white/10 hover:bg-white/10 px-4 py-2.5 rounded-xl text-xs font-mono text-gray-300 flex items-center space-x-1.5 cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Sync</span>
-            </button>
-            <button
-              onClick={handleLogout}
-              className="bg-red-950/40 border border-red-500/20 hover:bg-red-900/35 px-4 py-2.5 rounded-xl text-xs font-sans font-bold text-red-400 flex items-center space-x-1.5 cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Exit</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Navigation tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-[#CDD4DD]/10 pb-4 text-xs font-bold uppercase tracking-wider font-sans">
-          {[
-            { id: "analytics", label: "1. Performance" },
-            { id: "crm", label: "2. CRM Pipeline" },
-            { id: "bookings", label: "3. Bookings" },
-            { id: "discoveries", label: "4. Roadmaps" },
-            { id: "payments", label: "5. Payments Review" },
-            { id: "settings", label: "6. Console Settings" },
-            { id: "users", label: "7. User Control" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-3 rounded-xl transition-all cursor-pointer ${
-                activeTab === tab.id
-                  ? "bg-[#27187E] text-white"
-                  : "bg-[#1A2324] border border-[#CDD4DD]/10 text-[#CDD4DD]/50 hover:border-[#27187E]/50"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {error && (
-          <div className="p-4 bg-red-950/40 border border-red-500/20 rounded-2xl text-xs text-red-400 flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
-            <span>{error}</span>
-          </div>
+    <section className="bg-[#121A1B] text-white min-h-screen relative flex overflow-hidden">
+      {/* Toast Alerts */}
+      <AnimatePresence>
+        {successMsg && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-6 right-6 z-50 p-4 bg-emerald-950/90 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl flex items-center gap-2 shadow-xl"
+          >
+            <CheckCircle2 className="w-4.5 h-4.5" />
+            <span>{successMsg}</span>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Tab contents */}
-        <div className="min-h-[50vh]">
-          {/* TAB 1: Analytics */}
-          {activeTab === "analytics" && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl space-y-2">
-                  <span className="text-[10px] font-sans font-bold text-[#CDD4DD]/40 block">TOTAL REVENUE AUDITED</span>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold font-serif text-emerald-500">${totalRevenue.toLocaleString()}</span>
-                    <DollarSign className="w-5 h-5 text-emerald-500" />
-                  </div>
-                </div>
+      {/* Left Sidebar Workspace navigation */}
+      <aside className="w-64 bg-[#1A2324] border-r border-[#CDD4DD]/10 flex flex-col h-screen sticky top-0 shrink-0">
+        {/* Brand Header */}
+        <div className="p-6 border-b border-[#CDD4DD]/10 flex items-center space-x-2.5">
+          <Shield className="w-6 h-6 text-[#FF7A00]" />
+          <div>
+            <h2 className="font-serif font-bold text-sm tracking-wider text-white uppercase">INVICTUS CORE</h2>
+            <span className="text-[8px] text-gray-500 font-mono tracking-widest uppercase">CONTROL CENTER</span>
+          </div>
+        </div>
 
-                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl space-y-2">
-                  <span className="text-[10px] font-sans font-bold text-[#CDD4DD]/40 block">ACTIVE BOOKINGS</span>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold font-serif text-white">{bookings.length}</span>
-                    <Calendar className="w-5 h-5 text-[#27187E]" />
-                  </div>
-                </div>
-
-                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl space-y-2">
-                  <span className="text-[10px] font-sans font-bold text-[#CDD4DD]/40 block">CRM ACTIVE PROSPECTS</span>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold font-serif text-white">{leads.length}</span>
-                    <Users className="w-5 h-5 text-[#27187E]" />
-                  </div>
-                </div>
-
-                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl space-y-2">
-                  <span className="text-[10px] font-sans font-bold text-[#CDD4DD]/40 block">SCOPING ROADMAPS</span>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold font-serif text-white">{discoveries.length}</span>
-                    <Brain className="w-5 h-5 text-[#FF7A00]" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Lead funnels stats */}
-              <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-2xl space-y-4">
-                <h4 className="font-serif font-bold text-sm text-[#FF7A00] uppercase tracking-wider">Kanban Pipeline Statistics</h4>
-                <div className="text-xs text-[#CDD4DD]/60 space-y-3 font-mono">
-                  {pipelineColumns.map((col) => (
-                    <div key={col.id} className="flex justify-between border-b border-[#CDD4DD]/5 pb-2">
-                      <span>{col.label} stage:</span>
-                      <span className="text-white font-bold">{leads.filter((l) => l.status === col.id).length} prospects</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: CRM Pipeline */}
-          {activeTab === "crm" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h4 className="font-serif font-bold text-sm text-white uppercase tracking-wider">Prospect Pipeline Manager</h4>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto pb-4">
-                {pipelineColumns.map((col) => {
-                  const colLeads = leads.filter((l) => l.status === col.id);
+        {/* Workspace Groups */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {sidebarGroups.map((group, idx) => (
+            <div key={idx} className="space-y-2">
+              <span className="text-[8px] font-sans font-bold text-[#CDD4DD]/30 tracking-widest uppercase px-3 block">
+                {group.title}
+              </span>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
                   return (
-                    <div key={col.id} className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded-2xl p-4 space-y-3 flex flex-col min-h-[300px]">
-                      <div className="flex justify-between items-center border-b border-[#CDD4DD]/10 pb-2">
-                        <span className="font-sans font-bold text-xs uppercase tracking-wider text-white">{col.label}</span>
-                        <span className="bg-[#27187E] text-white text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full">
-                          {colLeads.length}
-                        </span>
-                      </div>
-
-                      <div className="flex-1 space-y-2">
-                        {colLeads.map((lead) => (
-                          <div
-                            key={lead.id}
-                            onClick={() => handleLeadCycleStatus(lead.id, lead.status)}
-                            className="bg-[#121A1B] p-3 rounded-xl border border-[#CDD4DD]/10 hover:border-[#FF7A00] cursor-pointer transition-all space-y-1"
-                          >
-                            <span className="font-serif font-bold text-xs text-white block truncate">{lead.company}</span>
-                            <span className="text-[8px] text-[#CDD4DD]/40 block uppercase">{lead.contactName}</span>
-                            <span className="text-[10px] text-[#FF7A00] block font-bold font-mono">{lead.budget}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id as any);
+                        setGlobalSearchQuery(""); // Clear search on tab switch
+                      }}
+                      className={`w-full px-3 py-2.5 rounded-xl transition-all flex items-center space-x-2.5 text-xs text-left cursor-pointer ${
+                        isActive && !isSearchActive
+                          ? "bg-[#FF7A00]/10 border border-[#FF7A00]/30 text-[#FF7A00] font-bold"
+                          : "bg-transparent border border-transparent text-[#CDD4DD]/50 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </button>
                   );
                 })}
               </div>
             </div>
-          )}
+          ))}
+        </div>
 
-          {/* TAB 3: Bookings */}
-          {activeTab === "bookings" && (
-            <div className="space-y-4">
-              <h4 className="font-serif font-bold text-sm text-white uppercase tracking-wider">Consultation Booking Ledger</h4>
+        {/* Footer Actions */}
+        <div className="p-4 border-t border-[#CDD4DD]/10 space-y-2">
+          <button
+            onClick={fetchAdminData}
+            className="w-full bg-white/5 border border-white/10 hover:bg-white/10 px-3 py-2.5 rounded-xl text-[10px] font-mono text-gray-300 flex items-center justify-center space-x-1.5 cursor-pointer transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Sync Catalog</span>
+          </button>
+          <button
+            onClick={handleLogout}
+            className="w-full bg-red-950/20 border border-red-500/20 hover:bg-red-900/30 px-3 py-2.5 rounded-xl text-[10px] font-bold text-red-400 flex items-center justify-center space-x-1.5 cursor-pointer transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Terminate Session</span>
+          </button>
+        </div>
+      </aside>
 
-              <div className="space-y-4">
-                {bookings.map((booking) => (
-                  <div
-                    key={booking.id}
-                    className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm"
-                  >
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-wider uppercase block">{booking.packageType}</span>
-                      <h4 className="font-serif font-bold text-base text-white">
-                        {booking.serviceTitle.en || booking.serviceTitle.fr}
-                      </h4>
-                      <div className="text-xs text-[#CDD4DD]/60 font-mono space-y-1">
-                        <p>Client: <strong className="text-white">{booking.clientName}</strong> ({booking.clientEmail})</p>
-                        <p>Scheduled: {booking.date} at {booking.time} ({booking.timezone}) Spoken: <span className="uppercase">{booking.language}</span></p>
-                        {booking.paymentMethod && <p>Payment: <span className="uppercase text-emerald-400 font-bold">{booking.paymentMethod}</span> (Ref: <span className="text-[#FF7A00]">{booking.paymentReference || booking.id}</span>)</p>}
-                      </div>
-                      <p className="text-[11px] text-[#CDD4DD]/40 italic bg-[#121A1B] p-3 rounded-xl border border-[#CDD4DD]/5 max-w-lg mt-2 leading-relaxed font-semibold">
-                        Goals: {booking.questionnaire?.goals || "No context provided."}
-                      </p>
-                    </div>
+      {/* Main Content Area */}
+      <main className="flex-1 h-screen overflow-y-auto bg-[#121A1B] flex flex-col">
+        {/* Top Header Row */}
+        <header className="px-8 py-4 bg-[#1A2324]/50 border-b border-[#CDD4DD]/5 flex items-center justify-between gap-4 sticky top-0 z-30 backdrop-blur-md">
+          {/* Global Search Box */}
+          <div className="relative flex-grow max-w-md">
+            <Search className="w-4 h-4 text-[#CDD4DD]/30 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={globalSearchQuery}
+              onChange={(e) => setGlobalSearchQuery(e.target.value)}
+              placeholder="Search across pages, clients, bookings, and payments..."
+              className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#FF7A00] transition-colors"
+            />
+            {isSearchActive && (
+              <button 
+                onClick={() => setGlobalSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
 
-                    <div className="flex flex-col items-end gap-3 self-end sm:self-center shrink-0">
-                      <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${
-                        booking.status === "confirmed" 
-                          ? "bg-emerald-950/40 border-emerald-500/20 text-emerald-400"
-                          : booking.status === "awaiting_payment"
-                          ? "bg-amber-950/40 border-amber-500/20 text-amber-400 animate-pulse"
-                          : "bg-red-950/40 border-red-500/20 text-red-400"
-                      }`}>
-                        {booking.status}
-                      </span>
+          <div className="flex items-center space-x-3 text-xs shrink-0">
+            <span className="bg-emerald-950 border border-emerald-500/20 text-emerald-400 font-bold px-2.5 py-1 rounded-full text-[10px] flex items-center space-x-1 uppercase font-mono">
+              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+              <span>Operational</span>
+            </span>
+          </div>
+        </header>
 
-                      {(booking.status === "pending" || booking.status === "awaiting_payment") && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleBookingStatus(booking.id, "confirmed")}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-xl transition-colors cursor-pointer"
-                            title="Confirm & Approve"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleBookingStatus(booking.id, "cancelled")}
-                            className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-xl transition-colors cursor-pointer"
-                            title="Cancel booking"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+        {/* Dashboard Pages Body */}
+        <div className="flex-1 p-8">
+          {error && (
+            <div className="p-4 bg-red-950/40 border border-red-500/20 rounded-2xl text-xs text-red-400 flex items-center space-x-2 mb-6 animate-fadeIn">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+              <span>{error}</span>
             </div>
           )}
 
-          {/* TAB 4: Roadmaps */}
-          {activeTab === "discoveries" && (
-            <div className="space-y-4">
-              <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-4 rounded-2xl flex flex-col md:flex-row gap-3 justify-between items-center">
-                <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                  <input
-                    type="text"
-                    placeholder="Search roadmaps..."
-                    value={discSearch}
-                    onChange={(e) => setDiscSearch(e.target.value)}
-                    className="bg-[#121A1B]/55 border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E] w-64 font-semibold"
-                  />
-                </div>
-                <button
-                  onClick={handleExportCSV}
-                  className="px-4 py-2.5 bg-[#27187E] hover:bg-[#121A1B] text-white text-xs font-bold uppercase rounded-xl flex items-center space-x-1.5 cursor-pointer shadow-sm w-full md:w-auto justify-center"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Export CSV</span>
-                </button>
+          {/* Render Global Search Results if query active */}
+          {isSearchActive ? (
+            <div className="space-y-6 animate-fadeIn">
+              <div>
+                <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">
+                  SEARCH METRIC
+                </span>
+                <h3 className="font-serif font-bold text-xl text-white">
+                  Found {totalSearchResults} matches for &ldquo;{globalSearchQuery}&rdquo;
+                </h3>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* List pane */}
-                <div className="lg:col-span-5 space-y-2 max-h-[500px] overflow-y-auto pr-2">
-                  {discoveries
-                    .filter((d) => (d.answers?.companyName || "").toLowerCase().includes(discSearch.toLowerCase()))
-                    .map((disc) => (
-                      <div
-                        key={disc.id}
-                        onClick={() => setSelectedDisc(disc)}
-                        className={`p-4 rounded-2xl border text-left cursor-pointer transition-all ${
-                          selectedDisc?.id === disc.id
-                            ? "bg-[#27187E]/20 border-[#27187E]"
-                            : "bg-[#1A2324] border-[#CDD4DD]/10 hover:border-[#27187E]/50"
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-1.5">
-                          <h5 className="font-serif font-bold text-xs text-white">{disc.answers?.companyName}</h5>
-                          <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-950 text-blue-400">
-                            {disc.summary?.complexity || "Medium"}
-                          </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* 1. Bookings Matches */}
+                {searchResults.bookings.length > 0 && (
+                  <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-3xl space-y-3">
+                    <span className="text-[9px] font-bold text-[#FF7A00] uppercase block">Bookings ({searchResults.bookings.length})</span>
+                    <div className="space-y-2">
+                      {searchResults.bookings.map(b => (
+                        <div 
+                          key={b.id} 
+                          onClick={() => { setActiveTab("bookings"); setGlobalSearchQuery(""); }}
+                          className="bg-[#121A1B] p-2.5 rounded-xl border border-transparent hover:border-[#FF7A00]/20 cursor-pointer transition-all"
+                        >
+                          <p className="font-bold text-white text-[11px]">{b.clientName}</p>
+                          <p className="text-[9px] text-[#CDD4DD]/50">{b.clientEmail}</p>
+                          <p className="text-[9px] text-gray-400">{b.packageType}</p>
                         </div>
-                        <p className="text-[10px] text-[#CDD4DD]/50 font-mono">Industry: {disc.answers?.industry}</p>
-                      </div>
-                    ))}
-                </div>
-
-                {/* Detail pane */}
-                <div className="lg:col-span-7">
-                  {selectedDisc ? (
-                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-2xl space-y-6">
-                      <div className="pb-4 border-b border-[#CDD4DD]/10 flex justify-between items-center gap-4">
-                        <div>
-                          <span className="text-[8px] font-mono tracking-widest text-[#CDD4DD]/40 block">SCOPING BLUEPRINT</span>
-                          <h4 className="font-serif font-bold text-base text-white">{selectedDisc.summary?.title}</h4>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleConvertToLead(selectedDisc)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-[9px] font-sans font-bold uppercase transition-colors"
-                          >
-                            CRM Convert
-                          </button>
-                          <button
-                            onClick={() => handleDeleteDiscovery(selectedDisc.id)}
-                            className="bg-red-950/40 hover:bg-red-900/35 border border-red-500/20 text-red-400 p-1.5 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4 text-xs">
-                        <p>Company: <strong className="text-white">{selectedDisc.answers?.companyName}</strong>, Industry: <strong className="text-white">{selectedDisc.answers?.industry}</strong>, Budget: <strong className="text-white">{selectedDisc.answers?.budgetRange}</strong></p>
-                        <p className="italic bg-[#121A1B] p-3 rounded-lg border border-[#CDD4DD]/5 text-[#CDD4DD]/55">
-                          Challenges: "{selectedDisc.answers?.challenges}"
-                        </p>
-                        <div className="border-t border-[#CDD4DD]/5 pt-4">
-                          <strong className="block text-[9px] font-sans uppercase mb-2">Automated Roadmap Overview</strong>
-                          <div className="bg-[#121A1B] p-4 rounded-xl border border-[#CDD4DD]/5 text-[10px] font-mono text-[#CDD4DD]/50 max-h-48 overflow-y-auto whitespace-pre-wrap">
-                            {selectedDisc.summary?.overviewMarkdown}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center p-8 border border-dashed border-[#CDD4DD]/10 rounded-2xl bg-[#1A2324] text-[#CDD4DD]/30">
-                      Select a discovery blueprint to inspect details.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: Payments Review */}
-          {activeTab === "payments" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              
-              {/* Payment Link Generator */}
-              <div className="lg:col-span-5 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-6 self-start">
-                <div>
-                  <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">INVOICE GENERATOR</span>
-                  <h4 className="font-serif font-bold text-lg text-white">Generate Payment Link</h4>
-                  <p className="text-[10px] text-[#CDD4DD]/50">Create a customized, pre-filled checkout link for client billing.</p>
-                </div>
-
-                <form onSubmit={handleGenerateLink} className="space-y-4 text-xs">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Client Name</label>
-                      <input
-                        type="text"
-                        value={genClientName}
-                        onChange={(e) => setGenClientName(e.target.value)}
-                        placeholder="e.g. John Doe"
-                        className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Client Email Address</label>
-                      <input
-                        type="email"
-                        value={genEmail}
-                        onChange={(e) => setGenEmail(e.target.value)}
-                        placeholder="e.g. partner@company.com"
-                        className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Consulting Service Tier</label>
-                    <select
-                      value={genServiceId}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setGenServiceId(val);
-                        if (val !== "custom" && val !== "") {
-                          const selected = (consultingServices.length > 0 ? consultingServices : consultingOffers).find(s => s.id === val);
-                          if (selected) setGenAmount(String(selected.price));
-                        } else {
-                          setGenAmount("");
-                        }
-                      }}
-                      className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
-                    >
-                      <option value="">-- Select --</option>
-                      {(consultingServices.length > 0 ? consultingServices : consultingOffers).map((offer) => (
-                        <option key={offer.id} value={offer.id}>
-                          {(offer.title?.en || offer.title) as string} (${offer.price})
-                        </option>
                       ))}
-                      <option value="custom">Custom Service / Invoice</option>
-                    </select>
-                  </div>
-
-                  {genServiceId === "custom" && (
-                    <div>
-                      <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Custom Service Title</label>
-                      <input
-                        type="text"
-                        required
-                        value={genCustomTitle}
-                        onChange={(e) => setGenCustomTitle(e.target.value)}
-                        placeholder="e.g. Specialized Security Audit"
-                        className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
-                      />
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Billing Currency</label>
-                      <select
-                        value={genCurrency}
-                        onChange={(e) => setGenCurrency(e.target.value)}
-                        className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
-                      >
-                        <option value="USD">USD - US Dollar</option>
-                        <option value="GDS">GDS - Haitian Gourde</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Billing Amount</label>
-                      <input
-                        type="number"
-                        required
-                        value={genAmount}
-                        onChange={(e) => setGenAmount(e.target.value)}
-                        placeholder="e.g. 500"
-                        className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
-                      />
                     </div>
                   </div>
+                )}
 
-                  <button
-                    type="submit"
-                    className="w-full py-3 bg-[#FF7A00] hover:bg-[#121A1B] hover:border-[#FF7A00] hover:text-[#FF7A00] border border-transparent text-white text-xs font-bold tracking-widest uppercase rounded-xl transition-all cursor-pointer shadow-sm"
-                  >
-                    Build Payment URL
-                  </button>
-                </form>
+                {/* 2. CRM Leads Matches */}
+                {searchResults.leads.length > 0 && (
+                  <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-3xl space-y-3">
+                    <span className="text-[9px] font-bold text-[#FF7A00] uppercase block">CRM Prospects ({searchResults.leads.length})</span>
+                    <div className="space-y-2">
+                      {searchResults.leads.map(l => (
+                        <div 
+                          key={l.id} 
+                          onClick={() => { setActiveTab("crm"); setGlobalSearchQuery(""); }}
+                          className="bg-[#121A1B] p-2.5 rounded-xl border border-transparent hover:border-[#FF7A00]/20 cursor-pointer transition-all"
+                        >
+                          <p className="font-bold text-white text-[11px]">{l.company}</p>
+                          <p className="text-[9px] text-[#CDD4DD]/50">{l.contactName} &middot; {l.email}</p>
+                          <p className="text-[9px] text-[#FF7A00] uppercase font-bold">{l.status}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                {generatedLink && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-[#121A1B] border border-[#CDD4DD]/10 p-4 rounded-xl space-y-3"
-                  >
-                    <div className="flex justify-between items-center text-[9px] font-bold text-[#FF7A00] uppercase tracking-wider">
-                      <span>PRE-FILLED INVOICE CHECKOUT URL</span>
-                      <button
-                        onClick={handleCopyLink}
-                        className="text-white hover:text-[#FF7A00] flex items-center gap-1 cursor-pointer"
-                      >
-                        <Clipboard className="w-3 h-3" />
-                        <span>Copy URL</span>
-                      </button>
+                {/* 3. Case Studies Matches */}
+                {searchResults.projects.length > 0 && (
+                  <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-3xl space-y-3">
+                    <span className="text-[9px] font-bold text-[#FF7A00] uppercase block">Case Studies ({searchResults.projects.length})</span>
+                    <div className="space-y-2">
+                      {searchResults.projects.map(p => (
+                        <div 
+                          key={p.id} 
+                          onClick={() => { setActiveTab("cms_case_studies"); setGlobalSearchQuery(""); }}
+                          className="bg-[#121A1B] p-2.5 rounded-xl border border-transparent hover:border-[#FF7A00]/20 cursor-pointer transition-all"
+                        >
+                          <p className="font-bold text-white text-[11px]">{p.title}</p>
+                          <p className="text-[9px] text-[#CDD4DD]/50">{p.id}</p>
+                        </div>
+                      ))}
                     </div>
-                    <div className="bg-[#1A2324] border border-[#CDD4DD]/5 p-3 rounded-lg text-[10px] font-mono text-gray-300 break-all select-all">
-                      {generatedLink}
+                  </div>
+                )}
+
+                {/* 4. Training Matches */}
+                {searchResults.training.length > 0 && (
+                  <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-3xl space-y-3">
+                    <span className="text-[9px] font-bold text-[#FF7A00] uppercase block">Training Programs ({searchResults.training.length})</span>
+                    <div className="space-y-2">
+                      {searchResults.training.map(t => (
+                        <div 
+                          key={t.id} 
+                          onClick={() => { setActiveTab("cms_training"); setGlobalSearchQuery(""); }}
+                          className="bg-[#121A1B] p-2.5 rounded-xl border border-transparent hover:border-[#FF7A00]/20 cursor-pointer transition-all"
+                        >
+                          <p className="font-bold text-white text-[11px]">{t.title?.en || t.title}</p>
+                          <p className="text-[9px] text-gray-400 uppercase">{t.category}</p>
+                        </div>
+                      ))}
                     </div>
-                  </motion.div>
+                  </div>
+                )}
+
+                {/* 5. Payments Matches */}
+                {searchResults.payments.length > 0 && (
+                  <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-3xl space-y-3">
+                    <span className="text-[9px] font-bold text-[#FF7A00] uppercase block">Payments ({searchResults.payments.length})</span>
+                    <div className="space-y-2">
+                      {searchResults.payments.map(p => (
+                        <div 
+                          key={p.id} 
+                          onClick={() => { setActiveTab("payments"); setGlobalSearchQuery(""); }}
+                          className="bg-[#121A1B] p-2.5 rounded-xl border border-transparent hover:border-[#FF7A00]/20 cursor-pointer transition-all"
+                        >
+                          <p className="font-bold text-white text-[11px]">{p.clientName || "Anonymous"}</p>
+                          <p className="text-[9px] text-[#CDD4DD]/50">{p.clientEmail}</p>
+                          <p className="text-[9px] font-bold text-emerald-400">{p.amount} {p.currency}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
-
-              {/* Submitted Payments Ledger Table */}
-              <div className="lg:col-span-7 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 self-start">
-                <div>
-                  <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">VERIFICATION INBOX</span>
-                  <h4 className="font-serif font-bold text-lg text-white">Client Receipt Approvals</h4>
-                  <p className="text-[10px] text-[#CDD4DD]/50">Inspect proof-of-payment receipts uploaded to CDN Storage and verify payments.</p>
-                </div>
-
-                <div className="overflow-x-auto max-h-[600px] overflow-y-auto pr-2 animate-fadeIn">
-                  {payments.length === 0 ? (
-                    <div className="text-center py-12 text-[#CDD4DD]/30 border border-dashed border-[#CDD4DD]/10 rounded-2xl">
-                      No payment receipts submitted yet.
+            </div>
+          ) : (
+            <>
+              {/* TAB 1: Analytics Dashboard (BI Center V3) */}
+              {activeTab === "analytics" && (
+                <div className="space-y-6">
+                  {/* BI Cards Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl flex justify-between items-center shadow-md">
+                      <div>
+                        <span className="text-[8px] font-bold text-[#CDD4DD]/40 uppercase block">MTD Revenue</span>
+                        <h3 className="text-base font-bold font-mono text-white">${(biData.mtdRevenue || 0).toLocaleString()}</h3>
+                      </div>
+                      <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400">
+                        <DollarSign className="w-4 h-4" />
+                      </div>
                     </div>
-                  ) : (
+
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl flex justify-between items-center shadow-md">
+                      <div>
+                        <span className="text-[8px] font-bold text-[#CDD4DD]/40 uppercase block">YTD Revenue</span>
+                        <h3 className="text-base font-bold font-mono text-white">${(biData.ytdRevenue || 0).toLocaleString()}</h3>
+                      </div>
+                      <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400">
+                        <DollarSign className="w-4 h-4" />
+                      </div>
+                    </div>
+
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl flex justify-between items-center shadow-md">
+                      <div>
+                        <span className="text-[8px] font-bold text-[#CDD4DD]/40 uppercase block">Est. Pipeline</span>
+                        <h3 className="text-base font-bold font-mono text-[#FF7A00]">${(biData.pipelineValue || 0).toLocaleString()}</h3>
+                      </div>
+                      <div className="p-2.5 bg-[#FF7A00]/10 rounded-xl text-[#FF7A00]">
+                        <TrendingUp className="w-4 h-4" />
+                      </div>
+                    </div>
+
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl flex justify-between items-center shadow-md">
+                      <div>
+                        <span className="text-[8px] font-bold text-[#CDD4DD]/40 uppercase block">Consulting Hours</span>
+                        <h3 className="text-base font-bold font-mono text-white">{biData.consultingHours || 0} hrs</h3>
+                      </div>
+                      <div className="p-2.5 bg-purple-500/10 rounded-xl text-purple-400">
+                        <Cpu className="w-4 h-4" />
+                      </div>
+                    </div>
+
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl flex justify-between items-center shadow-md">
+                      <div>
+                        <span className="text-[8px] font-bold text-[#CDD4DD]/40 uppercase block">Academy Signups</span>
+                        <h3 className="text-base font-bold font-mono text-white">{biData.trainingRegistrations || 0}</h3>
+                      </div>
+                      <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-400">
+                        <BookOpen className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SVG BI Charts Panel */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Revenue Monthly Trend Area Graph */}
+                    <div className="lg:col-span-8 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 shadow-md">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-serif font-bold text-base text-white">Monthly Revenue Flow ({new Date().getFullYear()})</h4>
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/20">Real-Time Ledger</span>
+                      </div>
+
+                      <div className="w-full bg-[#121A1B] p-4 rounded-2xl border border-[#CDD4DD]/5 flex items-center justify-center">
+                        {biData.revenueByMonth?.length > 0 ? (() => {
+                          const maxVal = Math.max(...biData.revenueByMonth.map((m: any) => m.amount), 1000);
+                          const width = 600;
+                          const height = 180;
+                          const points = biData.revenueByMonth.map((m: any, idx: number) => {
+                            const x = (idx / (biData.revenueByMonth.length - 1 || 1)) * (width - 60) + 40;
+                            const y = height - (m.amount / maxVal) * (height - 40) - 20;
+                            return { x, y, month: m.month, amount: m.amount };
+                          });
+
+                          const pathD = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map((p: any) => `L ${p.x} ${p.y}`).join(" ");
+                          const areaD = `${pathD} L ${points[points.length - 1].x} ${height - 20} L ${points[0].x} ${height - 20} Z`;
+
+                          return (
+                            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto text-xs overflow-visible">
+                              <defs>
+                                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#FF7A00" stopOpacity="0.3" />
+                                  <stop offset="100%" stopColor="#FF7A00" stopOpacity="0" />
+                                </linearGradient>
+                              </defs>
+
+                              {/* Grid lines */}
+                              {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
+                                const yVal = height - 20 - p * (height - 40);
+                                return (
+                                  <g key={i} className="opacity-10">
+                                    <line x1="40" y1={yVal} x2={width - 20} y2={yVal} stroke="#CDD4DD" strokeDasharray="4 4" />
+                                    <text x="5" y={yVal + 4} fill="#CDD4DD" className="font-mono text-[8px]">${Math.round(p * maxVal).toLocaleString()}</text>
+                                  </g>
+                                );
+                              })}
+
+                              {/* Render Area with Gradient */}
+                              <path d={areaD} fill="url(#areaGrad)" />
+
+                              {/* Render line path */}
+                              <path d={pathD} fill="none" stroke="#FF7A00" strokeWidth="2.5" strokeLinecap="round" />
+
+                              {/* Circles and Labels */}
+                              {points.map((pt: any, i: number) => (
+                                <g key={i}>
+                                  <circle cx={pt.x} cy={pt.y} r="4" fill="#FF7A00" stroke="#121A1B" strokeWidth="1.5" />
+                                  {pt.amount > 0 && (
+                                    <text x={pt.x} y={pt.y - 8} fill="#white" textAnchor="middle" className="font-bold text-[8px] font-mono">${Math.round(pt.amount)}</text>
+                                  )}
+                                  <text x={pt.x} y={height - 5} fill="#CDD4DD" className="opacity-40 font-bold" textAnchor="middle">{pt.month}</text>
+                                </g>
+                              ))}
+                            </svg>
+                          );
+                        })() : (
+                          <div className="py-12 text-gray-500 font-medium">No paid invoices recorded this year.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* CRM Funnel Bar Chart */}
+                    <div className="lg:col-span-4 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 shadow-md text-gray-300">
+                      <h4 className="font-serif font-bold text-base text-white">Pipeline stage breakdown</h4>
+                      <div className="space-y-4 pt-1">
+                        {biData.leadsPipeline?.map((stage: any) => {
+                          const pct = biData.pipelineValue > 0 ? (stage.value / biData.pipelineValue) * 100 : 0;
+                          return (
+                            <div key={stage.status} className="space-y-1">
+                              <div className="flex justify-between items-center text-[10px]">
+                                <span className="font-bold uppercase tracking-wider text-[#CDD4DD]/60">{stage.status} ({stage.count})</span>
+                                <span className="font-mono text-white font-bold">${(stage.value || 0).toLocaleString()}</span>
+                              </div>
+                              <div className="w-full bg-[#121A1B] h-2.5 rounded-full overflow-hidden border border-[#CDD4DD]/5">
+                                <div 
+                                  className="bg-gradient-to-r from-[#FF7A00] to-amber-500 h-full rounded-full transition-all"
+                                  style={{ width: `${Math.max(pct, 4)}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Telemetry Log Time Ledger */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Log form (Left) */}
+                    <div className="lg:col-span-4 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 self-start shadow-md text-gray-300">
+                      <div>
+                        <span className="text-[8px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">TIME MANAGER</span>
+                        <h4 className="font-serif font-bold text-base text-white">Log Consulting Hours</h4>
+                      </div>
+
+                      <form onSubmit={handleLogHours} className="space-y-3.5">
+                        <div>
+                          <label className="block text-[8px] font-bold text-[#CDD4DD]/40 uppercase tracking-wider mb-1">Select Client *</label>
+                          <select
+                            value={logClientId}
+                            onChange={(e) => setLogClientId(e.target.value)}
+                            required
+                            className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-3 py-2 text-white focus:outline-none"
+                          >
+                            <option value="">Choose Profile...</option>
+                            {billingProfiles.map(p => (
+                              <option key={p.id} value={p.id}>{p.companyName}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[8px] font-bold text-[#CDD4DD]/40 uppercase tracking-wider mb-1">Hours *</label>
+                            <input
+                              type="number"
+                              step="0.25"
+                              required
+                              value={logHours}
+                              onChange={(e) => setLogHours(e.target.value)}
+                              placeholder="e.g. 4.5"
+                              className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-3 py-2 text-white focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8px] font-bold text-[#CDD4DD]/40 uppercase tracking-wider mb-1">Date *</label>
+                            <input
+                              type="date"
+                              required
+                              value={logDate}
+                              onChange={(e) => setLogDate(e.target.value)}
+                              className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-3 py-2 text-white focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[8px] font-bold text-[#CDD4DD]/40 uppercase tracking-wider mb-1">Activity / Notes</label>
+                          <input
+                            type="text"
+                            value={logDesc}
+                            onChange={(e) => setLogDesc(e.target.value)}
+                            placeholder="e.g. API refactoring & DB setup"
+                            className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-3 py-2 text-white focus:outline-none"
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          className="w-full py-2.5 bg-[#FF7A00] hover:bg-opacity-85 text-white font-bold uppercase rounded-xl border-0 cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Submit Hours</span>
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* Hours Log Ledger (Right) */}
+                    <div className="lg:col-span-8 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 shadow-md text-gray-300">
+                      <h4 className="font-serif font-bold text-base text-white">Consulting Telemetry Ledger</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[8px] tracking-wider">
+                              <th className="py-2.5 px-3">Date</th>
+                              <th className="py-2.5 px-3">Client</th>
+                              <th className="py-2.5 px-3">Hours</th>
+                              <th className="py-2.5 px-3">Activity</th>
+                              <th className="py-2.5 px-3 text-right">Delete</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#CDD4DD]/5">
+                            {consultingLogs.length === 0 ? (
+                              <tr>
+                                <td colSpan={5} className="text-center py-8 text-gray-500 font-medium">No hours logged yet.</td>
+                              </tr>
+                            ) : (
+                              consultingLogs.slice(0, 8).map((log: any) => {
+                                const clientObj = billingProfiles.find(p => p.id === log.clientId);
+                                return (
+                                  <tr key={log.id} className="hover:bg-[#121A1B]/35">
+                                    <td className="py-2.5 px-3 font-mono">{log.activityDate}</td>
+                                    <td className="py-2.5 px-3 text-white font-bold">{clientObj?.companyName || "Unknown Client"}</td>
+                                    <td className="py-2.5 px-3 font-bold text-amber-500 font-mono">{log.hoursLogged} hrs</td>
+                                    <td className="py-2.5 px-3 truncate max-w-[200px]" title={log.description}>{log.description || "Consulting"}</td>
+                                    <td className="py-2.5 px-3 text-right">
+                                      <button 
+                                        onClick={() => handleDeleteLog(log.id)}
+                                        className="text-red-400 hover:text-red-500 bg-transparent border-0 cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: CRM Board */}
+              {activeTab === "crm" && (
+                <div className="space-y-6">
+                  <div>
+                    <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">SALES WORKFLOW</span>
+                    <h3 className="font-serif font-bold text-xl text-white">CRM Prospect Pipeline</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto pb-4">
+                    {pipelineColumns.map((col) => {
+                      const colLeads = leads.filter((l) => l.status === col.id);
+                      return (
+                        <div key={col.id} className="bg-[#1A2324] border border-[#CDD4DD]/10 p-4 rounded-3xl min-w-[200px] flex flex-col space-y-4">
+                          <div className="flex justify-between items-center border-b border-[#CDD4DD]/5 pb-2">
+                            <span className="font-bold text-[10px] tracking-wider uppercase text-[#CDD4DD]/70">{col.label}</span>
+                            <span className="bg-[#FF7A00]/10 text-[#FF7A00] border border-[#FF7A00]/20 px-1.5 py-0.5 rounded text-[8px] font-bold">{colLeads.length}</span>
+                          </div>
+
+                          <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
+                            {colLeads.map((l) => (
+                              <div key={l.id} className="bg-[#121A1B] border border-[#CDD4DD]/5 p-3 rounded-2xl space-y-2 relative group hover:border-[#FF7A00]/20 transition-all">
+                                <div>
+                                  <p className="font-bold text-white text-[11px]">{l.company}</p>
+                                  <p className="text-[9px] text-[#CDD4DD]/50">{l.contactName}</p>
+                                  <p className="text-[9px] text-[#CDD4DD]/50">{l.email}</p>
+                                </div>
+                                {l.budget && (
+                                  <span className="bg-[#FF7A00]/5 text-[#FF7A00] text-[8px] px-1.5 py-0.5 rounded border border-[#FF7A00]/10 font-bold block w-fit">
+                                    {l.budget}
+                                  </span>
+                                )}
+                                <div className="flex justify-between pt-2 border-t border-[#CDD4DD]/5 text-[9px]">
+                                  <button onClick={() => handleLeadCycleStatus(l.id, l.status)} className="text-[#FF7A00] hover:underline cursor-pointer">
+                                    Move Stage
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: Bookings */}
+              {activeTab === "bookings" && (
+                <div className="space-y-6">
+                  <div>
+                    <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">SCHEDULING CENTER</span>
+                    <h3 className="font-serif font-bold text-xl text-white">Client Session Bookings</h3>
+                  </div>
+
+                  <div className="overflow-x-auto bg-[#1A2324] border border-[#CDD4DD]/10 rounded-3xl p-6 shadow-md">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
                         <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
-                          <th className="py-3 px-4">Client / Service</th>
+                          <th className="py-3 px-4">Client Name</th>
+                          <th className="py-3 px-4">Email</th>
+                          <th className="py-3 px-4">Date & Time</th>
+                          <th className="py-3 px-4">Package</th>
                           <th className="py-3 px-4">Amount</th>
-                          <th className="py-3 px-4">Method / Ref</th>
                           <th className="py-3 px-4">Status</th>
                           <th className="py-3 px-4 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#CDD4DD]/5">
-                        {payments.map((pay) => (
-                          <tr key={pay.id} className="hover:bg-[#121A1B]/30">
-                            <td className="py-3 px-4 space-y-1">
-                              <div className="font-semibold text-white truncate max-w-[160px]">{pay.clientName || "Anonymous"}</div>
-                              <div className="text-[10px] text-[#CDD4DD]/40 font-mono truncate max-w-[160px]">{pay.clientEmail}</div>
-                              <div className="text-[10px] text-[#FF7A00] font-medium truncate max-w-[160px]">{pay.service}</div>
-                            </td>
-                            <td className="py-3 px-4 font-bold text-white">
-                               {pay.currency === "GDS" ? `${pay.amount} GDS` : `$${pay.amount}`}
-                             </td>
-                            <td className="py-3 px-4 space-y-0.5 font-mono text-[10px]">
-                              <div className="uppercase text-emerald-400 font-bold">{pay.paymentMethod}</div>
-                              <div className="text-[#CDD4DD]/40">Ref: {pay.paymentReference}</div>
-                            </td>
+                        {bookings.map((b) => (
+                          <tr key={b.id} className="hover:bg-[#121A1B]/35">
+                            <td className="py-3 px-4 font-semibold text-white">{b.clientName}</td>
+                            <td className="py-3 px-4 font-mono text-[#CDD4DD]/60">{b.clientEmail}</td>
                             <td className="py-3 px-4">
-                              <span className={`text-[8px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border ${
-                                pay.status === "paid"
+                              <span>{b.date}</span>
+                              <span className="text-[9px] text-[#CDD4DD]/40 block">{b.time} ({b.timezone})</span>
+                            </td>
+                            <td className="py-3 px-4 capitalize text-[#CDD4DD]/80">{b.packageType}</td>
+                            <td className="py-3 px-4 font-bold text-emerald-400">${b.amount}</td>
+                            <td className="py-3 px-4">
+                              <span className={`text-[8px] uppercase px-2 py-0.5 rounded font-bold border ${
+                                b.status === "confirmed" || b.status === "completed"
                                   ? "bg-emerald-950/40 border-emerald-500/20 text-emerald-400"
-                                  : pay.status === "pending"
-                                  ? "bg-amber-950/40 border-amber-500/20 text-amber-400 animate-pulse"
-                                  : "bg-red-950/40 border-red-500/20 text-red-400"
+                                  : b.status === "cancelled"
+                                  ? "bg-red-950/40 border-red-500/20 text-red-400"
+                                  : "bg-amber-950/40 border-amber-500/20 text-amber-400"
                               }`}>
-                                {pay.status}
+                                {b.status}
                               </span>
                             </td>
-                            <td className="py-3 px-4 text-right space-y-1.5">
-                              {pay.invoiceUrl && (
-                                <a
-                                  href={pay.invoiceUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-block bg-[#121A1B] hover:bg-[#CDD4DD]/10 border border-[#CDD4DD]/10 text-white text-[9px] font-bold uppercase px-2 py-1 rounded transition-colors text-center w-full"
-                                >
-                                  View Screenshot
-                                </a>
+                            <td className="py-3 px-4 text-right space-x-1.5">
+                              {b.status === "pending" && (
+                                <>
+                                  <button onClick={() => handleBookingStatus(b.id, "confirmed")} className="text-emerald-400 hover:text-emerald-500 font-bold uppercase text-[9px] tracking-wider cursor-pointer">
+                                    Approve
+                                  </button>
+                                  <span className="text-gray-600">|</span>
+                                  <button onClick={() => handleBookingStatus(b.id, "cancelled")} className="text-red-400 hover:text-red-500 font-bold uppercase text-[9px] tracking-wider cursor-pointer">
+                                    Cancel
+                                  </button>
+                                </>
                               )}
-                              
-                              {pay.status === "pending" && (
-                                <div className="flex gap-1 justify-end">
-                                  <button
-                                    onClick={() => handleVerifyPayment(pay.id)}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded-md transition-colors cursor-pointer"
-                                    title="Approve Receipt"
-                                  >
-                                    <Check className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleRejectPayment(pay.id)}
-                                    className="bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-md transition-colors cursor-pointer"
-                                    title="Reject / Mark Overdue"
-                                  >
-                                    <X className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
+                              {b.status === "confirmed" && (
+                                <button onClick={() => handleBookingStatus(b.id, "completed")} className="text-blue-400 hover:text-blue-500 font-bold uppercase text-[9px] tracking-wider cursor-pointer">
+                                  Mark Completed
+                                </button>
                               )}
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                  )}
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* TAB 5: Site & Payment Settings */}
-          {activeTab === "settings" && (
-            <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 sm:p-8 rounded-3xl space-y-8">
-              
-              {/* Feature Flags */}
-              <div className="space-y-4">
-                <h4 className="font-serif font-bold text-base text-[#FF7A00] tracking-wider uppercase border-b border-[#CDD4DD]/10 pb-2">
-                  1. Feature Toggles
-                </h4>
-                <div className="flex items-center justify-between p-4 bg-[#121A1B]/55 rounded-2xl border border-[#CDD4DD]/5">
-                  <div>
-                    <span className="text-sm font-semibold text-white block">Training Section Status</span>
-                    <span className="text-[10px] text-[#CDD4DD]/40">Active display of Academy & Workshops. If toggled off, showing Coming Soon.</span>
                   </div>
-                  <button
-                    onClick={() => setSiteSettings({ ...siteSettings, trainingEnabled: !siteSettings.trainingEnabled })}
-                    className={`w-12 h-6 rounded-full p-1 transition-all ${
-                      siteSettings.trainingEnabled ? "bg-[#27187E]" : "bg-gray-700"
-                    }`}
-                  >
-                    <div className={`w-4 h-4 rounded-full bg-white transition-all transform ${
-                      siteSettings.trainingEnabled ? "translate-x-6" : "translate-x-0"
-                    }`} />
-                  </button>
                 </div>
-              </div>
+              )}
 
-              {/* Dynamic Profiles */}
-              <div className="space-y-4">
-                <h4 className="font-serif font-bold text-base text-white tracking-wider uppercase border-b border-[#CDD4DD]/10 pb-2">
-                  2. Dynamic Media Links
-                </h4>
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Profile Picture URL Link</label>
-                    <div className="relative">
-                      <Image className="w-4 h-4 text-[#CDD4DD]/30 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={siteSettings.profileImageUrl}
-                        onChange={(e) => setSiteSettings({ ...siteSettings, profileImageUrl: e.target.value })}
-                        placeholder="Paste image link here... e.g. https://images.unsplash.com/..."
-                        className="w-full bg-[#121A1B]/55 border border-[#CDD4DD]/10 rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none"
-                      />
+              {/* TAB 4: Discovery Sessions */}
+              {activeTab === "discoveries" && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-xs font-sans">
+                  {/* Left Side: List */}
+                  <div className="lg:col-span-5 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">SUBMISSION FEED</span>
+                        <h4 className="font-serif font-bold text-lg text-white">Discovery Submissions</h4>
+                      </div>
+                      <button onClick={handleExportCSV} className="bg-white/5 border border-white/10 hover:bg-white/10 p-2 rounded-xl text-gray-300 cursor-pointer">
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Social links */}
-              <div className="space-y-4">
-                <h4 className="font-serif font-bold text-base text-white tracking-wider uppercase border-b border-[#CDD4DD]/10 pb-2">
-                  3. Social Media Targets
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">GitHub Link</label>
-                    <input
-                      type="text"
-                      value={siteSettings.socialLinks?.github || ""}
-                      onChange={(e) => setSiteSettings({
-                        ...siteSettings,
-                        socialLinks: { ...siteSettings.socialLinks, github: e.target.value }
-                      })}
-                      className="w-full bg-[#121A1B]/55 border border-[#CDD4DD]/10 rounded-xl px-4 py-3 text-xs text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">LinkedIn Link</label>
-                    <input
-                      type="text"
-                      value={siteSettings.socialLinks?.linkedin || ""}
-                      onChange={(e) => setSiteSettings({
-                        ...siteSettings,
-                        socialLinks: { ...siteSettings.socialLinks, linkedin: e.target.value }
-                      })}
-                      className="w-full bg-[#121A1B]/55 border border-[#CDD4DD]/10 rounded-xl px-4 py-3 text-xs text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Twitter Link</label>
-                    <input
-                      type="text"
-                      value={siteSettings.socialLinks?.twitter || ""}
-                      onChange={(e) => setSiteSettings({
-                        ...siteSettings,
-                        socialLinks: { ...siteSettings.socialLinks, twitter: e.target.value }
-                      })}
-                      className="w-full bg-[#121A1B]/55 border border-[#CDD4DD]/10 rounded-xl px-4 py-3 text-xs text-white"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Methods */}
-              <div className="space-y-4">
-                <h4 className="font-serif font-bold text-base text-white tracking-wider uppercase border-b border-[#CDD4DD]/10 pb-2">
-                  4. Payment Configurations & Details
-                </h4>
-
-                <div className="grid grid-cols-1 gap-6">
-                  {paymentConfig.methods?.map((method, idx) => (
-                    <div
-                      key={method.id}
-                      className="bg-[#121A1B]/55 p-5 rounded-2xl border border-[#CDD4DD]/5 space-y-4 flex flex-col justify-between"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <span className="text-xs font-bold uppercase block text-white">{method.name} ({method.type})</span>
-                          <span className="text-[9px] text-[#CDD4DD]/45">Specify active endpoints detail properties.</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updatedMethods = [...(paymentConfig.methods || [])];
-                            updatedMethods[idx] = { ...method, enabled: !method.enabled };
-                            setPaymentConfig({ methods: updatedMethods });
-                          }}
-                          className={`w-10 h-5 rounded-full p-0.5 transition-all ${
-                            method.enabled ? "bg-[#27187E]" : "bg-gray-700"
+                    <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                      {discoveries.map((disc) => (
+                        <div
+                          key={disc.id}
+                          onClick={() => setSelectedDisc(disc)}
+                          className={`p-3.5 rounded-2xl border transition-all cursor-pointer text-left ${
+                            selectedDisc?.id === disc.id
+                              ? "bg-[#FF7A00]/10 border-[#FF7A00]/30"
+                              : "bg-[#121A1B] border-[#CDD4DD]/5 hover:border-gray-700"
                           }`}
                         >
-                          <div className={`w-4 h-4 rounded-full bg-white transition-all transform ${
-                            method.enabled ? "translate-x-5" : "translate-x-0"
-                          }`} />
-                        </button>
-                      </div>
+                          <p className="font-bold text-white text-[11px]">{disc.answers.companyName}</p>
+                          <p className="text-[9px] text-[#CDD4DD]/40">Scoped: {new Date(disc.createdAt).toLocaleDateString()}</p>
+                          <p className="text-[9px] text-gray-400 mt-1 capitalize">Types: {disc.answers.projectTypes?.join(", ")}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Logo URL Link</label>
-                          <input
-                            type="text"
-                            value={method.logoUrl || ""}
-                            onChange={(e) => {
-                              const updatedMethods = [...(paymentConfig.methods || [])];
-                              updatedMethods[idx] = { ...method, logoUrl: e.target.value };
-                              setPaymentConfig({ methods: updatedMethods });
-                            }}
-                            placeholder="Logo image URL link..."
-                            className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white"
-                          />
+                  {/* Right Side: Details View */}
+                  <div className="lg:col-span-7 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-5">
+                    {selectedDisc ? (
+                      <div className="space-y-4 animate-fadeIn">
+                        <div className="flex justify-between items-start gap-4">
+                          <div>
+                            <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">DISCOVERY CARD</span>
+                            <h3 className="font-serif font-bold text-xl text-white">{selectedDisc.answers.companyName}</h3>
+                            <span className="text-[9px] text-gray-500 font-mono">ID: {selectedDisc.id}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => handleConvertToLead(selectedDisc)} className="bg-emerald-950 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-900/35 px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider text-[9px] cursor-pointer">
+                              Accept Prospect
+                            </button>
+                            <button onClick={() => handleDeleteDiscovery(selectedDisc.id)} className="bg-red-950/20 border border-red-500/20 text-red-400 hover:bg-red-900/30 px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider text-[9px] cursor-pointer">
+                              Archive
+                            </button>
+                          </div>
                         </div>
 
-                        {/* Condition fields based on type */}
-                        {method.type === "mobile" && (
-                          <div>
-                            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Phone Number</label>
-                            <input
-                              type="text"
-                              value={method.phoneNumber || ""}
-                              onChange={(e) => {
-                                const updatedMethods = [...(paymentConfig.methods || [])];
-                                updatedMethods[idx] = { ...method, phoneNumber: e.target.value };
-                                setPaymentConfig({ methods: updatedMethods });
-                              }}
-                              placeholder="e.g. +509 3700 0000"
-                              className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white"
-                            />
+                        <div className="bg-[#121A1B] p-4 rounded-2xl border border-[#CDD4DD]/5 space-y-3">
+                          <h5 className="font-serif font-bold text-sm text-[#FF7A00]">Answers Summary</h5>
+                          <div className="grid grid-cols-2 gap-3 text-[10px]">
+                            <div><span className="text-gray-500">Industry:</span> <span className="font-bold">{selectedDisc.answers.industry}</span></div>
+                            <div><span className="text-gray-500">Expected ROI:</span> <span className="font-bold">{selectedDisc.answers.expectedROI}</span></div>
+                            <div><span className="text-gray-500">Timeline:</span> <span className="font-bold">{selectedDisc.answers.timeline}</span></div>
+                            <div><span className="text-gray-500">Budget Range:</span> <span className="font-bold text-emerald-400">{selectedDisc.answers.budgetRange}</span></div>
                           </div>
-                        )}
+                        </div>
 
-                        {method.type === "bank" && (
-                          <>
+                        <div className="bg-[#121A1B] p-4 rounded-2xl border border-[#CDD4DD]/5 space-y-3">
+                          <h5 className="font-serif font-bold text-sm text-[#FF7A00]">Automated AI Recommendation</h5>
+                          <div className="space-y-2">
                             <div>
-                              <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Account Number</label>
-                              <input
-                                type="text"
-                                value={method.accountNumber || ""}
-                                onChange={(e) => {
-                                  const updatedMethods = [...(paymentConfig.methods || [])];
-                                  updatedMethods[idx] = { ...method, accountNumber: e.target.value };
-                                  setPaymentConfig({ methods: updatedMethods });
-                                }}
-                                placeholder="Account number..."
-                                className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white"
-                              />
+                              <span className="text-[9px] font-bold text-[#CDD4DD]/40 block uppercase">Project Complexity</span>
+                              <span className="bg-amber-950/40 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-bold uppercase text-[9px]">{selectedDisc.summary.complexity || "Medium"}</span>
                             </div>
                             <div>
-                              <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Account Holder Name</label>
-                              <input
-                                type="text"
-                                value={method.accountHolder || ""}
-                                onChange={(e) => {
-                                  const updatedMethods = [...(paymentConfig.methods || [])];
-                                  updatedMethods[idx] = { ...method, accountHolder: e.target.value };
-                                  setPaymentConfig({ methods: updatedMethods });
-                                }}
-                                placeholder="Full name..."
-                                className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white"
-                              />
+                              <span className="text-[9px] font-bold text-[#CDD4DD]/40 block uppercase">Recommended Services</span>
+                              <div className="flex flex-wrap gap-1.5 mt-1">
+                                {selectedDisc.summary.recommendedServices?.map((srv: string) => (
+                                  <span key={srv} className="bg-[#1A2324] text-white border border-[#CDD4DD]/10 px-2 py-0.5 rounded text-[9px] font-medium">{srv}</span>
+                                ))}
+                              </div>
                             </div>
-                          </>
-                        )}
-
-                        {method.type === "international" && (
-                          <div>
-                            <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Account Email (Wise/Paypal)</label>
-                            <input
-                              type="text"
-                              value={method.email || ""}
-                              onChange={(e) => {
-                                const updatedMethods = [...(paymentConfig.methods || [])];
-                                updatedMethods[idx] = { ...method, email: e.target.value };
-                                setPaymentConfig({ methods: updatedMethods });
-                              }}
-                              placeholder="e.g. billing@domain.com"
-                              className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white"
-                            />
                           </div>
-                        )}
+                        </div>
                       </div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center py-20 text-[#CDD4DD]/30 border border-dashed border-[#CDD4DD]/10 rounded-2xl">
+                        Select a scoping submission from the feed list.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: Payments Review */}
+              {activeTab === "payments" && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-xs font-sans animate-fadeIn">
+                  {/* Left Form: Generate Invoice Payment Links */}
+                  <div className="lg:col-span-4 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 self-start">
+                    <div>
+                      <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">INVOICE GENERATOR</span>
+                      <h4 className="font-serif font-bold text-lg text-white">Generate Payment Link</h4>
                     </div>
-                  ))}
+                    <form onSubmit={handleGenerateLink} className="space-y-3.5 text-xs text-gray-300">
+                      <div>
+                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Client Name</label>
+                        <input
+                          type="text"
+                          value={genClientName}
+                          onChange={(e) => setGenClientName(e.target.value)}
+                          placeholder="e.g. John Doe"
+                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Client Email</label>
+                        <input
+                          type="email"
+                          value={genEmail}
+                          onChange={(e) => setGenEmail(e.target.value)}
+                          placeholder="e.g. client@domain.com"
+                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Currency</label>
+                          <select
+                            value={genCurrency}
+                            onChange={(e) => setGenCurrency(e.target.value)}
+                            className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-3 py-2.5 text-white focus:outline-none"
+                          >
+                            <option value="USD">USD ($)</option>
+                            <option value="GDS">GDS (HTG)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Service Select</label>
+                          <select
+                            value={genServiceId}
+                            onChange={(e) => setGenServiceId(e.target.value)}
+                            className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-3 py-2.5 text-white focus:outline-none"
+                          >
+                            <option value="">Choose Service...</option>
+                            {consultingServices.map((cs) => (
+                              <option key={cs.id} value={cs.id}>{cs.title?.en || cs.title}</option>
+                            ))}
+                            <option value="custom">Custom Service</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {genServiceId === "custom" && (
+                        <div>
+                          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Custom Service Title</label>
+                          <input
+                            type="text"
+                            required
+                            value={genCustomTitle}
+                            onChange={(e) => setGenCustomTitle(e.target.value)}
+                            placeholder="e.g. AI Integration Review"
+                            className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Billing Amount</label>
+                        <input
+                          type="number"
+                          required
+                          value={genAmount}
+                          onChange={(e) => setGenAmount(e.target.value)}
+                          placeholder="e.g. 500"
+                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+                        />
+                      </div>
+
+                      <button type="submit" className="w-full py-3 bg-[#FF7A00] hover:bg-[#121A1B] hover:border-[#FF7A00] hover:text-[#FF7A00] border border-transparent text-white font-bold tracking-wider uppercase rounded-xl transition-all cursor-pointer">
+                        Generate Invoice
+                      </button>
+                    </form>
+
+                    {generatedLink && (
+                      <div className="bg-[#121A1B] p-3 rounded-xl border border-[#CDD4DD]/10 space-y-2">
+                        <span className="text-[8px] font-bold text-[#FF7A00] uppercase block">PRE-PAID SECURE LINK</span>
+                        <input type="text" readOnly value={generatedLink} className="w-full bg-[#1A2324] text-[10px] text-gray-300 font-mono rounded px-2 py-1.5 border border-[#CDD4DD]/5 focus:outline-none" />
+                        <button onClick={handleCopyLink} className="w-full py-2 bg-[#1A2324] hover:bg-[#FF7A00] hover:text-white rounded-lg text-[9px] font-bold tracking-wider uppercase border border-[#CDD4DD]/10 transition-colors cursor-pointer">
+                          Copy Link
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Side: Ledger Table */}
+                  <div className="lg:col-span-8 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4">
+                    <div>
+                      <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">PAYMENT LEDGER</span>
+                      <h4 className="font-serif font-bold text-lg text-white">Submitted Transactions</h4>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
+                            <th className="py-3 px-4">Client Name / Email</th>
+                            <th className="py-3 px-4">Service</th>
+                            <th className="py-3 px-4">Amount</th>
+                            <th className="py-3 px-4">Method / Ref</th>
+                            <th className="py-3 px-4">Status</th>
+                            <th className="py-3 px-4 text-right">Receipt</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#CDD4DD]/5">
+                          {payments.map((p) => (
+                            <tr key={p.id} className="hover:bg-[#121A1B]/30 align-top">
+                              <td className="py-3 px-4">
+                                <span className="font-semibold text-white block">{p.clientName || "Anonymous"}</span>
+                                <span className="text-[9px] text-[#CDD4DD]/50 font-mono">{p.clientEmail}</span>
+                              </td>
+                              <td className="py-3 px-4 capitalize text-[#CDD4DD]/80">{p.service}</td>
+                              <td className="py-3 px-4 font-bold text-white">
+                                {p.currency === "GDS" ? `${p.amount} GDS` : `$${p.amount} USD`}
+                              </td>
+                              <td className="py-3 px-4 font-mono text-[10px]">
+                                <span className="text-gray-400 capitalize block">{p.paymentMethod || "None"}</span>
+                                <span className="text-[#CDD4DD]/40 block text-[9px]">{p.paymentReference || "No Ref"}</span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className={`text-[8px] uppercase px-2 py-0.5 rounded font-bold border ${
+                                  p.status === "paid"
+                                    ? "bg-emerald-950/40 border-emerald-500/20 text-emerald-400"
+                                    : p.status === "overdue"
+                                    ? "bg-red-950/40 border-red-500/20 text-red-400"
+                                    : "bg-amber-950/40 border-amber-500/20 text-amber-400"
+                                }`}>
+                                  {p.status}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right space-y-1">
+                                {p.invoiceUrl && (
+                                  <a href={p.invoiceUrl} target="_blank" rel="noreferrer" className="text-purple-400 hover:underline block text-[10px]">
+                                    View Receipt Image
+                                  </a>
+                                )}
+                                {p.status === "pending" && (
+                                  <div className="flex gap-1 justify-end mt-1">
+                                    <button onClick={() => handleVerifyPayment(p.id)} className="bg-emerald-900 hover:bg-emerald-800 text-emerald-400 px-2 py-1 rounded text-[8px] font-bold uppercase transition-colors cursor-pointer border border-emerald-500/25">
+                                      Confirm
+                                    </button>
+                                    <button onClick={() => handleRejectPayment(p.id)} className="bg-red-950/40 hover:bg-red-900/35 text-red-400 px-2 py-1 rounded text-[8px] font-bold uppercase transition-colors cursor-pointer border border-red-500/25">
+                                      Reject
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Action save button */}
-              <div className="pt-6 border-t border-[#CDD4DD]/10 flex justify-end">
-                <button
-                  onClick={handleSaveSettings}
-                  className="px-8 py-3.5 bg-[#FF7A00] hover:bg-[#121A1B] hover:border-[#FF7A00] hover:text-[#FF7A00] border border-transparent text-white text-xs font-bold tracking-widest uppercase rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm"
-                >
-                  <Save className="w-4 h-4" />
-                  Save Console Parameters
-                </button>
-              </div>
-
-            </div>
-          )}
-
-          {/* TAB 6: User Accounts Control */}
-          {activeTab === "users" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Form Pane */}
-              <div className="lg:col-span-4 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-6 self-start animate-fadeIn">
-                <div>
-                  <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">PROVISIONING CONSOLE</span>
-                  <h4 className="font-serif font-bold text-lg text-white">Add New User Account</h4>
-                </div>
-
-                <form onSubmit={handleAddUser} className="space-y-4">
+              {/* TAB: CMS Sections / Website Builder */}
+              {activeTab === "cms_sections" && (
+                <div className="space-y-6">
                   <div>
-                    <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Full Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={newUserName}
-                      onChange={(e) => setNewUserName(e.target.value)}
-                      placeholder="e.g. Jean-Claude"
-                      className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
+                    <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">HOMEPAGE ENGINE</span>
+                    <h3 className="font-serif font-bold text-xl text-white">Dynamic Section Layout Builder</h3>
+                  </div>
+                  <WebsiteBuilder />
+                </div>
+              )}
+
+              {/* TAB: CMS Case Studies */}
+              {activeTab === "cms_case_studies" && (
+                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">PORTFOLIO REGISTRY</span>
+                      <h4 className="font-serif font-bold text-lg text-white">Case Studies (Projects)</h4>
+                    </div>
+                    {!isProjectFormOpen && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedProject(null);
+                          setIsProjectFormOpen(true);
+                        }}
+                        className="bg-[#FF7A00] hover:bg-opacity-80 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer text-white border-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Case Study</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {isProjectFormOpen ? (
+                    <ProjectEditForm 
+                      project={selectedProject} 
+                      onSave={handleSaveProject} 
+                      onCancel={() => {
+                        setIsProjectFormOpen(false);
+                        setSelectedProject(null);
+                      }} 
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Email Address</label>
-                    <input
-                      type="email"
-                      required
-                      value={newUserEmail}
-                      onChange={(e) => setNewUserEmail(e.target.value)}
-                      placeholder="e.g. user@domain.com"
-                      className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Passkey Credentials</label>
-                    <input
-                      type="password"
-                      required
-                      value={newUserPassword}
-                      onChange={(e) => setNewUserPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Security Access Level</label>
-                    <select
-                      value={newUserRole}
-                      onChange={(e) => setNewUserRole(e.target.value as any)}
-                      className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
-                    >
-                      <option value="client">Client Portal Access (client)</option>
-                      <option value="admin">Administrator Console (admin)</option>
-                    </select>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-3 bg-[#FF7A00] hover:bg-[#121A1B] hover:border-[#FF7A00] hover:text-[#FF7A00] border border-transparent text-white text-xs font-bold tracking-widest uppercase rounded-xl transition-all cursor-pointer shadow-sm"
-                  >
-                    Onboard Account
-                  </button>
-                </form>
-              </div>
-
-              {/* Table Pane */}
-              <div className="lg:col-span-8 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 animate-fadeIn">
-                <div>
-                  <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">CREDENTIAL REGISTER</span>
-                  <h4 className="font-serif font-bold text-lg text-white">Active User Accounts</h4>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
+                            <th className="py-3 px-4">Title</th>
+                            <th className="py-3 px-4">Category (EN)</th>
+                            <th className="py-3 px-4">Status</th>
+                            <th className="py-3 px-4">Technologies</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#CDD4DD]/5">
+                          {cmsProjects.map((p) => (
+                            <tr key={p.id} className="hover:bg-[#121A1B]/30">
+                              <td className="py-3 px-4 font-semibold text-white">{p.title}</td>
+                              <td className="py-3 px-4 text-[#CDD4DD]/70">{p.category?.en || p.category}</td>
+                              <td className="py-3 px-4">
+                                <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded font-bold border ${
+                                  p.status === "published"
+                                    ? "bg-emerald-950/40 border-emerald-500/20 text-emerald-400"
+                                    : "bg-amber-950/40 border-amber-500/20 text-amber-400"
+                                }`}>
+                                  {p.status || "published"}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex flex-wrap gap-1">
+                                  {p.technologies?.map((tech: string) => (
+                                    <span key={tech} className="bg-[#121A1B] text-[#CDD4DD]/50 text-[9px] px-1.5 py-0.5 rounded border border-[#CDD4DD]/5 font-mono">{tech}</span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-right space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedProject(p);
+                                    setIsProjectFormOpen(true);
+                                  }}
+                                  className="text-purple-400 hover:text-purple-300 font-bold uppercase text-[10px] tracking-wider cursor-pointer border-0 bg-transparent"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteProject(p.id)}
+                                  className="text-red-400 hover:text-red-500 font-bold uppercase text-[10px] tracking-wider cursor-pointer border-0 bg-transparent"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
+              )}
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
-                        <th className="py-3 px-4">Name</th>
-                        <th className="py-3 px-4">Email</th>
-                        <th className="py-3 px-4">Role</th>
-                        <th className="py-3 px-4">Created At</th>
-                        <th className="py-3 px-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#CDD4DD]/5">
-                      {users.map((u) => (
-                        <tr key={u.id} className="hover:bg-[#121A1B]/30">
-                          <td className="py-3 px-4 font-semibold text-white">{u.name}</td>
-                          <td className="py-3 px-4 font-mono text-[#CDD4DD]/70">{u.email}</td>
-                          <td className="py-3 px-4">
-                            <span className={`text-[9px] uppercase px-2 py-0.5 rounded-md border font-bold ${
-                              u.role === "admin"
-                                ? "bg-purple-950/40 border-purple-500/20 text-purple-400"
-                                : "bg-blue-950/40 border-blue-500/20 text-blue-400"
-                            }`}>
-                              {u.role}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-[#CDD4DD]/40">{new Date(u.createdAt).toLocaleDateString()}</td>
-                          <td className="py-3 px-4 text-right">
-                            <button
-                              onClick={() => handleDeleteUser(u.id)}
-                              className="text-red-400 hover:text-red-500 font-bold uppercase text-[10px] tracking-wider transition-colors cursor-pointer"
-                            >
-                              Revoke
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              {/* TAB: CMS Training Programs */}
+              {activeTab === "cms_training" && (
+                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">ACADEMY REGISTRY</span>
+                      <h4 className="font-serif font-bold text-lg text-white">Training Programs</h4>
+                    </div>
+                    {!isTrainingFormOpen && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedTraining(null);
+                          setIsTrainingFormOpen(true);
+                        }}
+                        className="bg-[#FF7A00] hover:bg-opacity-80 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer text-white border-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Program</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {isTrainingFormOpen ? (
+                    <TrainingEditForm 
+                      program={selectedTraining} 
+                      onSave={handleSaveTraining} 
+                      onCancel={() => {
+                        setIsTrainingFormOpen(false);
+                        setSelectedTraining(null);
+                      }} 
+                    />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
+                            <th className="py-3 px-4">Title (EN)</th>
+                            <th className="py-3 px-4">Duration</th>
+                            <th className="py-3 px-4">Status</th>
+                            <th className="py-3 px-4">Category</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#CDD4DD]/5">
+                          {trainingPrograms.map((t) => (
+                            <tr key={t.id} className="hover:bg-[#121A1B]/30">
+                              <td className="py-3 px-4 font-semibold text-white">{t.title?.en || t.title}</td>
+                              <td className="py-3 px-4 text-[#CDD4DD]/70">{t.duration || t.readingTime}</td>
+                              <td className="py-3 px-4">
+                                <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded font-bold border ${
+                                  t.status === "published"
+                                    ? "bg-emerald-950/40 border-emerald-500/20 text-emerald-400"
+                                    : "bg-amber-950/40 border-amber-500/20 text-amber-400"
+                                }`}>
+                                  {t.status || "published"}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-gray-400 capitalize">{t.category}</td>
+                              <td className="py-3 px-4 text-right space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedTraining(t);
+                                    setIsTrainingFormOpen(true);
+                                  }}
+                                  className="text-purple-400 hover:text-purple-300 font-bold uppercase text-[10px] tracking-wider cursor-pointer border-0 bg-transparent"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteTraining(t.id)}
+                                  className="text-red-400 hover:text-red-500 font-bold uppercase text-[10px] tracking-wider cursor-pointer border-0 bg-transparent"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* TAB 8: CMS Databases */}
-          {activeTab === "cms" && (
-            <div className="space-y-6">
-              {/* CMS Sub-navigation */}
-              <div className="flex flex-wrap gap-2 border-b border-[#CDD4DD]/10 pb-4 text-xs font-bold uppercase tracking-wider font-sans">
-                {[
-                  { id: "translations", label: "Translations" },
-                  { id: "projects", label: "Case Studies (Projects)" },
-                  { id: "training", label: "Training Programs" },
-                  { id: "services", label: "Consulting Services" },
-                  { id: "faqs", label: "FAQs" }
-                ].map((subTab) => (
-                  <button
-                    key={subTab.id}
-                    type="button"
-                    onClick={() => setCmsSubTab(subTab.id as any)}
-                    className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer ${
-                      cmsSubTab === subTab.id
-                        ? "bg-[#FF7A00] text-white"
-                        : "bg-[#1A2324] border border-[#CDD4DD]/10 text-[#CDD4DD]/50 hover:border-[#FF7A00]/50"
-                    }`}
-                  >
-                    {subTab.label}
-                  </button>
-                ))}
-              </div>
+              {/* TAB: CMS Consulting Services */}
+              {activeTab === "cms_services" && (
+                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">SERVICES REGISTRY</span>
+                      <h4 className="font-serif font-bold text-lg text-white">Consulting Services & Pricing</h4>
+                    </div>
+                    {!isServiceFormOpen && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedServiceCMS(null);
+                          setIsServiceFormOpen(true);
+                        }}
+                        className="bg-[#FF7A00] hover:bg-opacity-80 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer text-white border-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Offering</span>
+                      </button>
+                    )}
+                  </div>
 
-              {/* 1. Translations Editor */}
-              {cmsSubTab === "translations" && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {isServiceFormOpen ? (
+                    <ServiceEditForm 
+                      service={selectedServiceCMS} 
+                      onSave={handleSaveService} 
+                      onCancel={() => {
+                        setIsServiceFormOpen(false);
+                        setSelectedServiceCMS(null);
+                      }} 
+                    />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
+                            <th className="py-3 px-4">Title (EN)</th>
+                            <th className="py-3 px-4">Price</th>
+                            <th className="py-3 px-4">Duration</th>
+                            <th className="py-3 px-4">Status</th>
+                            <th className="py-3 px-4">Category</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#CDD4DD]/5">
+                          {consultingServices.map((s) => (
+                            <tr key={s.id} className="hover:bg-[#121A1B]/30">
+                              <td className="py-3 px-4 font-semibold text-white">{s.title?.en || s.title}</td>
+                              <td className="py-3 px-4 font-bold text-emerald-400">${s.price}</td>
+                              <td className="py-3 px-4 text-[#CDD4DD]/70">{s.duration} mins</td>
+                              <td className="py-3 px-4">
+                                <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded font-bold border ${
+                                  s.status === "published"
+                                    ? "bg-emerald-950/40 border-emerald-500/20 text-emerald-400"
+                                    : "bg-amber-950/40 border-amber-500/20 text-amber-400"
+                                }`}>
+                                  {s.status || "published"}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-gray-400 capitalize">{s.category}</td>
+                              <td className="py-3 px-4 text-right space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedServiceCMS(s);
+                                    setIsServiceFormOpen(true);
+                                  }}
+                                  className="text-purple-400 hover:text-purple-300 font-bold uppercase text-[10px] tracking-wider cursor-pointer border-0 bg-transparent"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteService(s.id)}
+                                  className="text-red-400 hover:text-red-500 font-bold uppercase text-[10px] tracking-wider cursor-pointer border-0 bg-transparent"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB: CMS FAQs */}
+              {activeTab === "cms_faqs" && (
+                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">FAQ REGISTRY</span>
+                      <h4 className="font-serif font-bold text-lg text-white">Frequently Asked Questions</h4>
+                    </div>
+                    {!isFAQFormOpen && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedFAQ(null);
+                          setIsFAQFormOpen(true);
+                        }}
+                        className="bg-[#FF7A00] hover:bg-opacity-80 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer text-white border-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add FAQ</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {isFAQFormOpen ? (
+                    <FAQEditForm 
+                      faq={selectedFAQ} 
+                      onSave={handleSaveFAQ} 
+                      onCancel={() => {
+                        setIsFAQFormOpen(false);
+                        setSelectedFAQ(null);
+                      }} 
+                    />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
+                            <th className="py-3 px-4">Question (EN)</th>
+                            <th className="py-3 px-4">Answer (EN)</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#CDD4DD]/5">
+                          {faqItems.map((f) => (
+                            <tr key={f.id} className="hover:bg-[#121A1B]/30 align-top">
+                              <td className="py-3 px-4 font-semibold text-white w-[40%]">{f.question?.en || f.question}</td>
+                              <td className="py-3 px-4 text-[#CDD4DD]/70 w-[45%] line-clamp-2 max-w-sm truncate">{f.answer?.en || f.answer}</td>
+                              <td className="py-3 px-4 text-right space-x-2 w-[15%]">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedFAQ(f);
+                                    setIsFAQFormOpen(true);
+                                  }}
+                                  className="text-purple-400 hover:text-purple-300 font-bold uppercase text-[10px] tracking-wider cursor-pointer border-0 bg-transparent"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteFAQ(f.id)}
+                                  className="text-red-400 hover:text-red-500 font-bold uppercase text-[10px] tracking-wider cursor-pointer border-0 bg-transparent"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB: CMS Translations */}
+              {activeTab === "cms_translations" && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-xs font-sans">
                   {/* Left Form: Add Translation */}
                   <div className="lg:col-span-4 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 self-start animate-fadeIn">
                     <div>
                       <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">DICTIONARY REGISTRY</span>
                       <h4 className="font-serif font-bold text-lg text-white">Add Translation Key</h4>
                     </div>
-                    <form onSubmit={handleAddTranslation} className="space-y-3 text-xs">
+                    <form onSubmit={handleAddTranslation} className="space-y-3.5 text-xs text-gray-300">
                       <div>
                         <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Unique Translation Key</label>
                         <input
@@ -1656,7 +2119,7 @@ export default function AdminDashboardPage() {
                       </div>
                       <button
                         type="submit"
-                        className="w-full py-3 bg-[#FF7A00] hover:bg-[#121A1B] hover:border-[#FF7A00] hover:text-[#FF7A00] border border-transparent text-white text-xs font-bold tracking-widest uppercase rounded-xl transition-all cursor-pointer shadow-sm"
+                        className="w-full py-3 bg-[#FF7A00] hover:bg-[#121A1B] hover:border-[#FF7A00] hover:text-[#FF7A00] border border-transparent text-white font-bold tracking-widest uppercase rounded-xl transition-all cursor-pointer shadow-sm"
                       >
                         Register Translation
                       </button>
@@ -1732,7 +2195,7 @@ export default function AdminDashboardPage() {
                                       <button
                                         type="button"
                                         onClick={() => handleSaveTranslation(t.key, editingTransEn, editingTransFr)}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded transition-colors cursor-pointer"
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded transition-colors cursor-pointer border-0"
                                         title="Save"
                                       >
                                         <Check className="w-3.5 h-3.5" />
@@ -1740,7 +2203,7 @@ export default function AdminDashboardPage() {
                                       <button
                                         type="button"
                                         onClick={() => setEditingTransKey(null)}
-                                        className="bg-gray-600 hover:bg-gray-700 text-white p-1.5 rounded transition-colors cursor-pointer"
+                                        className="bg-gray-600 hover:bg-gray-700 text-white p-1.5 rounded transition-colors cursor-pointer border-0"
                                         title="Cancel"
                                       >
                                         <X className="w-3.5 h-3.5" />
@@ -1755,7 +2218,7 @@ export default function AdminDashboardPage() {
                                           setEditingTransEn(t.en || "");
                                           setEditingTransFr(t.fr || "");
                                         }}
-                                        className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
+                                        className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer border-0 bg-transparent"
                                         title="Edit"
                                       >
                                         <Edit className="w-3.5 h-3.5" />
@@ -1763,7 +2226,7 @@ export default function AdminDashboardPage() {
                                       <button
                                         type="button"
                                         onClick={() => handleDeleteTranslation(t.key)}
-                                        className="text-red-400 hover:text-red-500 transition-colors cursor-pointer"
+                                        className="text-red-400 hover:text-red-500 transition-colors cursor-pointer border-0 bg-transparent"
                                         title="Delete"
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
@@ -1780,78 +2243,124 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
-              {/* 2. Case Studies Editor */}
-              {cmsSubTab === "projects" && (
-                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center">
+              {/* TAB: CMS Media Library */}
+              {activeTab === "cms_media" && (
+                <div className="space-y-6">
+                  <div>
+                    <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">MEDIA ASSETS</span>
+                    <h3 className="font-serif font-bold text-xl text-white">External Asset Library Catalog</h3>
+                  </div>
+                  <MediaLibrary />
+                </div>
+              )}
+
+              {/* TAB 7: Users Control */}
+              {activeTab === "users" && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-xs font-sans animate-fadeIn">
+                  {/* Left Form: Add User */}
+                  <div className="lg:col-span-4 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 self-start">
                     <div>
-                      <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">PORTFOLIO REGISTRY</span>
-                      <h4 className="font-serif font-bold text-lg text-white">Case Studies (Projects)</h4>
+                      <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">AUTHENTICATION</span>
+                      <h4 className="font-serif font-bold text-lg text-white">Create User Access</h4>
                     </div>
-                    {!isProjectFormOpen && (
+
+                    <form onSubmit={handleAddUser} className="space-y-3.5 text-xs text-gray-300">
+                      <div>
+                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Full Display Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={newUserName}
+                          onChange={(e) => setNewUserName(e.target.value)}
+                          placeholder="e.g. Marie Carmel"
+                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Account Email Address</label>
+                        <input
+                          type="email"
+                          required
+                          value={newUserEmail}
+                          onChange={(e) => setNewUserEmail(e.target.value)}
+                          placeholder="user@domain.com"
+                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Passkey Credentials</label>
+                        <input
+                          type="password"
+                          required
+                          value={newUserPassword}
+                          onChange={(e) => setNewUserPassword(e.target.value)}
+                          placeholder="••••••••••••"
+                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Security Access Level</label>
+                        <select
+                          value={newUserRole}
+                          onChange={(e) => setNewUserRole(e.target.value as any)}
+                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#27187E]"
+                        >
+                          <option value="client">Client Portal Access (client)</option>
+                          <option value="admin">Administrator Console (admin)</option>
+                        </select>
+                      </div>
+
                       <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedProject(null);
-                          setIsProjectFormOpen(true);
-                        }}
-                        className="bg-[#FF7A00] hover:bg-opacity-80 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer text-white"
+                        type="submit"
+                        className="w-full py-3 bg-[#FF7A00] hover:bg-[#121A1B] hover:border-[#FF7A00] hover:text-[#FF7A00] border border-transparent text-white font-bold tracking-widest uppercase rounded-xl transition-all cursor-pointer shadow-sm"
                       >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Case Study</span>
+                        Onboard Account
                       </button>
-                    )}
+                    </form>
                   </div>
 
-                  {isProjectFormOpen ? (
-                    <ProjectEditForm 
-                      project={selectedProject} 
-                      onSave={handleSaveProject} 
-                      onCancel={() => {
-                        setIsProjectFormOpen(false);
-                        setSelectedProject(null);
-                      }} 
-                    />
-                  ) : (
+                  {/* Table Pane */}
+                  <div className="lg:col-span-8 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 animate-fadeIn">
+                    <div>
+                      <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">CREDENTIAL REGISTER</span>
+                      <h4 className="font-serif font-bold text-lg text-white">Active User Accounts</h4>
+                    </div>
+
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
                           <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
-                            <th className="py-3 px-4">Title</th>
-                            <th className="py-3 px-4">Category (EN)</th>
-                            <th className="py-3 px-4">Technologies</th>
+                            <th className="py-3 px-4">Name</th>
+                            <th className="py-3 px-4">Email</th>
+                            <th className="py-3 px-4">Role</th>
+                            <th className="py-3 px-4">Created At</th>
                             <th className="py-3 px-4 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#CDD4DD]/5">
-                          {cmsProjects.map((p) => (
-                            <tr key={p.id} className="hover:bg-[#121A1B]/30">
-                              <td className="py-3 px-4 font-semibold text-white">{p.title}</td>
-                              <td className="py-3 px-4 text-[#CDD4DD]/70">{p.category?.en || p.category}</td>
+                          {users.map((u) => (
+                            <tr key={u.id} className="hover:bg-[#121A1B]/30">
+                              <td className="py-3 px-4 font-semibold text-white">{u.name}</td>
+                              <td className="py-3 px-4 font-mono text-[#CDD4DD]/70">{u.email}</td>
                               <td className="py-3 px-4">
-                                <div className="flex flex-wrap gap-1">
-                                  {p.technologies?.map((tech: string) => (
-                                    <span key={tech} className="bg-[#121A1B] text-[#CDD4DD]/50 text-[9px] px-1.5 py-0.5 rounded border border-[#CDD4DD]/5 font-mono">{tech}</span>
-                                  ))}
-                                </div>
+                                <span className={`text-[9px] uppercase px-2 py-0.5 rounded-md border font-bold ${
+                                  u.role === "admin"
+                                    ? "bg-purple-950/40 border-purple-500/20 text-purple-400"
+                                    : "bg-blue-950/40 border-blue-500/20 text-blue-400"
+                                }`}>
+                                  {u.role}
+                                </span>
                               </td>
-                              <td className="py-3 px-4 text-right space-x-2">
+                              <td className="py-3 px-4 text-[#CDD4DD]/40">{new Date(u.createdAt).toLocaleDateString()}</td>
+                              <td className="py-3 px-4 text-right">
                                 <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedProject(p);
-                                    setIsProjectFormOpen(true);
-                                  }}
-                                  className="text-purple-400 hover:text-purple-300 font-bold uppercase text-[10px] tracking-wider cursor-pointer"
+                                  onClick={() => handleDeleteUser(u.id)}
+                                  className="text-red-400 hover:text-red-500 font-bold uppercase text-[10px] tracking-wider transition-colors cursor-pointer border-0 bg-transparent"
                                 >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteProject(p.id)}
-                                  className="text-red-400 hover:text-red-500 font-bold uppercase text-[10px] tracking-wider cursor-pointer"
-                                >
-                                  Delete
+                                  Revoke
                                 </button>
                               </td>
                             </tr>
@@ -1859,245 +2368,254 @@ export default function AdminDashboardPage() {
                         </tbody>
                       </table>
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
 
-              {/* 3. Training Programs Editor */}
-              {cmsSubTab === "training" && (
-                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center">
+              {/* TAB 6: Settings Tab */}
+              {activeTab === "settings" && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-xs font-sans animate-fadeIn">
+                  {/* Left Column: Settings Configuration */}
+                  <div className="lg:col-span-6 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4">
                     <div>
-                      <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">ACADEMY REGISTRY</span>
-                      <h4 className="font-serif font-bold text-lg text-white">Training Programs</h4>
+                      <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">GLOBAL VALUES</span>
+                      <h4 className="font-serif font-bold text-lg text-white">System Settings</h4>
                     </div>
-                    {!isTrainingFormOpen && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedTraining(null);
-                          setIsTrainingFormOpen(true);
-                        }}
-                        className="bg-[#FF7A00] hover:bg-opacity-80 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer text-white"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Program</span>
+
+                    <div className="space-y-3.5 text-xs text-gray-300">
+                      <div>
+                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Admin Secret Console Path</label>
+                        <input
+                          type="text"
+                          value={siteSettings.adminPath}
+                          onChange={(e) => setSiteSettings({ ...siteSettings, adminPath: e.target.value })}
+                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Profile Picture URL (Header Avatar)</label>
+                        <input
+                          type="text"
+                          value={siteSettings.profileImageUrl}
+                          onChange={(e) => setSiteSettings({ ...siteSettings, profileImageUrl: e.target.value })}
+                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="pt-2 border-t border-[#CDD4DD]/5 space-y-3">
+                        <span className="text-[8px] font-bold text-[#FF7A00] tracking-wider uppercase block">Social Handles Integration</span>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[8px] text-gray-500 mb-1">GitHub</label>
+                            <input
+                              type="text"
+                              value={siteSettings.socialLinks?.github || ""}
+                              onChange={(e) => setSiteSettings({
+                                ...siteSettings,
+                                socialLinks: { ...(siteSettings.socialLinks || {}), github: e.target.value } as any
+                              })}
+                              className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-2.5 py-2 text-white focus:outline-none text-[10px]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8px] text-gray-500 mb-1">LinkedIn</label>
+                            <input
+                              type="text"
+                              value={siteSettings.socialLinks?.linkedin || ""}
+                              onChange={(e) => setSiteSettings({
+                                ...siteSettings,
+                                socialLinks: { ...(siteSettings.socialLinks || {}), linkedin: e.target.value } as any
+                              })}
+                              className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-2.5 py-2 text-white focus:outline-none text-[10px]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8px] text-gray-500 mb-1">Twitter</label>
+                            <input
+                              type="text"
+                              value={siteSettings.socialLinks?.twitter || ""}
+                              onChange={(e) => setSiteSettings({
+                                ...siteSettings,
+                                socialLinks: { ...(siteSettings.socialLinks || {}), twitter: e.target.value } as any
+                              })}
+                              className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-2.5 py-2 text-white focus:outline-none text-[10px]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 pt-3 border-t border-[#CDD4DD]/5">
+                        <input
+                          type="checkbox"
+                          id="trainingEnabled"
+                          checked={siteSettings.trainingEnabled}
+                          onChange={(e) => setSiteSettings({ ...siteSettings, trainingEnabled: e.target.checked })}
+                          className="w-4 h-4 rounded border-gray-300 text-[#FF7A00] focus:ring-[#FF7A00]"
+                        />
+                        <label htmlFor="trainingEnabled" className="font-bold text-[10px] text-[#CDD4DD]/80 uppercase select-none cursor-pointer">
+                          Activate Academy Training Programs
+                        </label>
+                      </div>
+
+                      <button onClick={handleSaveSettings} className="w-full py-3 bg-[#FF7A00] hover:bg-[#121A1B] hover:border-[#FF7A00] hover:text-[#FF7A00] border border-transparent text-white font-bold tracking-widest uppercase rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5">
+                        <Save className="w-4 h-4" />
+                        <span>Save Configuration</span>
                       </button>
-                    )}
+                    </div>
                   </div>
 
-                  {isTrainingFormOpen ? (
-                    <TrainingEditForm 
-                      program={selectedTraining} 
-                      onSave={handleSaveTraining} 
-                      onCancel={() => {
-                        setIsTrainingFormOpen(false);
-                        setSelectedTraining(null);
-                      }} 
-                    />
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
-                            <th className="py-3 px-4">Title (EN)</th>
-                            <th className="py-3 px-4">Duration</th>
-                            <th className="py-3 px-4">Category</th>
-                            <th className="py-3 px-4 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#CDD4DD]/5">
-                          {trainingPrograms.map((t) => (
-                            <tr key={t.id} className="hover:bg-[#121A1B]/30">
-                              <td className="py-3 px-4 font-semibold text-white">{t.title?.en || t.title}</td>
-                              <td className="py-3 px-4 text-[#CDD4DD]/70">{t.duration || t.readingTime}</td>
-                              <td className="py-3 px-4 text-gray-400 capitalize">{t.category}</td>
-                              <td className="py-3 px-4 text-right space-x-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedTraining(t);
-                                    setIsTrainingFormOpen(true);
-                                  }}
-                                  className="text-purple-400 hover:text-purple-300 font-bold uppercase text-[10px] tracking-wider cursor-pointer"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteTraining(t.id)}
-                                  className="text-red-400 hover:text-red-500 font-bold uppercase text-[10px] tracking-wider cursor-pointer"
-                                >
-                                  Delete
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* 4. Consulting Services Editor */}
-              {cmsSubTab === "services" && (
-                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center">
+                  {/* Right Column: Payment Methods List */}
+                  <div className="lg:col-span-6 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4">
                     <div>
-                      <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">SERVICES REGISTRY</span>
-                      <h4 className="font-serif font-bold text-lg text-white">Consulting Services & Pricing</h4>
+                      <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">PAYMENT GATEWAYS</span>
+                      <h4 className="font-serif font-bold text-lg text-white">Merchant Payment Routing</h4>
                     </div>
-                    {!isServiceFormOpen && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedServiceCMS(null);
-                          setIsServiceFormOpen(true);
-                        }}
-                        className="bg-[#FF7A00] hover:bg-opacity-80 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer text-white"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Offering</span>
-                      </button>
-                    )}
-                  </div>
 
-                  {isServiceFormOpen ? (
-                    <ServiceEditForm 
-                      service={selectedServiceCMS} 
-                      onSave={handleSaveService} 
-                      onCancel={() => {
-                        setIsServiceFormOpen(false);
-                        setSelectedServiceCMS(null);
-                      }} 
-                    />
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
-                            <th className="py-3 px-4">Title (EN)</th>
-                            <th className="py-3 px-4">Price</th>
-                            <th className="py-3 px-4">Duration</th>
-                            <th className="py-3 px-4">Category</th>
-                            <th className="py-3 px-4 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#CDD4DD]/5">
-                          {consultingServices.map((s) => (
-                            <tr key={s.id} className="hover:bg-[#121A1B]/30">
-                              <td className="py-3 px-4 font-semibold text-white">{s.title?.en || s.title}</td>
-                              <td className="py-3 px-4 font-bold text-emerald-400">${s.price}</td>
-                              <td className="py-3 px-4 text-[#CDD4DD]/70">{s.duration} mins</td>
-                              <td className="py-3 px-4 text-gray-400 capitalize">{s.category}</td>
-                              <td className="py-3 px-4 text-right space-x-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedServiceCMS(s);
-                                    setIsServiceFormOpen(true);
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                      {paymentConfig.methods.map((method, index) => (
+                        <div key={method.id} className="bg-[#121A1B] p-4 rounded-2xl border border-[#CDD4DD]/5 flex flex-col space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="font-serif font-bold text-sm text-white">{method.name}</span>
+                            <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded border font-bold ${
+                              method.enabled ? "bg-emerald-950/40 border-emerald-500/20 text-emerald-400" : "bg-red-950/40 border-red-500/20 text-red-400"
+                            }`}>
+                              {method.enabled ? "Active" : "Disabled"}
+                            </span>
+                          </div>
+                          
+                          {/* Configurations Inputs */}
+                          <div className="grid grid-cols-2 gap-2 text-[10px]">
+                            {method.phoneNumber !== undefined && (
+                              <div>
+                                <span className="text-gray-500 block text-[8px] uppercase">Phone Line</span>
+                                <input
+                                  type="text"
+                                  value={method.phoneNumber || ""}
+                                  onChange={(e) => {
+                                    const updatedMethods = [...paymentConfig.methods];
+                                    updatedMethods[index].phoneNumber = e.target.value;
+                                    setPaymentConfig({ methods: updatedMethods });
                                   }}
-                                  className="text-purple-400 hover:text-purple-300 font-bold uppercase text-[10px] tracking-wider cursor-pointer"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteService(s.id)}
-                                  className="text-red-400 hover:text-red-500 font-bold uppercase text-[10px] tracking-wider cursor-pointer"
-                                >
-                                  Delete
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                                  className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
+                                />
+                              </div>
+                            )}
+                            {method.accountNumber !== undefined && (
+                              <div>
+                                <span className="text-gray-500 block text-[8px] uppercase">Account Number</span>
+                                <input
+                                  type="text"
+                                  value={method.accountNumber || ""}
+                                  onChange={(e) => {
+                                    const updatedMethods = [...paymentConfig.methods];
+                                    updatedMethods[index].accountNumber = e.target.value;
+                                    setPaymentConfig({ methods: updatedMethods });
+                                  }}
+                                  className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
+                                />
+                              </div>
+                            )}
+                            {method.accountHolder !== undefined && (
+                              <div>
+                                <span className="text-gray-500 block text-[8px] uppercase">Account Holder</span>
+                                <input
+                                  type="text"
+                                  value={method.accountHolder || ""}
+                                  onChange={(e) => {
+                                    const updatedMethods = [...paymentConfig.methods];
+                                    updatedMethods[index].accountHolder = e.target.value;
+                                    setPaymentConfig({ methods: updatedMethods });
+                                  }}
+                                  className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
+                                />
+                              </div>
+                            )}
+                            {method.email !== undefined && (
+                              <div>
+                                <span className="text-gray-500 block text-[8px] uppercase">Gateway Email</span>
+                                <input
+                                  type="email"
+                                  value={method.email || ""}
+                                  onChange={(e) => {
+                                    const updatedMethods = [...paymentConfig.methods];
+                                    updatedMethods[index].email = e.target.value;
+                                    setPaymentConfig({ methods: updatedMethods });
+                                  }}
+                                  className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
+                                />
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center space-x-2 pt-1">
+                            <input
+                              type="checkbox"
+                              id={`enabled_${method.id}`}
+                              checked={method.enabled}
+                              onChange={(e) => {
+                                const updatedMethods = [...paymentConfig.methods];
+                                updatedMethods[index].enabled = e.target.checked;
+                                setPaymentConfig({ methods: updatedMethods });
+                              }}
+                              className="w-3.5 h-3.5 text-[#FF7A00] rounded focus:ring-[#FF7A00]"
+                            />
+                            <label htmlFor={`enabled_${method.id}`} className="text-[9px] uppercase font-bold text-gray-400 select-none cursor-pointer">
+                              Enable routing gateway
+                            </label>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
 
-              {/* 5. FAQs Editor */}
-              {cmsSubTab === "faqs" && (
-                <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">FAQ REGISTRY</span>
-                      <h4 className="font-serif font-bold text-lg text-white">Frequently Asked Questions</h4>
-                    </div>
-                    {!isFAQFormOpen && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedFAQ(null);
-                          setIsFAQFormOpen(true);
-                        }}
-                        className="bg-[#FF7A00] hover:bg-opacity-80 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer text-white"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add FAQ</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {isFAQFormOpen ? (
-                    <FAQEditForm 
-                      faq={selectedFAQ} 
-                      onSave={handleSaveFAQ} 
-                      onCancel={() => {
-                        setIsFAQFormOpen(false);
-                        setSelectedFAQ(null);
-                      }} 
-                    />
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
-                            <th className="py-3 px-4">Question (EN)</th>
-                            <th className="py-3 px-4">Answer (EN)</th>
-                            <th className="py-3 px-4 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#CDD4DD]/5">
-                          {faqItems.map((f) => (
-                            <tr key={f.id} className="hover:bg-[#121A1B]/30 align-top">
-                              <td className="py-3 px-4 font-semibold text-white w-[40%]">{f.question?.en || f.question}</td>
-                              <td className="py-3 px-4 text-[#CDD4DD]/70 w-[45%] line-clamp-2 max-w-sm truncate">{f.answer?.en || f.answer}</td>
-                              <td className="py-3 px-4 text-right space-x-2 w-[15%]">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedFAQ(f);
-                                    setIsFAQFormOpen(true);
-                                  }}
-                                  className="text-purple-400 hover:text-purple-300 font-bold uppercase text-[10px] tracking-wider cursor-pointer"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteFAQ(f.id)}
-                                  className="text-red-400 hover:text-red-500 font-bold uppercase text-[10px] tracking-wider cursor-pointer"
-                                >
-                                  Delete
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+              {/* TAB: Invoices & Quotes */}
+              {activeTab === "cms_invoices" && (
+                <div className="animate-fadeIn">
+                  <InvoiceManager />
                 </div>
               )}
-            </div>
+
+              {/* TAB: Client Billing Profiles */}
+              {activeTab === "cms_billing_profiles" && (
+                <div className="animate-fadeIn">
+                  <ClientBillingManager />
+                </div>
+              )}
+
+              {/* TAB: Business Profile */}
+              {activeTab === "cms_business_profile" && (
+                <div className="animate-fadeIn">
+                  <BusinessProfileForm />
+                </div>
+              )}
+
+              {/* TAB: SEO Center */}
+              {activeTab === "cms_seo" && (
+                <div className="animate-fadeIn">
+                  <SEOCenterForm />
+                </div>
+              )}
+
+              {/* TAB: Brand Assets */}
+              {activeTab === "cms_brand" && (
+                <div className="animate-fadeIn">
+                  <BrandAssetsForm />
+                </div>
+              )}
+
+              {/* TAB: Testimonials */}
+              {activeTab === "cms_testimonials" && (
+                <div className="animate-fadeIn">
+                  <TestimonialsManager />
+                </div>
+              )}
+            </>
           )}
         </div>
-
-      </div>
+      </main>
     </section>
   );
 }

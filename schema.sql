@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS leads (
     company VARCHAR(255) NOT NULL,
     contact_name VARCHAR(255),
     email VARCHAR(255),
+    industry VARCHAR(255),
     budget VARCHAR(100),
     notes TEXT,
     source VARCHAR(100) DEFAULT 'Contact Form',

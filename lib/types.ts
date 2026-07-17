@@ -69,7 +69,7 @@ export type BookingStatus =
 
 export interface Booking {
   id: string;
-  clientId: string;
+  clientId?: string; // Not stored in DB — bookings are linked via client_email
   clientName: string;
   clientEmail: string;
   serviceId: string;

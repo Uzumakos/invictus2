@@ -35,10 +35,11 @@ async function main() {
       let envContent = fs.readFileSync(envPath, "utf-8");
       
       const hashRegex = /^ADMIN_PASSWORD_HASH=.*$/m;
+      const escapedHash = hash.replace(/\$/g, "\\$");
       if (hashRegex.test(envContent)) {
-        envContent = envContent.replace(hashRegex, `ADMIN_PASSWORD_HASH=${hash}`);
+        envContent = envContent.replace(hashRegex, `ADMIN_PASSWORD_HASH=${escapedHash}`);
       } else {
-        envContent += `\nADMIN_PASSWORD_HASH=${hash}`;
+        envContent += `\nADMIN_PASSWORD_HASH=${escapedHash}`;
       }
       fs.writeFileSync(envPath, envContent, "utf-8");
       console.log("✅ Updated ADMIN_PASSWORD_HASH in .env.local");

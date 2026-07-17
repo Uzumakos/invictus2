@@ -26,6 +26,9 @@ export async function POST(req: NextRequest) {
 
     if (!adminEmail || !adminHash) {
       console.error("ADMIN_EMAIL or ADMIN_PASSWORD_HASH not defined in .env.local");
+      console.log("Current env keys containing 'ADMIN':", Object.keys(process.env).filter(k => k.includes("ADMIN")));
+      console.log("ADMIN_EMAIL value:", JSON.stringify(adminEmail), "length:", adminEmail?.length);
+      console.log("ADMIN_PASSWORD_HASH value:", JSON.stringify(adminHash), "length:", adminHash?.length);
       return NextResponse.json(
         { error: "Server authentication setup incomplete." },
         { status: 500 }

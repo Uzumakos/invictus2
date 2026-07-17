@@ -20,7 +20,18 @@ const tableMap: Record<string, string> = {
   articles: "articles",
   trainingPrograms: "training_programs",
   users: "users",
-  consultingServices: "consulting_services"
+  consultingServices: "consulting_services",
+  mediaLibrary: "media_library",
+  pageSections: "page_sections",
+  businessProfile: "business_profile",
+  clientBillingProfiles: "client_billing_profiles",
+  commercialDocuments: "commercial_documents",
+  commercialDocumentItems: "commercial_document_items",
+  consultingHours: "consulting_hours",
+  clientMilestones: "client_milestones",
+  clientDigitalScores: "client_digital_scores",
+  brandAssets: "brand_assets",
+  seoMetadata: "seo_metadata"
 };
 
 // Helper to map snake_case database columns to camelCase JSON keys

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Language, ProjectDiscovery, RecommendationRule, DiscoveryState } from "@/lib/types";
+import { useRouter } from "@/lib/i18n/navigation";
 
 interface AIDiscoveryProps {
   onSectionChange?: (sectionId: string) => void;
@@ -59,6 +60,7 @@ const INITIAL_STATE: DiscoveryState = {
 export default function AIDiscovery({ onSectionChange }: AIDiscoveryProps) {
   const t = useTranslations("discovery");
   const locale = useLocale() as Language;
+  const router = useRouter();
 
   const steps = [
     { id: "welcome", num: 1, name: t("steps.welcome") },
@@ -171,6 +173,30 @@ export default function AIDiscovery({ onSectionChange }: AIDiscoveryProps) {
 
   // Dynamic conditional questions
   const getDynamicQuestionForType = (type: string) => {
+    if (locale === "fr") {
+      switch (type) {
+        case "Website":
+          return "Quel est votre objectif de conversion principal ? (ex: capture de leads e-mail, vitrine de services, ventes directes)";
+        case "E-commerce":
+          return "Quels processeurs d'expédition ou passerelles de paiement sont nécessaires ? (ex: Stripe, paiement local, Sogebank)";
+        case "SaaS":
+          return "Quel est votre plan d'abonnement ou de monétisation prévu ? (ex: abonnement mensuel + premium, crédits d'utilisation)";
+        case "CRM":
+        case "ERP":
+          return "Combien de départements d'entreprise accèderont à cet outil ? (ex: Ventes, Logistique, Admins)";
+        case "Mobile App":
+          return "Quelles plateformes mobiles sont ciblées ? (ex: iOS natif, Android, React Native)";
+        case "AI Integration":
+          return "Quels ensembles de données ou documents l'IA doit-elle traiter ? (ex: résumés de conformité PDF, bases de données de sols)";
+        case "Technical Audit":
+          return "Quelles bases de données ou serveurs existants sont actuellement utilisés ? (ex: SQL hérité, journaux Excel)";
+        case "Training Program":
+          return "Quelle est la taille et l'expertise de votre équipe cible ? (ex: 50 enseignants avec une faible culture numérique)";
+        default:
+          return "Quelles règles ou directives spécifiques à votre secteur s'appliquent à ce projet ?";
+      }
+    }
+
     switch (type) {
       case "Website":
         return "What is your primary conversion goal? (e.g. capture email leads, services showcase, direct sales)";
@@ -272,7 +298,51 @@ export default function AIDiscovery({ onSectionChange }: AIDiscoveryProps) {
     const uniqueServices = Array.from(new Set(recommendedServices));
     const uniqueFeatures = Array.from(new Set(recommendedFeatures));
 
-    const overviewMarkdown = `### PROJECT ARCHITECTURAL ROADMAP BLUEPRINT
+    const projectTypeTranslations: Record<string, string> = {
+      "Website": "Site Web",
+      "SaaS": "SaaS",
+      "E-commerce": "E-commerce",
+      "Marketplace": "Place de Marché",
+      "CRM": "CRM",
+      "ERP": "ERP",
+      "Mobile App": "Application Mobile",
+      "AI Integration": "Intégration IA",
+      "Technical Audit": "Audit Technique",
+      "Training Program": "Programme de Formation"
+    };
+
+    const complexityTranslations: Record<string, string> = {
+      "Low": "FAIBLE",
+      "Medium": "MOYENNE",
+      "High": "ÉLEVÉE",
+      "Critical": "CRITIQUE"
+    };
+
+    const overviewMarkdown = locale === "fr"
+      ? `### PLAN DE ROUTE ARCHITECTURAL DU PROJET
+
+- **Organisation Client :** ${formData.companyName || "Privé"} (${formData.orgType === "Startup" ? "Jeune Entreprise" : formData.orgType === "SME" ? "PME" : formData.orgType === "Enterprise" ? "Grande Entreprise" : formData.orgType === "NGO" ? "ONG" : formData.orgType === "University" ? "Université" : "Public"})
+- **Secteur d'Activité :** ${formData.industry || "Commerce Général"} | **Origine :** ${formData.country || "Haïti / Global"}
+- **Portée du Projet :** ${formData.projectTypes.map(t => projectTypeTranslations[t] || t).join(" + ")}
+- **Budget Cible :** ${formData.budgetRange === "Under $2k" ? "Moins de 2 000 $" : formData.budgetRange === "$2k–$5k" ? "2 000 $ – 5 000 $" : formData.budgetRange === "$5k–$10k" ? "5 000 $ – 10 000 $" : formData.budgetRange === "$10k–$25k" ? "10 000 $ – 25 000 $" : formData.budgetRange === "$25k–$50k" ? "25 000 $ – 5 0000 $" : "Plus de 50 000 $"} | **Calendrier :** ${formData.timeline === "Immediate (< 1 month)" ? "Immédiat (< 1 mois)" : formData.timeline === "1–3 months" ? "1 à 3 mois" : formData.timeline === "3–6 months" ? "3 à 6 mois" : "Support Continu"}
+- **Langues Requises :** ${formData.languages || "Anglais / Français"}
+- **Échelle Attendue :** Jusqu'à ${formData.expectedUsers ? parseInt(formData.expectedUsers).toLocaleString() : "1 000"} utilisateurs actifs simultanés.
+
+---
+
+### Analyse Structurelle et Paramètres de Complexité
+
+1. **Complexité du Système Évaluée comme : ${complexityTranslations[complexity] || complexity} :** Sur la base des paramètres du projet, nous avons modélisé une infrastructure de complexité **${(complexityTranslations[complexity] || complexity).toLowerCase()}**.
+2. **Défis actuels et goulots d'étranglement :** ${formData.challenges ? `"${formData.challenges}"` : "Aucun déclaré. Infrastructure de conteneurisation cloud standard recommandée."}
+3. **Échelle d'audience et limites de charge :** ${formData.expectedUsers ? `Cible de ${formData.expectedUsers} utilisateurs actifs.` : "Les facteurs de charge standard des PME s'applient."}
+${notes.length > 0 ? `4. **Notes Systémiques Stratégiques :**\n${notes.map(n => `- ${n}`).join("\n")}` : ""}
+
+---
+
+### Étape Conseillée
+
+Nous vous conseillons de planifier une consultation pour **${uniqueServices[0] || "Architecture Logicielle"}** afin de préciser ces spécifications et fixer les jalons de livraison.`
+      : `### PROJECT ARCHITECTURAL ROADMAP BLUEPRINT
 
 - **Client Organization:** ${formData.companyName || "Private"} (${formData.orgType || "SME"})
 - **Sector Industry:** ${formData.industry || "General Commerce"} | **Origin:** ${formData.country || "Haiti / Global"}
@@ -422,6 +492,8 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
     
     if (onSectionChange) {
       onSectionChange("services");
+    } else {
+      router.push("/consulting");
     }
   };
 
@@ -492,10 +564,12 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                     <Check className="w-8 h-8" />
                   </div>
                   <h3 className="font-serif font-bold text-2xl text-[var(--color-brand-dark)]">
-                    Scoping Roadmap Successfully Compiled!
+                    {locale === "fr" ? "Feuille de route de cadrage compilée avec succès !" : "Scoping Roadmap Successfully Compiled!"}
                   </h3>
                   <p className="text-xs text-[var(--color-brand-muted)] max-w-md mx-auto leading-relaxed font-semibold">
-                    Thank you. We have saved your project discovery roadmap and generated a secure Client Portal workspace credentials profile under your company name.
+                    {locale === "fr" 
+                      ? "Merci. Nous avons sauvegardé votre feuille de route de découverte de projet et généré un profil d'accès sécurisé pour le Portail Client au nom de votre entreprise." 
+                      : "Thank you. We have saved your project discovery roadmap and generated a secure Client Portal workspace credentials profile under your company name."}
                   </p>
 
                   <div className="pt-6 flex flex-col sm:flex-row justify-center items-center gap-3">
@@ -503,7 +577,7 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       onClick={handleTransferToBooking}
                       className="w-full sm:w-auto bg-[#FF7A00] hover:bg-[var(--color-brand-dark)] text-white px-8 py-3.5 rounded-xl text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
                     >
-                      <span>Book Recommended Consultation</span>
+                      <span>{locale === "fr" ? "Réserver la consultation recommandée" : "Book Recommended Consultation"}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                     
@@ -511,11 +585,13 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       onClick={() => {
                         if (onSectionChange) {
                           onSectionChange("portal");
+                        } else {
+                          router.push("/portal");
                         }
                       }}
                       className="w-full sm:w-auto bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-dark)] text-white px-8 py-3.5 rounded-xl text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
                     >
-                      <span>Open Workspace Portal</span>
+                      <span>{locale === "fr" ? "Ouvrir le portail client" : "Open Workspace Portal"}</span>
                       <span>→</span>
                     </button>
                   </div>
@@ -532,10 +608,12 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       className="space-y-4 text-center py-6"
                     >
                       <h3 className="font-serif font-bold text-2xl text-[var(--color-brand-dark)]">
-                        CTO-level Architectural Evaluation
+                        {locale === "fr" ? "Évaluation Architecturale de Niveau CTO" : "CTO-level Architectural Evaluation"}
                       </h3>
                       <p className="text-xs text-[var(--color-brand-muted)] max-w-xl mx-auto leading-relaxed font-medium">
-                        Complete this guided 12-stage questionnaire. Our rule matching engine will parse your goals and budget ranges, generate a technical scoping draft blueprint, and prepare recommended action steps — no AI required.
+                        {locale === "fr" 
+                          ? "Répondez à ce questionnaire guidé en 12 étapes. Notre moteur d'analyse évaluera vos objectifs et vos contraintes budgétaires, générera un plan technique de cadrage et préparera des recommandations d'actions concrètes."
+                          : "Complete this guided 12-stage questionnaire. Our rule matching engine will parse your goals and budget ranges, generate a technical scoping draft blueprint, and prepare recommended action steps — no AI required."}
                       </p>
                       <div className="w-16 h-[2px] bg-[var(--color-brand-primary)] mx-auto mt-4" />
                     </motion.div>
@@ -550,10 +628,23 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       exit={{ opacity: 0 }}
                       className="space-y-6"
                     >
-                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">What is your project type?</h4>
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">{t("projectType.title")}</h4>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {["Website", "SaaS", "E-commerce", "Marketplace", "CRM", "ERP", "Mobile App", "AI Integration", "Technical Audit", "Training Program"].map((type) => {
                           const isSelected = formData.projectTypes.includes(type);
+                          const projectTypeTranslations: Record<string, string> = {
+                            "Website": "Site Web",
+                            "SaaS": "SaaS",
+                            "E-commerce": "E-commerce",
+                            "Marketplace": "Place de Marché",
+                            "CRM": "CRM",
+                            "ERP": "ERP",
+                            "Mobile App": "Application Mobile",
+                            "AI Integration": "Intégration IA",
+                            "Technical Audit": "Audit Technique",
+                            "Training Program": "Programme de Formation"
+                          };
+                          const displayLabel = locale === "fr" ? projectTypeTranslations[type] || type : type;
                           return (
                             <button
                               key={type}
@@ -571,33 +662,48 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                                   : "border-[var(--color-brand-neutral)]/45 bg-white text-[var(--color-brand-muted)] hover:border-[var(--color-brand-primary)]/40"
                               }`}
                             >
-                              {type}
+                              {displayLabel}
                             </button>
                           );
                         })}
                       </div>
 
                       {/* Render conditional text questions for selected types */}
-                      {formData.projectTypes.map((type) => (
-                        <div key={type} className="bg-[var(--color-brand-bg)] p-4 rounded-xl space-y-2 border">
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-primary)] uppercase tracking-wider">
-                            {type} Context Detail
-                          </label>
-                          <span className="block text-xs font-serif text-[var(--color-brand-dark)] font-bold mb-1.5">
-                            {getDynamicQuestionForType(type)}
-                          </span>
-                          <input
-                            type="text"
-                            value={(formData.customAnswers && formData.customAnswers[type]) || ""}
-                            onChange={(e) => {
-                              const newAnswers = { ...(formData.customAnswers || {}), [type]: e.target.value };
-                              updateField("customAnswers", newAnswers);
-                            }}
-                            placeholder="Add brief details..."
-                            className="w-full bg-white border border-[var(--color-brand-neutral)]/45 rounded-lg px-3 py-2 text-xs text-[var(--color-brand-dark)]"
-                          />
-                        </div>
-                      ))}
+                      {formData.projectTypes.map((type) => {
+                        const projectTypeTranslations: Record<string, string> = {
+                          "Website": "Site Web",
+                          "SaaS": "SaaS",
+                          "E-commerce": "E-commerce",
+                          "Marketplace": "Place de Marché",
+                          "CRM": "CRM",
+                          "ERP": "ERP",
+                          "Mobile App": "Application Mobile",
+                          "AI Integration": "Intégration IA",
+                          "Technical Audit": "Audit Technique",
+                          "Training Program": "Programme de Formation"
+                        };
+                        const displayLabel = locale === "fr" ? projectTypeTranslations[type] || type : type;
+                        return (
+                          <div key={type} className="bg-[var(--color-brand-bg)] p-4 rounded-xl space-y-2 border">
+                            <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-primary)] uppercase tracking-wider">
+                              {locale === "fr" ? `Détails du contexte : ${displayLabel}` : `${type} Context Detail`}
+                            </label>
+                            <span className="block text-xs font-serif text-[var(--color-brand-dark)] font-bold mb-1.5">
+                              {getDynamicQuestionForType(type)}
+                            </span>
+                            <input
+                              type="text"
+                              value={(formData.customAnswers && formData.customAnswers[type]) || ""}
+                              onChange={(e) => {
+                                const newAnswers = { ...(formData.customAnswers || {}), [type]: e.target.value };
+                                updateField("customAnswers", newAnswers);
+                              }}
+                              placeholder={locale === "fr" ? "Ajouter de brefs détails..." : "Add brief details..."}
+                              className="w-full bg-white border border-[var(--color-brand-neutral)]/45 rounded-lg px-3 py-2 text-xs text-[var(--color-brand-dark)]"
+                            />
+                          </div>
+                        );
+                      })}
                     </motion.div>
                   )}
 
@@ -610,10 +716,10 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       exit={{ opacity: 0 }}
                       className="space-y-6"
                     >
-                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">Tell us about your organization</h4>
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">{t("organization.title")}</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Company / Organization Name *</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("organization.companyName")} *</label>
                           <input
                             type="text"
                             required
@@ -624,7 +730,7 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                           />
                         </div>
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Sector Vertical Industry *</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("organization.industry")} *</label>
                           <input
                             type="text"
                             required
@@ -635,7 +741,7 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                           />
                         </div>
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Origin Country</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("organization.country")}</label>
                           <input
                             type="text"
                             value={formData.country}
@@ -645,18 +751,18 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                           />
                         </div>
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Organization Type</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("organization.orgType")}</label>
                           <select
                             value={formData.orgType}
                             onChange={(e) => updateField("orgType", e.target.value)}
                             className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
                           >
-                            <option value="Startup">Startup</option>
-                            <option value="SME">SME / Private Company</option>
-                            <option value="Enterprise">Large Enterprise</option>
-                            <option value="NGO">NGO / International Agency</option>
-                            <option value="University">University / Educational Institute</option>
-                            <option value="Government">Government Department</option>
+                            <option value="Startup">{locale === "fr" ? "Jeune Entreprise (Startup)" : "Startup"}</option>
+                            <option value="SME">{locale === "fr" ? "PME / Entreprise Privée" : "SME / Private Company"}</option>
+                            <option value="Enterprise">{locale === "fr" ? "Grande Entreprise" : "Large Enterprise"}</option>
+                            <option value="NGO">{locale === "fr" ? "ONG / Organisme International" : "NGO / International Agency"}</option>
+                            <option value="University">{locale === "fr" ? "Université / Établissement d'Enseignement" : "University / Educational Institute"}</option>
+                            <option value="Government">{locale === "fr" ? "Ministère / Organisme Public" : "Government Department"}</option>
                           </select>
                         </div>
                       </div>
@@ -672,10 +778,19 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       exit={{ opacity: 0 }}
                       className="space-y-6"
                     >
-                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">What are your primary business goals?</h4>
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">{t("businessGoals.title")}</h4>
                       <div className="grid grid-cols-2 gap-3">
                         {["Increase Sales / Leads", "Automate Offline Steps", "Scale User Capacity", "Integrate AI Systems", "Secure Legacy Database", "Digital Transformation"].map((goal) => {
                           const isSelected = formData.businessGoals.includes(goal);
+                          const businessGoalTranslations: Record<string, string> = {
+                            "Increase Sales / Leads": "Augmenter les Ventes / Prospects",
+                            "Automate Offline Steps": "Automatiser les Processus Hors ligne",
+                            "Scale User Capacity": "Augmenter la Capacité Utilisateurs",
+                            "Integrate AI Systems": "Intégrer des Systèmes IA",
+                            "Secure Legacy Database": "Sécuriser les Bases de Données Existantes",
+                            "Digital Transformation": "Transformation Digitale"
+                          };
+                          const displayGoal = locale === "fr" ? businessGoalTranslations[goal] || goal : goal;
                           return (
                             <button
                               key={goal}
@@ -693,7 +808,7 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                                   : "border-[var(--color-brand-neutral)]/45 bg-white text-[var(--color-brand-muted)] hover:border-[var(--color-brand-primary)]/40"
                               }`}
                             >
-                              {goal}
+                              {displayGoal}
                             </button>
                           );
                         })}
@@ -710,27 +825,27 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       exit={{ opacity: 0 }}
                       className="space-y-6"
                     >
-                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">Describe your current roadblocks & bottlenecks</h4>
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">{t("currentSituation.title")}</h4>
                       
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Key Challenges *</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("currentSituation.challenges")} *</label>
                           <textarea
                             rows={3}
                             value={formData.challenges}
                             onChange={(e) => updateField("challenges", e.target.value)}
-                            placeholder="E.g. Database queries take 3s, manual Excel sheets get lost, or payment gateways are fragmented."
+                            placeholder={locale === "fr" ? "Ex: Les requêtes de base de données prennent 3s, les fichiers Excel se perdent, ou les passerelles de paiement sont fragmentées." : "E.g. Database queries take 3s, manual Excel sheets get lost, or payment gateways are fragmented."}
                             className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Offline Limitations (if any)</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("currentSituation.limits")}</label>
                           <textarea
                             rows={2}
                             value={formData.limits}
                             onChange={(e) => updateField("limits", e.target.value)}
-                            placeholder="E.g. Drivers pass through dead cellular signal zones."
+                            placeholder={locale === "fr" ? "Ex: Les chauffeurs traversent des zones sans couverture réseau." : "E.g. Drivers pass through dead cellular signal zones."}
                             className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
                           />
                         </div>
@@ -747,25 +862,25 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       exit={{ opacity: 0 }}
                       className="space-y-6"
                     >
-                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">Target Audience & Scale</h4>
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">{t("targetAudience.title")}</h4>
                       
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Expected Users (Monthly Active)</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("targetAudience.expectedUsers")}</label>
                           <select
                             value={formData.expectedUsers}
                             onChange={(e) => updateField("expectedUsers", e.target.value)}
                             className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none font-mono"
                           >
-                            <option value="Under 1,000">Under 1,000</option>
-                            <option value="1,000 - 10,000">1,000 - 10,000</option>
-                            <option value="10,000 - 50,000">10,000 - 50,000</option>
-                            <option value="50,000+">50,000+</option>
+                            <option value="Under 1,000">{locale === "fr" ? "Moins de 1 000" : "Under 1,000"}</option>
+                            <option value="1,000 - 10,000">{locale === "fr" ? "1 000 - 10 000" : "1,000 - 10,000"}</option>
+                            <option value="10,000 - 50,000">{locale === "fr" ? "10 000 - 50 000" : "10,000 - 50,000"}</option>
+                            <option value="50,000+">{locale === "fr" ? "Plus de 50 000" : "50,000+"}</option>
                           </select>
                         </div>
 
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Target Languages</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("targetAudience.languages")}</label>
                           <input
                             type="text"
                             value={formData.languages}
@@ -787,10 +902,40 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       exit={{ opacity: 0 }}
                       className="space-y-6"
                     >
-                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">Feature Catalog Selection</h4>
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">{t("features.title")}</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-2">
                         {featureCatalog.map((feat) => {
                           const isSelected = formData.features.includes(feat.id);
+                          let displayId = feat.id;
+                          let displayCat = feat.cat;
+                          let displayDesc = feat.desc;
+                          if (locale === "fr") {
+                            const frFeatures: Record<string, { id: string; cat: string; desc: string }> = {
+                              "Authentication": { id: "Authentification", cat: "Sécurité", desc: "Connexion utilisateur, inscription, codes multifacteurs, hachages de mots de passe" },
+                              "Payments": { id: "Paiements", cat: "Commerce", desc: "Passerelles Stripe, cartes bancaires récurrentes, facturation automatique" },
+                              "Dashboard": { id: "Tableau de bord", cat: "Analyses", desc: "Graphiques interactifs, indices de tendance, panneaux de surveillance des métriques" },
+                              "Notifications": { id: "Notifications", cat: "Canaux", desc: "Alertes SMS, e-mails, déclencheurs push, flux centralisé d'alertes" },
+                              "Messaging": { id: "Messagerie", cat: "Collaboration", desc: "Discussions chiffrées, espaces de fichiers partagés, fil de contact client" },
+                              "Calendar": { id: "Calendrier", cat: "Réservation", desc: "Planificateur client, décalages horaires, déclencheurs Google Meet" },
+                              "Reports": { id: "Rapports", cat: "Données", desc: "Exports CSV, reçus PDF, résumés de graphiques agrégés" },
+                              "Inventory": { id: "Inventaire", cat: "Opérations", desc: "Quantités de stock en temps réel, listes de fournisseurs, flux d'approvisionnement" },
+                              "CMS": { id: "CMS", cat: "Contenu", desc: "Blog en libre-service, éditeur de mises à jour de contenu" },
+                              "Multilingual": { id: "Multilingue", cat: "Global", desc: "Traductions instantanées, balises de locale, règles de détection de langue" },
+                              "Document Management": { id: "Gestion documentaire", cat: "Conformité", desc: "Partage de fichiers cloud, signatures d'accords de confidentialité sécurisés, stockage de contrats PDF" },
+                              "Role Management": { id: "Gestion des rôles", cat: "Sécurité", desc: "Privilèges d'espace de travail granulaires pour admin, responsable, client, invité" },
+                              "Admin Panel": { id: "Panneau d'administration", cat: "Opérations", desc: "Navigateur de soumissions, journaux de statut, éditeur de métadonnées utilisateur" },
+                              "Search": { id: "Recherche", cat: "Données", desc: "Indexation par mots-clés flous, filtres de recherche robustes" },
+                              "Maps": { id: "Cartes", cat: "Localisation", desc: "Épingles de coordonnées Google Maps Platform, localisateurs de magasins" },
+                              "AI Ready": { id: "Prêt pour l'IA", cat: "IA", desc: "Indexation vectorielle, middleware d'intégration Google Gemini, plongements contextuels" },
+                              "Offline Support": { id: "Support hors ligne", cat: "Global", desc: "Caches de bases de données hors ligne, agents d'arrière-plan" }
+                            };
+                            const mapped = frFeatures[feat.id];
+                            if (mapped) {
+                              displayId = mapped.id;
+                              displayCat = mapped.cat;
+                              displayDesc = mapped.desc;
+                            }
+                          }
                           return (
                             <button
                               key={feat.id}
@@ -809,10 +954,10 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                               }`}
                             >
                               <div className="flex justify-between items-center w-full">
-                                <span className="font-bold text-xs text-[var(--color-brand-dark)]">{feat.id}</span>
-                                <span className="text-[8px] font-sans font-bold uppercase tracking-wider text-[var(--color-brand-muted)] bg-white px-2 py-0.5 rounded border border-[var(--color-brand-neutral)]/30">{feat.cat}</span>
+                                <span className="font-bold text-xs text-[var(--color-brand-dark)]">{displayId}</span>
+                                <span className="text-[8px] font-sans font-bold uppercase tracking-wider text-[var(--color-brand-muted)] bg-white px-2 py-0.5 rounded border border-[var(--color-brand-neutral)]/30">{displayCat}</span>
                               </div>
-                              <p className="text-[10px] text-[var(--color-brand-muted)] leading-relaxed font-semibold">{feat.desc}</p>
+                              <p className="text-[10px] text-[var(--color-brand-muted)] leading-relaxed font-semibold">{displayDesc}</p>
                             </button>
                           );
                         })}
@@ -829,28 +974,28 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       exit={{ opacity: 0 }}
                       className="space-y-6"
                     >
-                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">Technical preferences & needs</h4>
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">{t("technical.title")}</h4>
                       
                       <div className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Preferred Stack (e.g. Next.js, Node, Go)</label>
+                            <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("technical.techStack")}</label>
                             <input
                               type="text"
                               value={formData.techStack}
                               onChange={(e) => updateField("techStack", e.target.value)}
-                              placeholder="Leave blank for recommendation..."
+                              placeholder={locale === "fr" ? "Laisser vide pour une recommandation..." : "Leave blank for recommendation..."}
                               className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
                             />
                           </div>
 
                           <div>
-                            <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Target Cloud Provider (e.g. GCP, AWS)</label>
+                            <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("technical.cloudProvider")}</label>
                             <input
                               type="text"
                               value={formData.cloudProvider}
                               onChange={(e) => updateField("cloudProvider", e.target.value)}
-                              placeholder="e.g. GCP (Amedee's default)"
+                              placeholder={locale === "fr" ? "ex: GCP (par défaut)" : "e.g. GCP (Amedee's default)"}
                               className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
                             />
                           </div>
@@ -858,10 +1003,10 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
 
                         <div className="grid grid-cols-2 gap-3 pt-2">
                           {[
-                            { id: "needsAI", label: "Integrate Generative AI / LLMs" },
-                            { id: "needsMigration", label: "Requires Legacy Data Migration" },
-                            { id: "needsAPI", label: "Integrate External Third-Party APIs" },
-                            { id: "needsAutomation", label: "Automate Manual Operations" },
+                            { id: "needsAI", label: locale === "fr" ? "Intégrer de l'IA Générative / LLMs" : "Integrate Generative AI / LLMs" },
+                            { id: "needsMigration", label: locale === "fr" ? "Migration de Données Héritées Requise" : "Requires Legacy Data Migration" },
+                            { id: "needsAPI", label: locale === "fr" ? "Intégrer des APIs Tierces" : "Integrate External Third-Party APIs" },
+                            { id: "needsAutomation", label: locale === "fr" ? "Automatiser des Opérations Manuelles" : "Automate Manual Operations" },
                           ].map((item) => (
                             <button
                               key={item.id}
@@ -881,7 +1026,7 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                     </motion.div>
                   )}
 
-                  {/* Step 9: Financial Bounds */}
+                  {/* Step 9: Financial parameters */}
                   {activeStep.id === "budget" && (
                     <motion.div
                       key="budget"
@@ -890,33 +1035,33 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       exit={{ opacity: 0 }}
                       className="space-y-6"
                     >
-                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">Financial parameters</h4>
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">{t("budget.title")}</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Target Budget Range</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{locale === "fr" ? "Fourchette budgétaire cible" : "Target Budget Range"}</label>
                           <select
                             value={formData.budgetRange}
                             onChange={(e) => updateField("budgetRange", e.target.value)}
                             className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none font-semibold font-mono"
                           >
-                            <option value="Under $2k">Under $2k</option>
-                            <option value="$2k–$5k">$2k–$5k</option>
-                            <option value="$5k–$10k">$5k–$10k</option>
-                            <option value="$10k–$25k">$10k–$25k</option>
-                            <option value="$25k–$50k">$25k–$50k</option>
-                            <option value="$50k+">$50k+</option>
+                            <option value="Under $2k">{locale === "fr" ? "Moins de 2 000 $" : "Under $2k"}</option>
+                            <option value="$2k–$5k">{locale === "fr" ? "2 000 $ – 5 000 $" : "$2k–$5k"}</option>
+                            <option value="$5k–$10k">{locale === "fr" ? "5 000 $ – 10 000 $" : "$5k–$10k"}</option>
+                            <option value="$10k–$25k">{locale === "fr" ? "10 000 $ – 25 000 $" : "$10k–$25k"}</option>
+                            <option value="$25k–$50k">{locale === "fr" ? "25 000 $ – 50 000 $" : "$25k–$50k"}</option>
+                            <option value="$50k+">{locale === "fr" ? "50 000 $ +" : "$50k+"}</option>
                           </select>
                         </div>
 
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Decision Maker Confirmation</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("budget.decisionMaker")}</label>
                           <select
                             value={formData.isDecisionMaker}
                             onChange={(e) => updateField("isDecisionMaker", e.target.value)}
                             className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none font-semibold"
                           >
-                            <option value="Yes">Yes, I am decision maker</option>
-                            <option value="No">No, evaluating for board</option>
+                            <option value="Yes">{locale === "fr" ? "Oui, je suis le décideur" : "Yes, I am decision maker"}</option>
+                            <option value="No">{locale === "fr" ? "Non, j'évalue pour un tiers / conseil" : "No, evaluating for board"}</option>
                           </select>
                         </div>
                       </div>
@@ -932,10 +1077,17 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       exit={{ opacity: 0 }}
                       className="space-y-6"
                     >
-                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">Project Timeline parameters</h4>
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">{t("timeline.title")}</h4>
                       <div className="grid grid-cols-2 gap-3">
                         {["Immediate (< 1 month)", "1–3 months", "3–6 months", "Continuous Support"].map((time) => {
                           const isSelected = formData.timeline === time;
+                          const timeTranslations: Record<string, string> = {
+                            "Immediate (< 1 month)": "Immédiat (< 1 mois)",
+                            "1–3 months": "1 à 3 mois",
+                            "3–6 months": "3 à 6 mois",
+                            "Continuous Support": "Support Continu"
+                          };
+                          const label = locale === "fr" ? timeTranslations[time] || time : time;
                           return (
                             <button
                               key={time}
@@ -947,7 +1099,7 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                                   : "border-[var(--color-brand-neutral)]/45 bg-white text-[var(--color-brand-muted)] hover:border-[var(--color-brand-primary)]/40"
                               }`}
                             >
-                              {time}
+                              {label}
                             </button>
                           );
                         })}
@@ -964,32 +1116,32 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       exit={{ opacity: 0 }}
                       className="space-y-6"
                     >
-                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">Preferred Consultation parameters</h4>
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">{t("language.title")}</h4>
                       
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Meeting Language</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("language.preferred")}</label>
                           <select
                             value={formData.preferredLanguage}
                             onChange={(e) => updateField("preferredLanguage", e.target.value)}
                             className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
                           >
-                            <option value="English">English</option>
-                            <option value="French">Français</option>
+                            <option value="English">{locale === "fr" ? "Anglais" : "English"}</option>
+                            <option value="French">{locale === "fr" ? "Français" : "French"}</option>
                           </select>
                         </div>
 
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Your Timezone</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("language.timezone")}</label>
                           <select
                             value={formData.timezone}
                             onChange={(e) => updateField("timezone", e.target.value)}
                             className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
                           >
-                            <option value="EST">EST (Haiti / East Coast)</option>
-                            <option value="PST">PST (Pacific Coast)</option>
-                            <option value="GMT">GMT (London / Europe)</option>
-                            <option value="CET">CET (Central Europe)</option>
+                            <option value="EST">{locale === "fr" ? "EST (Haïti / Côte Est)" : "EST (Haiti / East Coast)"}</option>
+                            <option value="PST">{locale === "fr" ? "PST (Côte Ouest)" : "PST (Pacific Coast)"}</option>
+                            <option value="GMT">{locale === "fr" ? "GMT (Londres / Europe)" : "GMT (London / Europe)"}</option>
+                            <option value="CET">{locale === "fr" ? "CET (Europe Centrale)" : "CET (Central Europe)"}</option>
                           </select>
                         </div>
                       </div>
@@ -1005,26 +1157,26 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       exit={{ opacity: 0 }}
                       className="space-y-6"
                     >
-                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">External references & notes</h4>
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">{t("additional.title")}</h4>
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Links to existing resources (comma separated URLs)</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("additional.links")}</label>
                           <input
                             type="text"
                             value={formData.links}
                             onChange={(e) => updateField("links", e.target.value)}
-                            placeholder="e.g. https://github.com/yourproject, https://figma.com/..."
+                            placeholder={locale === "fr" ? "ex: https://github.com/votreprojet, https://figma.com/..." : "e.g. https://github.com/yourproject, https://figma.com/..."}
                             className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none font-semibold"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">Additional Strategic Notes</label>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("additional.notes")}</label>
                           <textarea
                             rows={3}
                             value={formData.notes}
                             onChange={(e) => updateField("notes", e.target.value)}
-                            placeholder="Type any other specifications, compliance mandates or details here..."
+                            placeholder={locale === "fr" ? "Saisissez d'autres spécifications, exigences de conformité ou détails ici..." : "Type any other specifications, compliance mandates or details here..."}
                             className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
                           />
                         </div>
@@ -1043,25 +1195,25 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                     >
                       <div className="flex justify-between items-center border-b border-[var(--color-brand-neutral)]/20 pb-4">
                         <div>
-                          <h4 className="font-serif font-bold text-xl text-[var(--color-brand-dark)]">Questionnaire Scoping Synthesis</h4>
-                          <p className="text-[10px] text-[var(--color-brand-muted)] uppercase font-mono tracking-wider mt-0.5">Automated rule evaluation summary</p>
+                          <h4 className="font-serif font-bold text-xl text-[var(--color-brand-dark)]">{t("summary.title")}</h4>
+                          <p className="text-[10px] text-[var(--color-brand-muted)] uppercase font-mono tracking-wider mt-0.5">{locale === "fr" ? "Synthèse d'évaluation automatique" : "Automated rule evaluation summary"}</p>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 text-xs font-mono text-[var(--color-brand-muted)]">
                         <div className="bg-[var(--color-brand-bg)] p-3 rounded-lg border">
-                          <span className="block text-[8px] font-sans font-bold uppercase">Estimated Complexity</span>
+                          <span className="block text-[8px] font-sans font-bold uppercase">{t("summary.complexity")}</span>
                           <strong className="block text-sm text-[var(--color-brand-primary)] font-serif mt-0.5">{currentSummary.complexity}</strong>
                         </div>
                         <div className="bg-[var(--color-brand-bg)] p-3 rounded-lg border">
-                          <span className="block text-[8px] font-sans font-bold uppercase">Cloud Scoping Engine Status</span>
-                          <strong className="block text-sm text-green-600 font-serif mt-0.5">READY TO TRANSMIT</strong>
+                          <span className="block text-[8px] font-sans font-bold uppercase">{t("summary.status")}</span>
+                          <strong className="block text-sm text-green-600 font-serif mt-0.5">{locale === "fr" ? "PRÊT À TRANSMETTRE" : "READY TO TRANSMIT"}</strong>
                         </div>
                       </div>
 
                       {currentSummary.recommendedServices && currentSummary.recommendedServices.length > 0 && (
                         <div className="space-y-2">
-                          <strong className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase">Recommended Consultation stream</strong>
+                          <strong className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase">{t("summary.recommendedServices")}</strong>
                           <div className="flex flex-wrap gap-2">
                             {currentSummary.recommendedServices.map((service, idx) => (
                               <span key={idx} className="bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] border border-[var(--color-brand-primary)]/20 px-3 py-1.5 rounded-lg text-xs font-semibold">
@@ -1073,7 +1225,7 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                       )}
 
                       <div className="space-y-2">
-                        <strong className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase">Roadmap preview</strong>
+                        <strong className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase">{locale === "fr" ? "Aperçu de la feuille de route" : "Roadmap preview"}</strong>
                         <div className="bg-[var(--color-brand-bg)] border p-4 rounded-xl text-[10px] font-mono text-[var(--color-brand-muted)] max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed">
                           {currentSummary.overviewMarkdown}
                         </div>
@@ -1114,7 +1266,7 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                   disabled={isSubmitting}
                   className="bg-green-600 hover:bg-green-700 text-white px-8 py-3.5 rounded-xl text-xs font-bold tracking-widest uppercase transition-colors flex items-center space-x-2 cursor-pointer shadow-xs disabled:opacity-50"
                 >
-                  <span>{isSubmitting ? "Processing..." : t("submit")}</span>
+                  <span>{isSubmitting ? (locale === "fr" ? "Transmission en cours..." : "Processing...") : t("submit")}</span>
                   <Send className="w-4 h-4" />
                 </button>
               )}

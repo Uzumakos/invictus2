@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Shield, Lock, Send, FileText, CheckCircle2, Circle, Calendar, MessageSquare, Plus, Check, Loader2, DollarSign, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "@/lib/supabaseClient";
+import { useSearchParams } from "next/navigation";
 
 import { 
   Language, 
@@ -51,6 +53,10 @@ export default function ClientPortal() {
   // Form states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+  const errorParam = searchParams?.get("error");
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -59,22 +65,36 @@ export default function ClientPortal() {
   }, [isLoggedIn]);
 
   useEffect(() => {
-    const checkAutologin = () => {
-      const email = localStorage.getItem("portal_autologin_email");
-      const name = localStorage.getItem("portal_autologin_name");
-      if (email) {
-        setClientEmail(email);
-        setClientName(name || email.split("@")[0]);
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
         setIsLoggedIn(true);
-        localStorage.removeItem("portal_autologin_email");
-        localStorage.removeItem("portal_autologin_name");
+        setClientEmail(session.user.email || "");
+        setClientName(session.user.user_metadata?.name || session.user.email?.split("@")[0] || "");
       }
-    };
+    });
 
-    checkAutologin();
-    window.addEventListener("portal_autologin", checkAutologin);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setIsLoggedIn(true);
+        setClientEmail(session.user.email || "");
+        setClientName(session.user.user_metadata?.name || session.user.email?.split("@")[0] || "");
+      } else {
+        setIsLoggedIn(false);
+        setClientEmail("");
+        setClientName("");
+      }
+    });
+
+    // UX fallback for prefilling email from localstorage autologin triggers
+    const autologinEmail = localStorage.getItem("portal_autologin_email");
+    if (autologinEmail) {
+      setClientEmail(autologinEmail);
+      localStorage.removeItem("portal_autologin_email");
+    }
+
     return () => {
-      window.removeEventListener("portal_autologin", checkAutologin);
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -149,26 +169,42 @@ export default function ClientPortal() {
     }
   };
 
-  const handleCustomLogin = (e: React.FormEvent) => {
+  const handleCustomLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientEmail || !clientEmail.includes("@")) {
       setError("Please provide a valid email address.");
       return;
     }
     setError(null);
+    setSuccessMessage(null);
     setLoading(true);
-    const parts = clientEmail.split("@");
-    setClientName(parts[0].charAt(0).toUpperCase() + parts[0].slice(1));
-    setTimeout(() => {
-      setIsLoggedIn(true);
+
+    try {
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        email: clientEmail.toLowerCase().trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/portal`,
+        },
+      });
+
+      if (authError) {
+        setError(authError.message);
+      } else {
+        setSuccessMessage("A secure magic login link has been sent to your email. Check your inbox to sign in!");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to log in.");
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setClientEmail("");
-    setClientName("");
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   };
 
   const handleToggleTask = async (task: PortalTask) => {
@@ -300,10 +336,28 @@ export default function ClientPortal() {
             </div>
 
             <form onSubmit={handleCustomLogin} className="space-y-4">
+              {errorParam === "pending_approval" && !successMessage && (
+                <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
+                  <span>Access Pending. Your email must be approved by the administrator before accessing the client portal.</span>
+                </div>
+              )}
+              {errorParam === "unauthorized" && !successMessage && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
+                  <span>Unauthorized. Please sign in again or use an authorized email.</span>
+                </div>
+              )}
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
                   <span>{error}</span>
+                </div>
+              )}
+              {successMessage && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl flex items-start gap-2">
+                  <Check className="w-4 h-4 shrink-0 text-emerald-500 mt-0.5" />
+                  <span>{successMessage}</span>
                 </div>
               )}
 
@@ -324,23 +378,9 @@ export default function ClientPortal() {
                 disabled={loading}
                 className="w-full py-4 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-dark)] text-white text-xs font-bold tracking-widest uppercase rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-3xs"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("loginCta")}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send Magic Link"}
               </button>
             </form>
-
-            <div className="border-t border-[var(--color-brand-neutral)]/20 pt-4 flex flex-col items-center justify-center gap-2">
-              <span className="text-[10px] text-[var(--color-brand-muted)] font-bold">OR LOAD SANDBOX DEMO</span>
-              <button
-                onClick={() => {
-                  setClientEmail("jr.noel@haitistartups.com");
-                  setClientName("Jean-Rene Noel");
-                  setIsLoggedIn(true);
-                }}
-                className="text-xs font-bold text-[var(--color-brand-primary)] hover:text-[var(--color-brand-dark)] underline transition-colors cursor-pointer"
-              >
-                Access 'jr.noel@haitistartups.com' workspace
-              </button>
-            </div>
           </div>
         ) : (
           /* Main Workspace Screen */

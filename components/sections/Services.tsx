@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { Service, Booking, PaymentMethod, PaymentConfig, Language } from "@/lib/types";
 import { consultingOffers } from "@/lib/data";
+import { useRouter } from "@/lib/i18n/navigation";
 
 interface ServicesProps {
   onSectionChange?: (sectionId: string) => void;
@@ -28,6 +29,7 @@ interface ServicesProps {
 export default function Services({ onSectionChange }: ServicesProps) {
   const t = useTranslations("services");
   const currentLanguage = useLocale() as Language;
+  const router = useRouter();
 
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [bookingStep, setBookingStep] = useState<"none" | "package" | "datetime" | "questionnaire" | "payment" | "success">("none");
@@ -927,6 +929,8 @@ export default function Services({ onSectionChange }: ServicesProps) {
                               
                               if (onSectionChange) {
                                 onSectionChange("portal");
+                              } else {
+                                router.push("/portal");
                               }
                               handleCloseBooking();
                             }}

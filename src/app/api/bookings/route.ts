@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     const newBooking: Booking = {
       id: bookingId,
-      clientId: "client_" + crypto.randomBytes(6).toString("hex"),
+      // clientId is not a DB column — bookings are linked to clients via client_email
       clientName,
       clientEmail,
       serviceId,

@@ -55,7 +55,7 @@ export const config = {
   matcher: [
     // Admin routes
     "/admin/:path*",
-    // next-intl: match all paths except internals and static files
-    "/((?!_next|_vercel|.*\\..*).*)",
+    // next-intl: match all paths except api, internals and static files
+    "/((?!api|_next|_vercel|.*\\..*).*)",
   ],
 };
