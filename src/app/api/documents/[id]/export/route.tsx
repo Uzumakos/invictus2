@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseClient";
-import { pdf, Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { getCollection } from "@/lib/db";
+import { pdf, Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 import React from "react";
 
 // PDF Stylesheet (Modern layout guidelines matching brand colors)
@@ -61,14 +62,46 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
   const formattedNum = doc.document_number;
   const numLabel = isInvoice ? `${labels.invoiceNo}: ${formattedNum}` : `${labels.quoteNo}: ${formattedNum}`;
 
+  // Extract client identity (supports camelCase & snake_case)
+  const clientName = client?.company_name || client?.companyName || client?.primary_contact_name || client?.primaryContactName || client?.name || "";
+  const clientEmail = client?.email || "";
+  const clientAddress = client?.billing_address || client?.billingAddress || "";
+  const clientCountry = client?.country || "";
+  const clientPhone = client?.phone || "";
+
+  // Extract business identity (supports camelCase & snake_case)
+  const businessName = business?.business_name || business?.businessName || business?.company_name || business?.companyName || "INVICTUS";
+  const businessLegalName = business?.legal_name || business?.legalName || businessName;
+  const businessTagline = business?.tagline || business?.subtitle || "Digital Transformation Center";
+  const businessEmail = business?.email || "";
+  const businessPhone = business?.phone || "";
+  const businessWebsite = business?.website || "";
+  const businessAddress = business?.address || "";
+  const businessCountry = business?.country || "";
+  const businessTaxNumber = business?.tax_number || business?.taxNumber || "N/A";
+  const businessLogoUrl = business?.logo_url || business?.logoUrl || "";
+  const businessFooter = business?.invoice_footer || business?.invoiceFooter || "";
+
+  // Bank Info extraction (supports nested object or snake_case/camelCase)
+  const bankInfo = typeof business?.bank_information === "object" ? business.bank_information :
+                   typeof business?.bankInformation === "object" ? business.bankInformation :
+                   typeof business?.bank_info === "object" ? business.bank_info : {};
+  const bankName = bankInfo?.bankName || bankInfo?.bank_name || "N/A";
+  const bankAccount = bankInfo?.bankAccount || bankInfo?.bank_account || bankInfo?.accountNumber || bankInfo?.account_number || "N/A";
+  const bankSwift = bankInfo?.bankSwift || bankInfo?.bank_swift || bankInfo?.swift || "N/A";
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Header Block */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.companyLogo}>{business?.company_name || "INVICTUS"}</Text>
-            <Text style={styles.companySub}>{business?.tagline || "Digital Transformation Center"}</Text>
+          <View style={{ flex: 1 }}>
+            {businessLogoUrl ? (
+              <Image src={businessLogoUrl} style={{ width: 140, height: 45, objectFit: "contain", marginBottom: 4 }} />
+            ) : (
+              <Text style={styles.companyLogo}>{businessName}</Text>
+            )}
+            {businessTagline ? <Text style={styles.companySub}>{businessTagline}</Text> : null}
           </View>
           <View>
             <Text style={styles.docTitle}>{labels.title}</Text>
@@ -80,17 +113,28 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
         <View style={[styles.section, styles.row]}>
           <View style={[styles.col, styles.billTo]}>
             <Text style={styles.label}>{labels.billTo}</Text>
-            <Text style={styles.text}>{client?.companyName || client?.email || "Valued Client"}</Text>
-            {client?.email && <Text style={[styles.text, styles.textMuted]}>{client.email}</Text>}
-            {client?.paymentTerms && <Text style={[styles.text, styles.textMuted]}>Terms: {client.paymentTerms}</Text>}
+            <Text style={styles.text}>{clientName || clientEmail || "Valued Client"}</Text>
+            {clientEmail && clientName && clientName.toLowerCase() !== clientEmail.toLowerCase() && (
+              <Text style={[styles.text, styles.textMuted]}>{clientEmail}</Text>
+            )}
+            {clientAddress && (
+              <Text style={[styles.text, styles.textMuted]}>{clientAddress}{clientCountry ? `, ${clientCountry}` : ""}</Text>
+            )}
+            {clientPhone && <Text style={[styles.text, styles.textMuted]}>{clientPhone}</Text>}
+            {(client?.payment_terms || client?.paymentTerms) && (
+              <Text style={[styles.text, styles.textMuted]}>Terms: {client.payment_terms || client.paymentTerms}</Text>
+            )}
           </View>
 
           <View style={styles.col}>
             <Text style={styles.label}>{labels.from}</Text>
-            <Text style={styles.text}>{business?.company_name || "Invictus Ops"}</Text>
-            {business?.email && <Text style={[styles.text, styles.textMuted]}>{business.email}</Text>}
-            {business?.phone && <Text style={[styles.text, styles.textMuted]}>{business.phone}</Text>}
-            {business?.website && <Text style={[styles.text, styles.textMuted]}>{business.website}</Text>}
+            <Text style={styles.text}>{businessName}</Text>
+            {businessAddress && (
+              <Text style={[styles.text, styles.textMuted]}>{businessAddress}{businessCountry ? `, ${businessCountry}` : ""}</Text>
+            )}
+            {businessEmail && <Text style={[styles.text, styles.textMuted]}>{businessEmail}</Text>}
+            {businessPhone && <Text style={[styles.text, styles.textMuted]}>{businessPhone}</Text>}
+            {businessWebsite && <Text style={[styles.text, styles.textMuted]}>{businessWebsite}</Text>}
           </View>
 
           <View style={{ width: 120 }}>
@@ -112,7 +156,7 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
 
           {items.map((item, idx) => {
             // Localized item description fallback
-            const itemDesc = item.description?.[lang] || item.description?.["en"] || "Consulting Service";
+            const itemDesc = item.description?.[lang] || item.description?.["en"] || (typeof item.description === "string" ? item.description : "Consulting Service");
             return (
               <View key={item.id || idx} style={styles.tableRow}>
                 <Text style={styles.colDesc}>{itemDesc}</Text>
@@ -121,7 +165,7 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
                   {item.unit_price?.toLocaleString("en-US", { style: "currency", currency: doc.currency })}
                 </Text>
                 <Text style={styles.colTotal}>
-                  {item.total_price?.toLocaleString("en-US", { style: "currency", currency: doc.currency })}
+                  {item.total?.toLocaleString("en-US", { style: "currency", currency: doc.currency }) || item.total_price?.toLocaleString("en-US", { style: "currency", currency: doc.currency })}
                 </Text>
               </View>
             );
@@ -138,20 +182,20 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
               </Text>
             </View>
 
-            {Number(doc.discount_amount) > 0 && (
+            {Number(doc.discount_total || doc.discount_amount) > 0 && (
               <View style={styles.totalsRow}>
-                <Text style={styles.textMuted}>{labels.discount} ({doc.discount_rate}%)</Text>
+                <Text style={styles.textMuted}>{labels.discount}</Text>
                 <Text style={{ color: "red" }}>
-                  -{doc.discount_amount?.toLocaleString("en-US", { style: "currency", currency: doc.currency })}
+                  -{(doc.discount_total || doc.discount_amount)?.toLocaleString("en-US", { style: "currency", currency: doc.currency })}
                 </Text>
               </View>
             )}
 
-            {Number(doc.tax_amount) > 0 && (
+            {Number(doc.tax_total || doc.tax_amount) > 0 && (
               <View style={styles.totalsRow}>
-                <Text style={styles.textMuted}>{labels.tax} ({doc.tax_rate}%)</Text>
+                <Text style={styles.textMuted}>{labels.tax}</Text>
                 <Text style={styles.text}>
-                  {doc.tax_amount?.toLocaleString("en-US", { style: "currency", currency: doc.currency })}
+                  {(doc.tax_total || doc.tax_amount)?.toLocaleString("en-US", { style: "currency", currency: doc.currency })}
                 </Text>
               </View>
             )}
@@ -165,24 +209,33 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
           </View>
         </View>
 
+        {/* Payment Instructions & Terms */}
+        {(doc.terms_conditions || doc.termsConditions) ? (
+          <View style={[styles.section, { marginTop: 25 }]}>
+            <Text style={styles.label}>{lang === "fr" ? "INSTRUCTIONS DE PAIEMENT & TERMES" : "PAYMENT INSTRUCTIONS & TERMS"}</Text>
+            <Text style={[styles.text, { fontSize: 8.5, color: "#374151", lineHeight: 1.3 }]}>{doc.terms_conditions || doc.termsConditions}</Text>
+          </View>
+        ) : null}
+
         {/* Document Notes */}
         {doc.notes && (
-          <View style={[styles.section, { marginTop: 30 }]}>
-            <Text style={styles.label}>{labels.notes}</Text>
+          <View style={[styles.section, { marginTop: 15 }]}>
+            <Text style={styles.label}>{lang === "fr" ? "REMARQUES / NOTES" : "REMARKS / NOTES"}</Text>
             <Text style={[styles.text, styles.textMuted, { fontSize: 8 }]}>{doc.notes}</Text>
           </View>
         )}
 
         {/* Legal Footer */}
         <View style={styles.footer}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.footerText}>
-              {business?.legal_name || business?.company_name} &middot; Tax: {business?.tax_number || "N/A"}
+              {businessLegalName} &middot; Tax: {businessTaxNumber}
+              {businessFooter ? ` &middot; ${businessFooter}` : ""}
             </Text>
           </View>
-          <View>
+          <View style={{ flex: 1, textAlign: "right" }}>
             <Text style={styles.footerText}>
-              Bank: {business?.bank_info?.bankName || "Swift Brokerage"} &middot; Account: {business?.bank_info?.accountNumber || "N/A"}
+              Bank: {bankName} &middot; Acc: {bankAccount} &middot; SWIFT: {bankSwift}
             </Text>
           </View>
         </View>
@@ -227,11 +280,24 @@ export async function GET(
       .select("*")
       .eq("document_id", id);
 
-    // 4. Fetch Business legal info
-    const { data: business } = await dbClient
-      .from("business_profile")
-      .select("*")
-      .maybeSingle();
+    // 4. Fetch Business legal info with fallback to getCollection
+    let business: any = null;
+    try {
+      const { data } = await dbClient
+        .from("business_profile")
+        .select("*")
+        .maybeSingle();
+      business = data;
+    } catch {}
+
+    if (!business) {
+      try {
+        const bpCollection = await getCollection<any>("businessProfile");
+        if (bpCollection && bpCollection.length > 0) {
+          business = bpCollection[0];
+        }
+      } catch {}
+    }
 
     // Generate PDF stream using react-pdf server engine
     const docBlob = React.createElement(InvoicePDF, {

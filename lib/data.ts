@@ -165,8 +165,8 @@ export const initialProjects: Project[] = [
       [Language.FR]: "Délai de rédaction des propositions réduit de 5 jours à moins de 4 minutes, augmentant les opportunités de vente de 340%.",
     },
     lessons: {
-      [Language.EN]: "AI is not a replacement for domain experts. The optimal workflow is 'AI assists, Senior expert approves'.",
-      [Language.FR]: "L'IA ne remplace pas les experts du domaine. Le flux de travail optimal est 'L'IA assiste, l'expert senior approuve'.",
+      [Language.EN]: "AI is not a replacement for domain experts. The optimal workflow is 'AI assists, expert approves'.",
+      [Language.FR]: "L'IA ne remplace pas les experts du domaine. Le flux de travail optimal est 'L'IA assiste, l'expert approuve'.",
     },
   },
 ];

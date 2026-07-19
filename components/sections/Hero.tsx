@@ -4,6 +4,7 @@ import React from "react";
 import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/lib/i18n/navigation";
 
 interface HeroProps {
   profileImageUrl: string;
@@ -11,6 +12,7 @@ interface HeroProps {
 
 export default function Hero({ profileImageUrl }: HeroProps) {
   const t = useTranslations("hero");
+  const router = useRouter();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -141,7 +143,7 @@ export default function Hero({ profileImageUrl }: HeroProps) {
               variants={itemVariants}
             >
               <motion.button
-                onClick={() => handleNavClick("services")}
+                onClick={() => handleNavClick("/services")}
                 className="w-full sm:w-auto bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-dark)] text-white font-bold text-xs tracking-widest uppercase px-8 py-4 rounded-full flex items-center justify-center space-x-2.5 transition-all duration-300 shadow-xs cursor-pointer"
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.98 }}
@@ -156,7 +158,7 @@ export default function Hero({ profileImageUrl }: HeroProps) {
               </motion.button>
               
               <motion.button
-                onClick={() => handleNavClick("projects")}
+                onClick={() => handleNavClick("/case-studies")}
                 className="w-full sm:w-auto bg-[var(--color-brand-panel)] hover:bg-[var(--color-brand-neutral)] border border-[var(--color-brand-neutral)] text-[var(--color-brand-dark)] font-bold text-xs tracking-widest uppercase px-8 py-4 rounded-full flex items-center justify-center space-x-2 transition-all duration-300 cursor-pointer"
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.98 }}

@@ -419,33 +419,97 @@ export function ServiceEditForm({ service, onSave, onCancel }: { service: any; o
   const [price, setPrice] = useState(service?.price || "");
   const [duration, setDuration] = useState(service?.duration || "60");
   const [category, setCategory] = useState(service?.category || "engineering");
-  const [status, setStatus] = useState(service?.status || "draft");
+  const [status, setStatus] = useState(service?.status || "published");
   
   // Tab state
   const [activeTab, setActiveTab] = useState<"en" | "fr">("en");
 
   // Localized fields
-  const [titleEn, setTitleEn] = useState(service?.title?.en || "");
-  const [titleFr, setTitleFr] = useState(service?.title?.fr || "");
-  const [descEn, setDescEn] = useState(service?.description?.en || "");
-  const [descFr, setDescFr] = useState(service?.description?.fr || "");
-  const [featuresEn, setFeaturesEn] = useState(service?.features?.en?.join("\n") || "");
-  const [featuresFr, setFeaturesFr] = useState(service?.features?.fr?.join("\n") || "");
+  const [titleEn, setTitleEn] = useState(service?.title?.en || service?.title || "");
+  const [titleFr, setTitleFr] = useState(service?.title?.fr || service?.title || "");
+  const [descEn, setDescEn] = useState(service?.description?.en || service?.description || "");
+  const [descFr, setDescFr] = useState(service?.description?.fr || service?.description || "");
+  const [featuresEn, setFeaturesEn] = useState(Array.isArray(service?.features?.en) ? service.features.en.join("\n") : "");
+  const [featuresFr, setFeaturesFr] = useState(Array.isArray(service?.features?.fr) ? service.features.fr.join("\n") : "");
+
+  // Tiers state
+  const initialTiers = service?.tiers || [
+    {
+      name: "Strategic Sprint",
+      multiplier: 1.0,
+      extraFeatures: [
+        "1-on-1 Interactive Call",
+        "Direct email summaries",
+        "Video recording access",
+      ],
+    },
+    {
+      name: "Architectural Blueprint",
+      multiplier: 1.5,
+      extraFeatures: [
+        "1-on-1 Interactive Call",
+        "Direct email summaries + Full Blueprint document",
+        "Visual diagram design schemas",
+        "Follow-up QA review call (15 mins)",
+      ],
+    },
+    {
+      name: "Continuous Enterprise Support",
+      multiplier: 2.8,
+      extraFeatures: [
+        "All Blueprint assets",
+        "Dedicated Private Slack Channel (1 Month)",
+        "Priority architectural review response",
+        "30-day emergency technical backup",
+      ],
+    },
+  ];
+
+  const [tiers, setTiers] = useState(
+    initialTiers.map((t: any) => ({
+      name: t.name || "",
+      multiplier: t.multiplier || 1,
+      extraFeaturesStr: Array.isArray(t.extraFeatures) ? t.extraFeatures.join("\n") : (t.extraFeatures || "")
+    }))
+  );
+
+  const handleTierChange = (index: number, field: string, value: any) => {
+    const nextTiers = [...tiers];
+    nextTiers[index] = { ...nextTiers[index], [field]: value };
+    setTiers(nextTiers);
+  };
+
+  const handleAddTier = () => {
+    setTiers([...tiers, { name: "Custom Tier", multiplier: 1.2, extraFeaturesStr: "" }]);
+  };
+
+  const handleRemoveTier = (index: number) => {
+    setTiers(tiers.filter((_: any, i: number) => i !== index));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const featEnArray = featuresEn.split("\n").map((f: string) => f.trim()).filter(Boolean);
     const featFrArray = featuresFr.split("\n").map((f: string) => f.trim()).filter(Boolean);
 
+    const formattedTiers = tiers.map((t: any) => ({
+      name: t.name,
+      multiplier: Number(t.multiplier) || 1,
+      extraFeatures: t.extraFeaturesStr.split("\n").map((f: string) => f.trim()).filter(Boolean)
+    }));
+
+    const cleanId = (id || "").trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9_-]/g, "");
+
     onSave({
-      id: id || undefined,
+      id: cleanId || undefined,
       price: Number(price),
       duration: Number(duration),
       category,
       status,
       title: { en: titleEn, fr: titleFr },
       description: { en: descEn, fr: descFr },
-      features: { en: featEnArray, fr: featFrArray }
+      features: { en: featEnArray, fr: featFrArray },
+      tiers: formattedTiers
     });
   };
 
@@ -460,6 +524,7 @@ export function ServiceEditForm({ service, onSave, onCancel }: { service: any; o
             disabled={!!service}
             value={id}
             onChange={(e) => setId(e.target.value)}
+            placeholder="e.g. software-architecture"
             className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
           />
         </div>
@@ -470,6 +535,7 @@ export function ServiceEditForm({ service, onSave, onCancel }: { service: any; o
             required
             value={price}
             onChange={(e) => setPrice(e.target.value)}
+            placeholder="350"
             className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
           />
         </div>
@@ -480,6 +546,7 @@ export function ServiceEditForm({ service, onSave, onCancel }: { service: any; o
             required
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
+            placeholder="60"
             className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
           />
         </div>
@@ -490,8 +557,8 @@ export function ServiceEditForm({ service, onSave, onCancel }: { service: any; o
             onChange={(e) => setStatus(e.target.value)}
             className="w-full bg-[#1A2324] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
           >
-            <option value="draft">Draft (Private)</option>
             <option value="published">Published (Public)</option>
+            <option value="draft">Draft (Private)</option>
             <option value="archived">Archived</option>
           </select>
         </div>
@@ -508,6 +575,7 @@ export function ServiceEditForm({ service, onSave, onCancel }: { service: any; o
             <option value="engineering">Engineering</option>
             <option value="strategy">Strategy</option>
             <option value="marketing">Marketing</option>
+            <option value="training">Training</option>
           </select>
         </div>
       </div>
@@ -547,6 +615,74 @@ export function ServiceEditForm({ service, onSave, onCancel }: { service: any; o
         </div>
       )}
 
+      {/* Custom Service Tiers Section */}
+      <div className="space-y-3 border-t border-[#CDD4DD]/10 pt-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-wider uppercase block">RESERVATION TIERS</span>
+            <h4 className="font-serif font-bold text-sm text-white">Service Tiers & Pricing Multipliers</h4>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddTier}
+            className="text-[10px] font-bold text-[#FF7A00] hover:underline cursor-pointer"
+          >
+            + Add Package Tier
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {tiers.map((t: any, idx: number) => (
+            <div key={idx} className="bg-[#1A2324] p-4 rounded-xl border border-[#CDD4DD]/10 space-y-3">
+              <div className="flex justify-between items-center gap-3">
+                <div className="flex-1">
+                  <label className="block text-[8px] text-gray-400 mb-1 uppercase">Tier Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={t.name}
+                    onChange={(e) => handleTierChange(idx, "name", e.target.value)}
+                    placeholder="e.g. Strategic Sprint"
+                    className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-lg px-3 py-1.5 text-xs text-white"
+                  />
+                </div>
+                <div className="w-32">
+                  <label className="block text-[8px] text-gray-400 mb-1 uppercase">Price Multiplier</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    required
+                    value={t.multiplier}
+                    onChange={(e) => handleTierChange(idx, "multiplier", e.target.value)}
+                    className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono"
+                  />
+                </div>
+                {tiers.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTier(idx)}
+                    className="text-red-400 hover:text-red-500 text-xs mt-4 font-bold cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[8px] text-gray-400 mb-1 uppercase">Included Tier Features (One per line)</label>
+                <textarea
+                  value={t.extraFeaturesStr}
+                  onChange={(e) => handleTierChange(idx, "extraFeaturesStr", e.target.value)}
+                  rows={2}
+                  placeholder="1-on-1 Interactive Call&#10;Direct email summaries"
+                  className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-lg p-2 text-xs text-white"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="flex justify-end gap-2 border-t border-[#CDD4DD]/5 pt-4">
         <button type="button" onClick={onCancel} className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 text-white cursor-pointer">Cancel</button>
         <button type="submit" className="px-5 py-2.5 bg-[#FF7A00] hover:bg-opacity-80 rounded-xl text-white font-bold cursor-pointer">Save Service</button>
@@ -570,8 +706,9 @@ export function FAQEditForm({ faq, onSave, onCancel }: { faq: any; onSave: (data
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanId = (id || "").trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9_-]/g, "");
     onSave({
-      id: id || undefined,
+      id: cleanId || undefined,
       question: { en: questEn, fr: questFr },
       answer: { en: ansEn, fr: ansFr }
     });

@@ -9,11 +9,11 @@ import Logo from "./Logo";
 
 const NAV_SECTIONS = [
   { key: "about", href: "/about" },
-  { key: "services", href: "/consulting" },
+  { key: "services", href: "/services" },
   { key: "projects", href: "/case-studies" },
   { key: "training", href: "/training" },
   { key: "portal", href: "/portal" },
-  { key: "discovery", href: "/#discovery" },
+  { key: "discovery", href: "/discovery" },
   { key: "contact", href: "/#contact" },
 ] as const;
 
@@ -34,6 +34,15 @@ export default function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Prefetch all navigation routes for instantaneous fluid page transitions
+  useEffect(() => {
+    NAV_SECTIONS.forEach((section) => {
+      if (section.href.startsWith("/")) {
+        router.prefetch(section.href);
+      }
+    });
+  }, [router]);
 
   // Intersection observer for active section
   useEffect(() => {
@@ -118,13 +127,15 @@ export default function Header() {
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-1">
             {NAV_SECTIONS.map((section) => {
-              const isActive = activeSection === section.href.replace("#", "");
+              const isActive = activeSection === section.href.replace("#", "") || pathname === section.href;
               return (
-                <button
+                <Link
                   key={section.key}
                   id={`nav-${section.key}`}
-                  onClick={() => handleNavClick(section.href)}
-                  className={`relative px-3 py-2 text-xs font-medium tracking-wide transition-colors rounded-md ${
+                  href={section.href}
+                  prefetch={true}
+                  onClick={() => setMobileOpen(false)}
+                  className={`relative px-3 py-2 text-xs font-medium tracking-wide transition-colors rounded-md no-underline ${
                     isActive
                       ? "text-[var(--color-brand-primary)]"
                       : "text-[var(--color-brand-dark)]/70 hover:text-[var(--color-brand-primary)]"
@@ -137,7 +148,7 @@ export default function Header() {
                       className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-[var(--color-brand-primary)]"
                     />
                   )}
-                </button>
+                </Link>
               );
             })}
           </div>
@@ -188,13 +199,14 @@ export default function Header() {
             </div>
 
             {/* Book CTA */}
-            <button
+            <Link
               id="header-book-cta"
-              onClick={() => handleNavClick("#services")}
-              className="hidden sm:block px-4 py-1.5 bg-[var(--color-brand-primary)] text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity"
+              href="/services"
+              prefetch={true}
+              className="hidden sm:inline-flex items-center justify-center px-4 py-1.5 bg-[var(--color-brand-primary)] text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity cursor-pointer no-underline"
             >
               Book Now
-            </button>
+            </Link>
 
             {/* Mobile Menu Toggle */}
             <button

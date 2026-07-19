@@ -55,8 +55,24 @@ export default function Testimonials({ testimonials }: TestimonialsProps) {
           viewport={{ once: true, margin: "-100px" }}
         >
           {testimonials.map((test) => {
-            const role = test.role[locale] || test.role["en"];
-            const content = test.content[locale] || test.content["en"];
+            const authorName = test.name || test.clientName || "Client";
+            const avatarUrl = test.avatar || test.photoUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
+
+            let roleStr = "";
+            if (typeof test.role === "string") {
+              roleStr = test.role;
+            } else if (test.role && typeof test.role === "object") {
+              roleStr = (test.role as any)[locale] || (test.role as any)["en"] || (test.role as any)["fr"] || "";
+            }
+
+            let contentStr = "";
+            if (typeof test.content === "string") {
+              contentStr = test.content;
+            } else if (test.content && typeof test.content === "object") {
+              contentStr = (test.content as any)[locale] || (test.content as any)["en"] || (test.content as any)["fr"] || "";
+            }
+
+            const companyStr = test.company || "";
 
             return (
               <motion.div
@@ -69,7 +85,7 @@ export default function Testimonials({ testimonials }: TestimonialsProps) {
                 <div>
                   {/* Rating stars */}
                   <div className="flex gap-1 mb-6">
-                    {[...Array(test.rating)].map((_, i) => (
+                    {[...Array(test.rating || 5)].map((_, i) => (
                       <Star key={i} className="w-4 h-4 fill-[var(--color-brand-accent)] text-[var(--color-brand-accent)]" />
                     ))}
                   </div>
@@ -78,7 +94,7 @@ export default function Testimonials({ testimonials }: TestimonialsProps) {
                   <div className="relative mb-6">
                     <Quote className="w-8 h-8 text-[var(--color-brand-primary)]/10 absolute -top-4 -left-4 pointer-events-none" />
                     <p className="text-sm font-serif italic text-[var(--color-brand-dark)] leading-relaxed relative z-10 pl-2">
-                      "{content}"
+                      "{contentStr}"
                     </p>
                   </div>
                 </div>
@@ -87,8 +103,8 @@ export default function Testimonials({ testimonials }: TestimonialsProps) {
                 <div className="flex items-center gap-4 pt-6 border-t border-[var(--color-brand-neutral)]/25">
                   <div className="w-10 h-10 rounded-full bg-[var(--color-brand-panel)] overflow-hidden shrink-0">
                     <img
-                      src={test.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"}
-                      alt={test.name}
+                      src={avatarUrl}
+                      alt={authorName}
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-300"
                       onError={(e) => {
@@ -98,11 +114,15 @@ export default function Testimonials({ testimonials }: TestimonialsProps) {
                   </div>
                   <div>
                     <h4 className="font-sans font-bold text-sm text-[var(--color-brand-dark)]">
-                      {test.name}
+                      {authorName}
                     </h4>
-                    <p className="text-xs text-[var(--color-brand-muted)]">
-                      {role}, <span className="font-semibold text-[var(--color-brand-primary)]">{test.company}</span>
-                    </p>
+                    {(roleStr || companyStr) && (
+                      <p className="text-xs text-[var(--color-brand-muted)]">
+                        {roleStr && <span>{roleStr}</span>}
+                        {roleStr && companyStr && <span>, </span>}
+                        {companyStr && <span className="font-semibold text-[var(--color-brand-primary)]">{companyStr}</span>}
+                      </p>
+                    )}
                   </div>
                 </div>
               </motion.div>

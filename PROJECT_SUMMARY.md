@@ -1,6 +1,6 @@
 # Invictus Portfolio & Client Portal — Project Summary
 
-Welcome to the technical documentation of the **Invictus Portfolio & Client Portal** platform, designed and built for **Amedee Erns Baptiste** (Senior Software Engineer & Digital Transformation Consultant). 
+Welcome to the technical documentation of the **Invictus Portfolio & Client Portal** platform, designed and built for **Amedee Erns Baptiste** ( Software Engineer & Digital Transformation Consultant). 
 
 This platform functions both as a high-performance public portfolio showcasing consulting services, projects, and insights, and as an interactive secure portal where clients can book consultations, view tasks, exchange documents and messages, configure settings, and receive customized AI-driven project diagnostics.
 

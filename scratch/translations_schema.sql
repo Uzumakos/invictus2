@@ -111,8 +111,10 @@ INSERT INTO translations (key, en, fr) VALUES
 ('nav.portal', 'Client Portal', 'Portail Client'),
 ('nav.contact', 'Get in Touch', 'Contactez-moi'),
 ('nav.discovery', 'Project Discovery', 'Découverte de Projet'),
-('hero.tagline', 'Senior Technology Consultant building scalable digital products, AI-powered solutions & digital transformation strategies.', 'Consultant Technologique Senior construisant des produits numériques évolutifs, des solutions IA et des stratégies de transformation digitale.'),
-('hero.sub', 'Senior Consultant, Digital Marketing Trainer, and AI Product Strategist delivering international excellence.', 'Consultant Senior, Formateur en Marketing Digital et Stratège Produit IA délivrant l''excellence internationale.'),
+('hero.tagline', 'Technology and Innovation Consultant
+Partnering with organizations to design scalable digital products, integrate AI-driven solutions, and lead impactful digital transformation initiatives.', 'Consultant en technologie et innovation
+J''accompagne les entreprises et les institutions dans la création de produits numériques innovants, l''intégration de solutions d''intelligence artificielle et la conduite de leur transformation digitale.'),
+('hero.sub', 'Consultant, Digital Marketing Trainer, and AI Product Strategist delivering international excellence.', 'Consultant, Formateur en Marketing Digital et Stratège Produit IA délivrant l''excellence internationale.'),
 ('hero.ctaPrimary', 'Book a Consultation', 'Réserver une Consultation'),
 ('hero.ctaSecondary', 'Explore Case Studies', 'Explorer les Projets'),
 ('hero.availability', 'Available for high-stakes projects globally', 'Disponible pour des projets d''envergure mondiale'),
@@ -126,8 +128,8 @@ INSERT INTO translations (key, en, fr) VALUES
 ('organizations.subtitle', 'Organizations, startups, and institutions that have placed their digital transformation in our hands.', 'Organisations, startups et institutions qui ont confié leur transformation digitale entre nos mains.'),
 ('about.title', 'The Professional Mind', 'L''Esprit Professionnel'),
 ('about.subtitle', 'Bridging deep technical execution with forward-thinking business strategy.', 'Associer une exécution technique de pointe à une vision stratégique des affaires.'),
-('about.bio', 'Amedee Erns Baptiste is a seasoned Senior Technology Consultant, digital transformation strategist, and CTO advisor. With a proven track record of helping startups, NGOs, universities, and international brands transition into the AI era, Amedee specializes in digital transformation consulting, CTO-as-a-Service, and custom engineering.', 'Amedee Erns Baptiste est un consultant technologique senior chevronné, stratège en transformation digitale et conseiller CTO. Avec une expertise reconnue pour accompagner les startups, les ONG, les universités et les organisations internationales vers l''ère de l''intelligence artificielle, Amedee est spécialisé dans le conseil en transformation digitale, le rôle de CTO-as-a-Service et le développement sur mesure.'),
-('about.roles.0', 'Senior Technology Consultant', 'Consultant Technologique Senior'),
+('about.bio', 'Amedee Erns Baptiste is a seasoned  Technology Consultant, digital transformation strategist, and CTO advisor. With a proven track record of helping startups, NGOs, universities, and international brands transition into the AI era, Amedee specializes in digital transformation consulting, CTO-as-a-Service, and custom engineering.', 'Amedee Erns Baptiste est un consultant technologique chevronné, stratège en transformation digitale et conseiller CTO. Avec une expertise reconnue pour accompagner les startups, les ONG, les universités et les organisations internationales vers l''ère de l''intelligence artificielle, Amedee est spécialisé dans le conseil en transformation digitale, le rôle de CTO-as-a-Service et le développement sur mesure.'),
+('about.roles.0', ' Technology Consultant', 'Consultant Technologique '),
 ('about.roles.1', 'AI Product Strategist', 'Stratège Produit IA'),
 ('about.roles.2', 'Digital Transformation Leader', 'Leader de la Transformation Digitale'),
 ('about.roles.3', 'Expert Marketing Trainer', 'Formateur Expert en Marketing'),
@@ -432,8 +434,8 @@ INSERT INTO translations (key, en, fr) VALUES
 ('payments.moncashInstructions', 'Please transfer the amount to MonCash:', 'Veuillez transférer le montant par MonCash :'),
 ('payments.natcashInstructions', 'Please transfer the amount to Natcash:', 'Veuillez transférer le montant par Natcash :'),
 ('payments.bankInstructions', 'Please transfer to our Bank Account:', 'Veuillez transférer sur notre Compte Bancaire :'),
-('seo.title', 'Amedee Erns Baptiste — Senior Technology Consultant & Digital Transformation Advisor', 'Amedee Erns Baptiste — Consultant Principal en Technologie & Conseiller en Transformation Digitale'),
-('seo.description', 'CTO Advisor and Senior Technology Consultant delivering international excellence in Software Architecture, AI Systems, and Cloud Migration.', 'Conseiller CTO et Consultant Principal en Technologie offrant l''excellence internationale en Architecture Logicielle, Systèmes d''IA et Migration Cloud.'),
+('seo.title', 'Amedee Erns Baptiste —  Technology Consultant & Digital Transformation Advisor', 'Amedee Erns Baptiste — Consultant Principal en Technologie & Conseiller en Transformation Digitale'),
+('seo.description', 'CTO Advisor and Technology Consultant delivering international excellence in Software Architecture, AI Systems, and Cloud Migration.', 'Conseiller CTO et Consultant Principal en Technologie offrant l''excellence internationale en Architecture Logicielle, Systèmes d''IA et Migration Cloud.'),
 ('seo.keywords', 'Technology Consultant, Software Architecture, CTO Advisor, AI Integration, Cloud Migration, Digital Transformation', 'Consultant en Technologie, Architecture Logicielle, Conseiller CTO, Intégration de l''IA, Migration Cloud, Transformation Digitale')
 ON CONFLICT (key) DO UPDATE SET en = EXCLUDED.en, fr = EXCLUDED.fr;
 

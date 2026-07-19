@@ -101,7 +101,7 @@ export default function Services({ onSectionChange }: ServicesProps) {
           ) || servicesList[0];
           
           setSelectedService(matchedOffer);
-          setChosenTier(tiers[0]);
+          setChosenTier(getServiceTiers(matchedOffer)[0]);
           setBookingStep("datetime");
           
           // Clean up payload
@@ -165,7 +165,7 @@ export default function Services({ onSectionChange }: ServicesProps) {
     return dateToCompare < currentDate;
   };
 
-  const tiers = [
+  const defaultTiers = [
     {
       name: "Strategic Sprint",
       multiplier: 1.0,
@@ -197,14 +197,22 @@ export default function Services({ onSectionChange }: ServicesProps) {
     },
   ];
 
+  const getServiceTiers = (service: Service | null) => {
+    if (service && service.tiers && service.tiers.length > 0) {
+      return service.tiers;
+    }
+    return defaultTiers;
+  };
+
   const handleOpenBooking = (service: Service) => {
     setSelectedService(service);
+    const activeTiers = getServiceTiers(service);
     // Generate static reference code for this checkout flow
     const timestamp = Date.now().toString().slice(-6);
     const randomHex = Math.floor(Math.random() * 256).toString(16).padStart(2, "0");
     setGeneratedBookingId(`b_${timestamp}${randomHex}`);
     setBookingStep("package");
-    setChosenTier(tiers[0]);
+    setChosenTier(activeTiers[0]);
     setError(null);
   };
 
@@ -420,7 +428,7 @@ export default function Services({ onSectionChange }: ServicesProps) {
                           {t("packages")}
                         </h4>
                         <div className="grid grid-cols-1 gap-4">
-                          {tiers.map((tier) => {
+                          {getServiceTiers(selectedService).map((tier) => {
                             const isSelected = chosenTier?.name === tier.name;
                             const p = Math.round(selectedService.price * tier.multiplier);
                             return (
@@ -817,30 +825,31 @@ export default function Services({ onSectionChange }: ServicesProps) {
                                 <span className="text-[var(--color-brand-dark)] font-bold">${calculateFinalPrice()} USD</span>
                               </div>
 
-                              {currentPaymentMethod.type === "mobile" && (
+                              {currentPaymentMethod.email && (
                                 <div className="flex justify-between">
-                                  <span>{t("paymentPhone")}:</span>
+                                  <span>{t("paymentEmail") || "Gateway Email / ID"}:</span>
+                                  <span className="text-[var(--color-brand-primary)] font-bold">{currentPaymentMethod.email}</span>
+                                </div>
+                              )}
+
+                              {currentPaymentMethod.phoneNumber && (
+                                <div className="flex justify-between">
+                                  <span>{t("paymentPhone") || "Phone Line"}:</span>
                                   <span className="text-[var(--color-brand-primary)] font-bold">{currentPaymentMethod.phoneNumber}</span>
                                 </div>
                               )}
 
-                              {currentPaymentMethod.type === "bank" && (
-                                <>
-                                  <div className="flex justify-between">
-                                    <span>{t("paymentAccount")}:</span>
-                                    <span className="text-[var(--color-brand-dark)] font-bold">{currentPaymentMethod.accountNumber}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>{t("paymentHolder")}:</span>
-                                    <span className="text-[var(--color-brand-dark)] font-bold">{currentPaymentMethod.accountHolder}</span>
-                                  </div>
-                                </>
+                              {currentPaymentMethod.accountNumber && (
+                                <div className="flex justify-between">
+                                  <span>{t("paymentAccount") || "Account Number"}:</span>
+                                  <span className="text-[var(--color-brand-dark)] font-bold">{currentPaymentMethod.accountNumber}</span>
+                                </div>
                               )}
 
-                              {currentPaymentMethod.id === "wise" && (
+                              {currentPaymentMethod.accountHolder && (
                                 <div className="flex justify-between">
-                                  <span>{t("paymentEmail")}:</span>
-                                  <span className="text-[var(--color-brand-primary)] font-bold">{currentPaymentMethod.email}</span>
+                                  <span>{t("paymentHolder") || "Account Holder"}:</span>
+                                  <span className="text-[var(--color-brand-dark)] font-bold">{currentPaymentMethod.accountHolder}</span>
                                 </div>
                               )}
 

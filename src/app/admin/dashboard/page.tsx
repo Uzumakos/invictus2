@@ -19,6 +19,7 @@ import ClientBillingManager from "@/components/admin/ClientBillingManager";
 import TestimonialsManager from "@/components/admin/TestimonialsManager";
 import BrandAssetsForm from "@/components/admin/BrandAssetsForm";
 import SEOCenterForm from "@/components/admin/SEOCenterForm";
+import { getGoogleCalendarUrl } from "@/lib/googleCalendar";
 
 type DashboardTab = 
   | "analytics" | "crm" | "bookings" | "discoveries" | "payments" 
@@ -309,8 +310,10 @@ export default function AdminDashboardPage() {
   // Case Studies CRUD
   const handleSaveProject = async (projectData: any) => {
     setError(null);
-    const isNew = !projectData.id;
-    const url = isNew ? "/api/case-studies" : `/api/case-studies/${projectData.id}`;
+    const cleanId = (projectData.id || "").trim();
+    const existsInDb = cmsProjects.some((p) => p.id === cleanId || p.id === projectData.id);
+    const isNew = !cleanId || !existsInDb;
+    const url = isNew ? "/api/case-studies" : `/api/case-studies/${encodeURIComponent(cleanId)}`;
     const method = isNew ? "POST" : "PATCH";
 
     try {
@@ -340,7 +343,7 @@ export default function AdminDashboardPage() {
     if (!confirm("Are you sure you want to delete this case study?")) return;
     setError(null);
     try {
-      const res = await fetch(`/api/case-studies/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/case-studies/${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete project.");
       setCmsProjects(cmsProjects.filter((p) => p.id !== id));
       showToast("Case study deleted!");
@@ -353,8 +356,10 @@ export default function AdminDashboardPage() {
   // Training Programs CRUD
   const handleSaveTraining = async (trainingData: any) => {
     setError(null);
-    const isNew = !trainingData.id;
-    const url = isNew ? "/api/training-programs" : `/api/training-programs/${trainingData.id}`;
+    const cleanId = (trainingData.id || "").trim();
+    const existsInDb = trainingPrograms.some((t) => t.id === cleanId || t.id === trainingData.id);
+    const isNew = !cleanId || !existsInDb;
+    const url = isNew ? "/api/training-programs" : `/api/training-programs/${encodeURIComponent(cleanId)}`;
     const method = isNew ? "POST" : "PATCH";
 
     try {
@@ -384,7 +389,7 @@ export default function AdminDashboardPage() {
     if (!confirm("Are you sure you want to delete this training program?")) return;
     setError(null);
     try {
-      const res = await fetch(`/api/training-programs/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/training-programs/${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete training program.");
       setTrainingPrograms(trainingPrograms.filter((t) => t.id !== id));
       showToast("Training program deleted!");
@@ -397,8 +402,11 @@ export default function AdminDashboardPage() {
   // Consulting Services CRUD
   const handleSaveService = async (serviceData: any) => {
     setError(null);
-    const isNew = !serviceData.id;
-    const url = isNew ? "/api/consulting-services" : `/api/consulting-services/${serviceData.id}`;
+    const cleanId = (serviceData.id || "").trim();
+    const existsInDb = consultingServices.some((s) => s.id === cleanId || s.id === serviceData.id);
+    const isNew = !cleanId || !existsInDb;
+    const encodedId = encodeURIComponent(cleanId);
+    const url = isNew ? "/api/consulting-services" : `/api/consulting-services/${encodedId}`;
     const method = isNew ? "POST" : "PATCH";
 
     try {
@@ -428,7 +436,7 @@ export default function AdminDashboardPage() {
     if (!confirm("Are you sure you want to delete this consulting service?")) return;
     setError(null);
     try {
-      const res = await fetch(`/api/consulting-services/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/consulting-services/${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete service.");
       setConsultingServices(consultingServices.filter((s) => s.id !== id));
       showToast("Consulting service deleted!");
@@ -441,8 +449,10 @@ export default function AdminDashboardPage() {
   // FAQs CRUD
   const handleSaveFAQ = async (faqData: any) => {
     setError(null);
-    const isNew = !faqData.id;
-    const url = isNew ? "/api/faq-items" : `/api/faq-items/${faqData.id}`;
+    const cleanId = (faqData.id || "").trim();
+    const existsInDb = faqItems.some((f) => f.id === cleanId || f.id === faqData.id);
+    const isNew = !cleanId || !existsInDb;
+    const url = isNew ? "/api/faq-items" : `/api/faq-items/${encodeURIComponent(cleanId)}`;
     const method = isNew ? "POST" : "PATCH";
 
     try {
@@ -472,7 +482,7 @@ export default function AdminDashboardPage() {
     if (!confirm("Are you sure you want to delete this FAQ?")) return;
     setError(null);
     try {
-      const res = await fetch(`/api/faq-items/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/faq-items/${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete FAQ.");
       setFaqItems(faqItems.filter((f) => f.id !== id));
       showToast("FAQ deleted!");
@@ -822,6 +832,7 @@ export default function AdminDashboardPage() {
       title: "Content Studio (CMS)",
       items: [
         { id: "cms_sections", label: "Website Builder", icon: Layers },
+        { id: "cms_services", label: "Services & Pricing", icon: Cpu },
         { id: "cms_media", label: "Media Center", icon: ImageIcon },
         { id: "cms_seo", label: "SEO Center", icon: Globe },
         { id: "cms_brand", label: "Brand Assets", icon: Layers },
@@ -1055,7 +1066,27 @@ export default function AdminDashboardPage() {
                   </div>
                 )}
 
-                {/* 5. Payments Matches */}
+                {/* 5. Services Matches */}
+                {searchResults.services.length > 0 && (
+                  <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-3xl space-y-3">
+                    <span className="text-[9px] font-bold text-[#FF7A00] uppercase block">Services ({searchResults.services.length})</span>
+                    <div className="space-y-2">
+                      {searchResults.services.map(s => (
+                        <div 
+                          key={s.id} 
+                          onClick={() => { setActiveTab("cms_services"); setGlobalSearchQuery(""); }}
+                          className="bg-[#121A1B] p-2.5 rounded-xl border border-transparent hover:border-[#FF7A00]/20 cursor-pointer transition-all"
+                        >
+                          <p className="font-bold text-white text-[11px]">{s.title?.en || s.title}</p>
+                          <p className="text-[9px] text-[#CDD4DD]/50">${s.price} USD &middot; {s.duration} mins</p>
+                          <p className="text-[9px] text-emerald-400 uppercase font-bold">{s.category}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 6. Payments Matches */}
                 {searchResults.payments.length > 0 && (
                   <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-3xl space-y-3">
                     <span className="text-[9px] font-bold text-[#FF7A00] uppercase block">Payments ({searchResults.payments.length})</span>
@@ -1431,7 +1462,18 @@ export default function AdminDashboardPage() {
                                 {b.status}
                               </span>
                             </td>
-                            <td className="py-3 px-4 text-right space-x-1.5">
+                            <td className="py-3 px-4 text-right space-x-1.5 flex items-center justify-end gap-2">
+                              <a
+                                href={getGoogleCalendarUrl(b)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-[#27187E]/30 hover:bg-[#27187E] text-amber-400 hover:text-white px-2 py-1 rounded text-[9px] font-bold border border-[#FF7A00]/20 transition-all flex items-center gap-1 cursor-pointer no-underline"
+                                title="Add event to Google Calendar"
+                              >
+                                <Calendar className="w-3 h-3 text-[#FF7A00]" />
+                                <span>Add to GCal</span>
+                              </a>
+
                               {b.status === "pending" && (
                                 <>
                                   <button onClick={() => handleBookingStatus(b.id, "confirmed")} className="text-emerald-400 hover:text-emerald-500 font-bold uppercase text-[9px] tracking-wider cursor-pointer">
@@ -2467,85 +2509,157 @@ export default function AdminDashboardPage() {
 
                   {/* Right Column: Payment Methods List */}
                   <div className="lg:col-span-6 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4">
-                    <div>
-                      <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">PAYMENT GATEWAYS</span>
-                      <h4 className="font-serif font-bold text-lg text-white">Merchant Payment Routing</h4>
+                    <div className="flex justify-between items-start border-b border-[#CDD4DD]/10 pb-3">
+                      <div>
+                        <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">PAYMENT GATEWAYS</span>
+                        <h4 className="font-serif font-bold text-lg text-white">Merchant Payment Routing</h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const name = prompt("Enter the name of the new USD or local payment gateway (e.g. Zelle, Stripe, Bank Wire USD, PayPal):");
+                          if (!name || !name.trim()) return;
+                          const newId = name.toLowerCase().replace(/[^a-z0-9]/g, "_") || `gw_${Date.now()}`;
+                          const newMethod = {
+                            id: newId,
+                            name: name.trim(),
+                            type: "international" as const,
+                            enabled: true,
+                            logoUrl: "",
+                            phoneNumber: "",
+                            accountNumber: "",
+                            accountHolder: "",
+                            email: ""
+                          };
+                          setPaymentConfig({ methods: [...paymentConfig.methods, newMethod as any] });
+                          showToast(`Added gateway "${newMethod.name}". Click "Save Configuration" to persist.`);
+                        }}
+                        className="bg-[#FF7A00] hover:bg-opacity-80 text-white text-[9px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 border-0 shadow-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Gateway (USD/Local)</span>
+                      </button>
                     </div>
 
                     <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                       {paymentConfig.methods.map((method, index) => (
-                        <div key={method.id} className="bg-[#121A1B] p-4 rounded-2xl border border-[#CDD4DD]/5 flex flex-col space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="font-serif font-bold text-sm text-white">{method.name}</span>
-                            <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded border font-bold ${
-                              method.enabled ? "bg-emerald-950/40 border-emerald-500/20 text-emerald-400" : "bg-red-950/40 border-red-500/20 text-red-400"
-                            }`}>
-                              {method.enabled ? "Active" : "Disabled"}
-                            </span>
+                        <div key={method.id || index} className="bg-[#121A1B] p-4 rounded-2xl border border-[#CDD4DD]/5 flex flex-col space-y-3">
+                          <div className="flex justify-between items-center border-b border-[#CDD4DD]/5 pb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-serif font-bold text-sm text-white">{method.name}</span>
+                              <span className="text-[8px] uppercase px-1.5 py-0.5 rounded bg-white/5 text-gray-400 font-mono">
+                                {method.type}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded border font-bold ${
+                                method.enabled ? "bg-emerald-950/40 border-emerald-500/20 text-emerald-400" : "bg-red-950/40 border-red-500/20 text-red-400"
+                              }`}>
+                                {method.enabled ? "Active" : "Disabled"}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!confirm(`Are you sure you want to remove payment gateway "${method.name}"?`)) return;
+                                  const updated = paymentConfig.methods.filter((_, i) => i !== index);
+                                  setPaymentConfig({ methods: updated });
+                                  showToast(`Removed gateway "${method.name}".`);
+                                }}
+                                className="text-red-400 hover:text-red-500 hover:bg-red-950/20 p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent"
+                                title="Delete Gateway"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                           
                           {/* Configurations Inputs */}
                           <div className="grid grid-cols-2 gap-2 text-[10px]">
-                            {method.phoneNumber !== undefined && (
-                              <div>
-                                <span className="text-gray-500 block text-[8px] uppercase">Phone Line</span>
-                                <input
-                                  type="text"
-                                  value={method.phoneNumber || ""}
-                                  onChange={(e) => {
-                                    const updatedMethods = [...paymentConfig.methods];
-                                    updatedMethods[index].phoneNumber = e.target.value;
-                                    setPaymentConfig({ methods: updatedMethods });
-                                  }}
-                                  className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
-                                />
-                              </div>
-                            )}
-                            {method.accountNumber !== undefined && (
-                              <div>
-                                <span className="text-gray-500 block text-[8px] uppercase">Account Number</span>
-                                <input
-                                  type="text"
-                                  value={method.accountNumber || ""}
-                                  onChange={(e) => {
-                                    const updatedMethods = [...paymentConfig.methods];
-                                    updatedMethods[index].accountNumber = e.target.value;
-                                    setPaymentConfig({ methods: updatedMethods });
-                                  }}
-                                  className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
-                                />
-                              </div>
-                            )}
-                            {method.accountHolder !== undefined && (
-                              <div>
-                                <span className="text-gray-500 block text-[8px] uppercase">Account Holder</span>
-                                <input
-                                  type="text"
-                                  value={method.accountHolder || ""}
-                                  onChange={(e) => {
-                                    const updatedMethods = [...paymentConfig.methods];
-                                    updatedMethods[index].accountHolder = e.target.value;
-                                    setPaymentConfig({ methods: updatedMethods });
-                                  }}
-                                  className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
-                                />
-                              </div>
-                            )}
-                            {method.email !== undefined && (
-                              <div>
-                                <span className="text-gray-500 block text-[8px] uppercase">Gateway Email</span>
-                                <input
-                                  type="email"
-                                  value={method.email || ""}
-                                  onChange={(e) => {
-                                    const updatedMethods = [...paymentConfig.methods];
-                                    updatedMethods[index].email = e.target.value;
-                                    setPaymentConfig({ methods: updatedMethods });
-                                  }}
-                                  className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
-                                />
-                              </div>
-                            )}
+                            <div>
+                              <span className="text-gray-500 block text-[8px] uppercase">Gateway Name</span>
+                              <input
+                                type="text"
+                                value={method.name || ""}
+                                onChange={(e) => {
+                                  const updatedMethods = [...paymentConfig.methods];
+                                  updatedMethods[index].name = e.target.value;
+                                  setPaymentConfig({ methods: updatedMethods });
+                                }}
+                                className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-gray-500 block text-[8px] uppercase">Category / Type</span>
+                              <select
+                                value={method.type || "international"}
+                                onChange={(e) => {
+                                  const updatedMethods = [...paymentConfig.methods];
+                                  updatedMethods[index].type = e.target.value as any;
+                                  setPaymentConfig({ methods: updatedMethods });
+                                }}
+                                className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
+                              >
+                                <option value="international">USD / International</option>
+                                <option value="bank">Bank Transfer</option>
+                                <option value="mobile">Mobile Money</option>
+                              </select>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 block text-[8px] uppercase">Gateway Email / Zelle / ID</span>
+                              <input
+                                type="text"
+                                value={method.email || ""}
+                                placeholder="e.g. pay@domain.com"
+                                onChange={(e) => {
+                                  const updatedMethods = [...paymentConfig.methods];
+                                  updatedMethods[index].email = e.target.value;
+                                  setPaymentConfig({ methods: updatedMethods });
+                                }}
+                                className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-gray-500 block text-[8px] uppercase">Account Number</span>
+                              <input
+                                type="text"
+                                value={method.accountNumber || ""}
+                                placeholder="e.g. 123456789"
+                                onChange={(e) => {
+                                  const updatedMethods = [...paymentConfig.methods];
+                                  updatedMethods[index].accountNumber = e.target.value;
+                                  setPaymentConfig({ methods: updatedMethods });
+                                }}
+                                className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-gray-500 block text-[8px] uppercase">Account Holder Name</span>
+                              <input
+                                type="text"
+                                value={method.accountHolder || ""}
+                                placeholder="e.g. Business Name Inc"
+                                onChange={(e) => {
+                                  const updatedMethods = [...paymentConfig.methods];
+                                  updatedMethods[index].accountHolder = e.target.value;
+                                  setPaymentConfig({ methods: updatedMethods });
+                                }}
+                                className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-gray-500 block text-[8px] uppercase">Phone Line</span>
+                              <input
+                                type="text"
+                                value={method.phoneNumber || ""}
+                                placeholder="e.g. +1 (305) 000-0000"
+                                onChange={(e) => {
+                                  const updatedMethods = [...paymentConfig.methods];
+                                  updatedMethods[index].phoneNumber = e.target.value;
+                                  setPaymentConfig({ methods: updatedMethods });
+                                }}
+                                className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded px-2 py-1 text-white w-full focus:outline-none"
+                              />
+                            </div>
                           </div>
                           
                           <div className="flex items-center space-x-2 pt-1">

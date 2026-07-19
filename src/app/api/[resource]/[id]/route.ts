@@ -7,6 +7,7 @@ const ALLOWED_RESOURCES = [
   "leads",
   "notifications",
   "discoveries",
+  "recommendation-rules",
   "payments",
   "translations",
   "case-studies",
@@ -44,6 +45,7 @@ export async function PATCH(
     if (resource === "leads") collectionKey = "leads";
     if (resource === "notifications") collectionKey = "portalNotifications";
     if (resource === "discoveries") collectionKey = "discoveries";
+    if (resource === "recommendation-rules") collectionKey = "recommendationRules";
     if (resource === "payments") collectionKey = "portalPayments";
 
     // CMS, ERP & Telemetry collections

@@ -26,6 +26,12 @@ export interface Project {
 }
 
 // ─── Service / Consulting ─────────────────────────────────────────────────
+export interface ServiceTier {
+  name: string;
+  multiplier: number;
+  extraFeatures: string[];
+}
+
 export interface Service {
   id: string;
   title: Record<Language, string>;
@@ -34,16 +40,20 @@ export interface Service {
   duration: number; // in minutes
   features: Record<Language, string[]>;
   category: "engineering" | "strategy" | "marketing" | "training";
+  status?: "draft" | "published" | "archived";
+  tiers?: ServiceTier[];
 }
 
 // ─── Testimonial ──────────────────────────────────────────────────────────
 export interface Testimonial {
   id: string;
-  name: string;
-  role: Record<Language, string>;
-  company: string;
-  avatar: string; // URL
-  content: Record<Language, string>;
+  name?: string;
+  clientName?: string;
+  role?: Record<Language, string> | string;
+  company?: string;
+  avatar?: string;
+  photoUrl?: string;
+  content: Record<Language, string> | string;
   rating: number;
 }
 

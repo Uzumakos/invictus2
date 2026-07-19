@@ -97,9 +97,9 @@ export default function Contact() {
   return (
     <section id="contact" className="py-24 bg-[var(--color-brand-bg)] text-[var(--color-brand-dark)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Heading */}
-        <motion.div 
+        <motion.div
           className="text-center mb-16"
           variants={headerVariants}
           initial="hidden"
@@ -117,7 +117,7 @@ export default function Contact() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Info Column */}
-          <motion.div 
+          <motion.div
             className="lg:col-span-5 space-y-8 flex flex-col justify-between"
             variants={containerVariants}
             initial="hidden"
@@ -129,7 +129,7 @@ export default function Contact() {
                 Let's Build Something Scalable.
               </h3>
               <p className="text-sm text-[var(--color-brand-muted)] leading-relaxed font-medium">
-                Whether you need senior engineering consulting, an AI implementation roadmap, or digital transformation training, I'm here to help you design a bulletproof system.
+                Whether you need engineering consulting, an AI implementation roadmap, or digital transformation training, I'm here to help you design a bulletproof system.
               </p>
             </div>
 
@@ -173,7 +173,7 @@ export default function Contact() {
           </motion.div>
 
           {/* Form Column */}
-          <motion.div 
+          <motion.div
             className="lg:col-span-7 bg-white p-8 sm:p-10 rounded-3xl border border-[var(--color-brand-neutral)]/20 shadow-2xs"
             variants={containerVariants}
             initial="hidden"
@@ -181,7 +181,7 @@ export default function Contact() {
             viewport={{ once: true }}
           >
             {success ? (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center py-16 space-y-6"
@@ -206,7 +206,7 @@ export default function Contact() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <AnimatePresence mode="wait">
                   {error && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}

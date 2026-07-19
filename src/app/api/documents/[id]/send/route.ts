@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseClient";
+import { getCollection } from "@/lib/db";
 import { pdf } from "@react-pdf/renderer";
 import { InvoicePDF } from "../export/route";
 import nodemailer from "nodemailer";
@@ -72,11 +73,24 @@ export async function POST(
       .select("*")
       .eq("document_id", id);
 
-    // 4. Fetch business profile
-    const { data: business } = await dbClient
-      .from("business_profile")
-      .select("*")
-      .maybeSingle();
+    // 4. Fetch business profile with fallback
+    let business: any = null;
+    try {
+      const { data } = await dbClient
+        .from("business_profile")
+        .select("*")
+        .maybeSingle();
+      business = data;
+    } catch {}
+
+    if (!business) {
+      try {
+        const bpCollection = await getCollection<any>("businessProfile");
+        if (bpCollection && bpCollection.length > 0) {
+          business = bpCollection[0];
+        }
+      } catch {}
+    }
 
     // Render PDF into Buffer
     const docBlob = React.createElement(InvoicePDF, {

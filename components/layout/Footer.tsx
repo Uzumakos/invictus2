@@ -33,7 +33,7 @@ export default function Footer({ socialLinks }: FooterProps) {
   return (
     <footer className="bg-[var(--color-brand-dark)] text-white/70 py-16 border-t border-white/5 relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           {/* Brand Column */}
           <div className="space-y-4 col-span-1 md:col-span-2">
@@ -41,7 +41,7 @@ export default function Footer({ socialLinks }: FooterProps) {
               Amedee Erns Baptiste
             </span>
             <p className="text-xs text-white/50 max-w-sm leading-relaxed font-medium">
-              Senior Software Architect & Digital Transformation Leader. Specializing in high-throughput enterprise systems, robust database caching frameworks, and AI product integration strategy.
+              Software Architect & Digital Transformation Leader. Specializing in high-throughput enterprise systems, robust database caching frameworks, and AI product integration strategy.
             </p>
             <div className="flex space-x-4 pt-2">
               <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/5 rounded-full hover:bg-[var(--color-brand-primary)] hover:text-white transition-all">

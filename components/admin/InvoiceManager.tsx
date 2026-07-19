@@ -86,6 +86,10 @@ export default function InvoiceManager() {
   const [items, setItems] = useState<DocumentItem[]>([]);
   const [itemLangTab, setItemLangTab] = useState<"en" | "fr">("fr");
 
+  // Payment Gateways
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [selectedPaymentGatewayId, setSelectedPaymentGatewayId] = useState<string>("");
+
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,6 +98,7 @@ export default function InvoiceManager() {
   useEffect(() => {
     fetchDocuments();
     fetchClients();
+    fetchPaymentMethods();
   }, []);
 
   const fetchDocuments = async () => {
@@ -118,6 +123,39 @@ export default function InvoiceManager() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const fetchPaymentMethods = async () => {
+    try {
+      const res = await fetch("/api/payment-config");
+      if (res.ok) {
+        const data = await res.json();
+        setPaymentMethods(data?.methods?.filter((m: any) => m.enabled) || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleApplyPaymentGateway = (gatewayId: string) => {
+    if (!gatewayId) return;
+    const method = paymentMethods.find((m: any) => m.id === gatewayId);
+    if (!method) return;
+
+    let lines = [`Payment Gateway: ${method.name}`];
+    if (method.accountNumber) lines.push(`Account Number: ${method.accountNumber}`);
+    if (method.accountHolder) lines.push(`Account Holder: ${method.accountHolder}`);
+    if (method.email) lines.push(`Gateway Email / ID: ${method.email}`);
+    if (method.phoneNumber) lines.push(`Phone / Transfer Line: ${method.phoneNumber}`);
+
+    const formattedInfo = lines.join("\n");
+
+    setTermsConditions((prev) => {
+      if (!prev.trim()) return formattedInfo;
+      if (prev.includes(method.name)) return prev;
+      return `${prev.trim()}\n\n${formattedInfo}`;
+    });
+    showToast(`Attached "${method.name}" details to payment instructions.`);
   };
 
   const showToast = (msg: string) => {
@@ -686,13 +724,38 @@ export default function InvoiceManager() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pt-4 border-t border-[#CDD4DD]/5">
             <div className="md:col-span-7 space-y-3">
               <div>
-                <label className="block text-[8px] font-bold text-[#CDD4DD]/40 tracking-wider mb-1 uppercase">Payment Terms & Conditions</label>
+                <div className="flex justify-between items-center mb-1.5 flex-wrap gap-2">
+                  <label className="block text-[8px] font-bold text-[#CDD4DD]/40 tracking-wider uppercase">Payment Terms & Instructions</label>
+                  {paymentMethods.length > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={selectedPaymentGatewayId}
+                        onChange={(e) => setSelectedPaymentGatewayId(e.target.value)}
+                        className="bg-[#121A1B] border border-[#CDD4DD]/20 rounded-lg px-2.5 py-1 text-[9px] text-white focus:outline-none focus:border-[#FF7A00]"
+                      >
+                        <option value="">Select Existing Gateway...</option>
+                        {paymentMethods.map((m: any) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} ({m.type})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyPaymentGateway(selectedPaymentGatewayId)}
+                        className="bg-[#FF7A00] hover:bg-opacity-80 text-white text-[8px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg transition-all cursor-pointer border-0 shadow-sm"
+                      >
+                        + Add Payment Method
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <textarea
                   value={termsConditions}
                   onChange={(e) => setTermsConditions(e.target.value)}
-                  placeholder="Terms, bank information, check details, Swish, wire info..."
-                  rows={3}
-                  className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl p-3 text-white focus:outline-none"
+                  placeholder="Select an existing payment gateway above or type custom terms, bank details, wire info..."
+                  rows={4}
+                  className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl p-3 text-white focus:outline-none text-xs font-mono"
                 />
               </div>
               <div>

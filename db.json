@@ -47,11 +47,20 @@
       },
       {
         "id": "wise",
-        "name": "Wise",
+        "name": "Wise (USD)",
         "type": "international",
-        "enabled": false,
+        "enabled": true,
         "logoUrl": "",
-        "email": ""
+        "email": "erns@amedeebaptiste.com"
+      },
+      {
+        "id": "zelle",
+        "name": "Zelle (USD)",
+        "type": "international",
+        "enabled": true,
+        "logoUrl": "",
+        "email": "erns@amedeebaptiste.com",
+        "phoneNumber": "+1 (305) 000-0000"
       },
       {
         "id": "paypal",
@@ -821,8 +830,8 @@
         "fr": "Délai de rédaction des propositions réduit de 5 jours à moins de 4 minutes, augmentant les opportunités de vente de 340%."
       },
       "lessons": {
-        "en": "AI is not a replacement for domain experts. The optimal workflow is 'AI assists, Senior expert approves'.",
-        "fr": "L'IA ne remplace pas les experts du domaine. Le flux de travail optimal est 'L'IA assiste, l'expert senior approuve'."
+        "en": "AI is not a replacement for domain experts. The optimal workflow is 'AI assists, expert approves'.",
+        "fr": "L'IA ne remplace pas les experts du domaine. Le flux de travail optimal est 'L'IA assiste, l'expert approuve'."
       }
     }
   ],

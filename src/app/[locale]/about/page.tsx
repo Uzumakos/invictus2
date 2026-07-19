@@ -24,10 +24,10 @@ export default async function AboutPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-[var(--color-brand-bg)] text-[var(--color-brand-dark)] flex flex-col font-sans selection:bg-[var(--color-brand-primary)] selection:text-white">
       <Header />
-      
+
       <main className="flex-grow pt-32 pb-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
-          
+
           {/* Detailed About Intro Section */}
           <About />
 
@@ -38,8 +38,8 @@ export default async function AboutPage({ params }: PageProps) {
                 {locale === "fr" ? "VISION ET MISSION" : "VISION & MISSION"}
               </span>
               <h3 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight">
-                {locale === "fr" 
-                  ? "Accompagner la transformation digitale et l'adoption de l'IA" 
+                {locale === "fr"
+                  ? "Accompagner la transformation digitale et l'adoption de l'IA"
                   : "Empowering scalable digital transformations and AI adoption."}
               </h3>
             </div>
@@ -100,7 +100,7 @@ export default async function AboutPage({ params }: PageProps) {
                   1
                 </div>
                 <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">Digital Marketing Specialist</h4>
-                <p className="text-[11px] font-mono text-[var(--color-brand-muted)] mb-2">2018 - 2021</p>
+                <p className="text-[11px] font-mono text-[var(--color-brand-muted)] mb-2">2018 - 2026</p>
                 <p className="text-xs text-[var(--color-brand-muted)] leading-relaxed">
                   {locale === "fr"
                     ? "Début de carrière axé sur l'acquisition de clients, le marketing digital avancé et les formations technologiques, jetant les bases des stratégies de croissance."
@@ -113,7 +113,7 @@ export default async function AboutPage({ params }: PageProps) {
                   2
                 </div>
                 <h4 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">Software Engineering & Architecture</h4>
-                <p className="text-[11px] font-mono text-[var(--color-brand-muted)] mb-2">2021 - 2024</p>
+                <p className="text-[11px] font-mono text-[var(--color-brand-muted)] mb-2">2020 - 2026</p>
                 <p className="text-xs text-[var(--color-brand-muted)] leading-relaxed">
                   {locale === "fr"
                     ? "Transition vers l'ingénierie logicielle avancée et la conception d'architectures robustes. Développement de produits complexes à fort trafic pour des organisations mondiales."

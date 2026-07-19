@@ -12,8 +12,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
 
-  let title = "Amedee Erns Baptiste — Senior Technology Consultant & Digital Transformation Advisor";
-  let description = "Senior Technology Consultant, AI Product Strategist, and Digital Transformation Leader delivering international excellence.";
+  let title = "Amedee Erns Baptiste — Technology Consultant & Digital Transformation Advisor";
+  let description = " Technology Consultant, AI Product Strategist, and Digital Transformation Leader delivering international excellence.";
   let keywordsStr = "Technology Consultant, Software Architecture, CTO Advisor, AI Integration, Cloud Migration, Digital Transformation";
 
   try {
@@ -96,7 +96,7 @@ export default async function LocaleLayout({
     ],
     "description": locale === "fr"
       ? "Conseiller CTO et Consultant Principal en Technologie offrant l'excellence internationale en Architecture Logicielle, Systèmes d'IA et Migration Cloud."
-      : "CTO Advisor and Senior Technology Consultant delivering international excellence in Software Architecture, AI Systems, and Cloud Migration."
+      : "CTO Advisor and Technology Consultant delivering international excellence in Software Architecture, AI Systems, and Cloud Migration."
   };
 
   return (
@@ -109,7 +109,8 @@ export default async function LocaleLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         {process.env.NODE_ENV === "development" && (
-          <style dangerouslySetInnerHTML={{ __html: `
+          <style dangerouslySetInnerHTML={{
+            __html: `
             nextjs-portal,
             [data-nextjs-dialog-overlay],
             [data-nextjs-toast] {

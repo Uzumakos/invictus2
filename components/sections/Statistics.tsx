@@ -28,7 +28,7 @@ function AnimatedCounter({ value, suffix, label }: StatItemProps) {
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
+
       // Ease out quad
       const easeProgress = progress * (2 - progress);
       const currentCount = Math.floor(easeProgress * (end - start) + start);
@@ -63,9 +63,9 @@ export default function Statistics() {
   const t = useTranslations("stats");
 
   const stats = [
-    { value: 10, suffix: "+", label: t("experience") },
+    { value: 15, suffix: "+", label: t("experience") },
     { value: 40, suffix: "+", label: t("projects") },
-    { value: 2500, suffix: "+", label: t("students") },
+    { value: 300, suffix: "+", label: t("students") },
     { value: 150, suffix: "+", label: t("consultations") },
   ];
 

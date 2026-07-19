@@ -13,6 +13,7 @@ const ALLOWED_RESOURCES = [
   "notifications",
   "leads",
   "discoveries",
+  "recommendation-rules",
   "translations",
   "case-studies",
   "testimonials",
@@ -51,6 +52,7 @@ export async function GET(
     if (resource === "consultations") collectionKey = "portalConsultations";
     if (resource === "notifications") collectionKey = "portalNotifications";
     if (resource === "discoveries") collectionKey = "discoveries";
+    if (resource === "recommendation-rules") collectionKey = "recommendationRules";
 
     // CMS, ERP & Telemetry collections
     if (resource === "case-studies") collectionKey = "projects";
@@ -141,6 +143,21 @@ export async function POST(
         key: body.key,
         en: body.en,
         fr: body.fr
+      };
+    } else if (resource === "discoveries") {
+      const answersObj = body.answers ? { ...body.answers } : { ...body };
+      delete answersObj.summary;
+      delete answersObj.id;
+      delete answersObj.createdAt;
+      delete answersObj.created_at;
+      delete answersObj.archived;
+
+      newItem = {
+        id: body.id || `disc_${crypto.randomBytes(6).toString("hex")}`,
+        createdAt: new Date().toISOString(),
+        answers: answersObj,
+        summary: body.summary || {},
+        archived: body.archived ?? false
       };
     } else {
       const isUuidResource = [
