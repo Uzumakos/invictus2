@@ -39,7 +39,9 @@ export async function POST(req: NextRequest) {
 
     if (user && user.passwordHash) {
       isCorrect = await comparePassword(password, user.passwordHash);
-    } else if (email.toLowerCase() === adminEmail || email.toLowerCase() === "admin@yoursite.com" || email.toLowerCase() === "admin@invictus.com") {
+    }
+    
+    if (!isCorrect) {
       // Direct plain text password check (avoids Vercel $ variable corruption)
       if (adminPasswordPlain && password === adminPasswordPlain) {
         isCorrect = true;
