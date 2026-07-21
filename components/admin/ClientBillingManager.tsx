@@ -61,7 +61,7 @@ export default function ClientBillingManager() {
 
   const fetchProfiles = async () => {
     try {
-      const res = await fetch("/api/client-billing-profiles");
+      const res = await fetch("/api/client-billing-profiles", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setProfiles(data || []);

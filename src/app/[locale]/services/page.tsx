@@ -6,6 +6,9 @@ import Services from "@/components/sections/Services";
 import { loadDB } from "@/lib/db";
 import { Cpu, CheckCircle2, Shield, Calendar } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface PageProps {
   params: Promise<{ locale: string }>;
 }

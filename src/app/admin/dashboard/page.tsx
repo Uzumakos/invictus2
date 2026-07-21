@@ -154,18 +154,18 @@ export default function AdminDashboardPage() {
         bookingsRes, leadsRes, discoveriesRes, settingsRes, paymentRes, usersRes, paymentsRes,
         transRes, projectsRes, trainingRes, faqRes, servicesRes
       ] = await Promise.all([
-        fetch("/api/bookings"),
-        fetch("/api/leads"),
-        fetch("/api/discoveries"),
-        fetch("/api/settings"),
-        fetch("/api/payment-config"),
-        fetch("/api/users"),
-        fetch("/api/payments"),
-        fetch("/api/translations"),
-        fetch("/api/case-studies"),
-        fetch("/api/training-programs"),
-        fetch("/api/faq-items"),
-        fetch("/api/consulting-services")
+        fetch("/api/bookings", { cache: "no-store" }),
+        fetch("/api/leads", { cache: "no-store" }),
+        fetch("/api/discoveries", { cache: "no-store" }),
+        fetch("/api/settings", { cache: "no-store" }),
+        fetch("/api/payment-config", { cache: "no-store" }),
+        fetch("/api/users", { cache: "no-store" }),
+        fetch("/api/payments", { cache: "no-store" }),
+        fetch("/api/translations", { cache: "no-store" }),
+        fetch("/api/case-studies", { cache: "no-store" }),
+        fetch("/api/training-programs", { cache: "no-store" }),
+        fetch("/api/faq-items", { cache: "no-store" }),
+        fetch("/api/consulting-services", { cache: "no-store" })
       ]);
 
       setBookings(bookingsRes.ok ? await bookingsRes.json() : []);
@@ -177,15 +177,15 @@ export default function AdminDashboardPage() {
       setPayments(paymentsRes.ok ? await paymentsRes.json() : []);
       
       // V3 BI Fetching
-      const biRes = await fetch("/api/analytics/bi");
+      const biRes = await fetch("/api/analytics/bi", { cache: "no-store" });
       if (biRes.ok) {
         setBiData(await biRes.json());
       }
-      const bpRes = await fetch("/api/client-billing-profiles");
+      const bpRes = await fetch("/api/client-billing-profiles", { cache: "no-store" });
       if (bpRes.ok) {
         setBillingProfiles(await bpRes.json());
       }
-      const chRes = await fetch("/api/consulting-hours");
+      const chRes = await fetch("/api/consulting-hours", { cache: "no-store" });
       if (chRes.ok) {
         setConsultingLogs(await chRes.json());
       }

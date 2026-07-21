@@ -56,7 +56,7 @@ export default function Services({ onSectionChange }: ServicesProps) {
 
   // Fetch payment config and consulting services on mount
   useEffect(() => {
-    fetch("/api/payment-config")
+    fetch("/api/payment-config", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         setPaymentConfig(data);
@@ -66,7 +66,7 @@ export default function Services({ onSectionChange }: ServicesProps) {
       })
       .catch((err) => console.error("Error loading payment config:", err));
 
-    fetch("/api/consulting-services")
+    fetch("/api/consulting-services", { cache: "no-store" })
       .then((res) => {
         if (res.ok) return res.json();
         throw new Error();
