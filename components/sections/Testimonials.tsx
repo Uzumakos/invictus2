@@ -55,8 +55,8 @@ export default function Testimonials({ testimonials }: TestimonialsProps) {
           viewport={{ once: true, margin: "-100px" }}
         >
           {testimonials.map((test) => {
-            const authorName = test.name || test.clientName || "Client";
-            const avatarUrl = test.avatar || test.photoUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
+            const authorName = (test as any).clientName || (test as any).name || "Client";
+            const avatarUrl = (test as any).photoUrl || (test as any).avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
 
             let roleStr = "";
             if (typeof test.role === "string") {

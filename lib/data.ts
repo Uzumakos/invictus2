@@ -358,3 +358,96 @@ export const initialArticles: Article[] = [
     tags: ["Gemini", "AI Agents", "Architecture", "Software Engineering"],
   },
 ];
+
+export const initialTestimonials: Testimonial[] = [
+  {
+    id: "t1",
+    name: "Jean-Marc Duval",
+    clientName: "Jean-Marc Duval",
+    company: "NEXA Group",
+    role: "VP of Product Strategy",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256",
+    photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256",
+    rating: 5,
+    content: {
+      en: "Amedee delivered an outstanding Web3 gaming platform architecture. His deep technical knowledge and prompt engineering execution saved us months of development.",
+      fr: "Amedee a livré une architecture de plateforme de jeu Web3 exceptionnelle. Ses connaissances techniques approfondies nous ont fait gagner des mois de développement."
+    }
+  },
+  {
+    id: "t2",
+    name: "Marie-Claire Laurent",
+    clientName: "Marie-Claire Laurent",
+    company: "CWO Logistics",
+    role: "Director of Operations",
+    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=256&h=256",
+    photoUrl: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=256&h=256",
+    rating: 5,
+    content: {
+      en: "The fleet dispatch system designed by Invictus reduced our transit routing conflicts by 26%. Highly recommended for complex systems.",
+      fr: "Le système de répartition logistique conçu par Invictus a réduit nos conflits d’itinéraires de 26%. Hautement recommandé pour les systèmes complexes."
+    }
+  },
+  {
+    id: "t3",
+    name: "Pierre-Yves Etienne",
+    clientName: "Pierre-Yves Etienne",
+    company: "Lyanza Commerce",
+    role: "Chief Technology Officer",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=256&h=256",
+    photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=256&h=256",
+    rating: 5,
+    content: {
+      en: "Incredible speed and security in processing high-volume multi-currency payments. Amedee is a top-tier CTO advisor.",
+      fr: "Vitesse et sécurité incroyables pour le traitement des paiements multi-devises à fort volume. Amedee est un conseiller CTO de premier ordre."
+    }
+  }
+];
+
+export const initialFaqItems: any[] = [
+  {
+    id: "f1",
+    question: {
+      en: "What consulting packages do you offer?",
+      fr: "Quels forfaits de conseil proposez-vous ?"
+    },
+    answer: {
+      en: "We offer Software Architecture & System Design ($350), AI Strategy & Implementation ($450), and Digital Transformation Consulting ($300). Custom retainer programs are also available.",
+      fr: "Nous proposons l’Architecture Logicielle ($350), la Stratégie IA ($450) et le Conseil en Transformation Digitale ($300). Des accompagnements sur mesure sont aussi disponibles."
+    }
+  },
+  {
+    id: "f2",
+    question: {
+      en: "How does the booking process work?",
+      fr: "Comment fonctionne le processus de réservation ?"
+    },
+    answer: {
+      en: "Select your service, choose an available date and time, fill out the scoping questionnaire, and select a payment method (MonCash, Natcash, Unibank, Sogebank, Wise, or PayPal). Once submitted, you will receive confirmation and meeting details.",
+      fr: "Sélectionnez votre service, choisissez une date, remplissez le questionnaire et choisissez un moyen de paiement (MonCash, Natcash, Unibank, Sogebank, Wise ou PayPal)."
+    }
+  },
+  {
+    id: "f3",
+    question: {
+      en: "Do you provide ongoing development after consultation?",
+      fr: "Proposez-vous un développement continu après la consultation ?"
+    },
+    answer: {
+      en: "Yes. Following our strategic discovery session, we can transition into full-stack software development, AI agent deployment, or ongoing Fractional CTO advisory retainers.",
+      fr: "Oui. Après la session de découverte, nous pouvons passer au développement complet, au déploiement d’agents IA ou à un accompagnement CTO."
+    }
+  },
+  {
+    id: "f4",
+    question: {
+      en: "What payment methods are supported?",
+      fr: "Quels moyens de paiement sont acceptés ?"
+    },
+    answer: {
+      en: "We support local mobile money (MonCash, Natcash), Haitian bank transfers (Unibank, Sogebank), and international options (Wise, PayPal).",
+      fr: "Nous acceptons MonCash, Natcash, Unibank, Sogebank, Wise et PayPal."
+    }
+  }
+];
+

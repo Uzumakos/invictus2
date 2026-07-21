@@ -75,15 +75,15 @@ export default function TestimonialsManager() {
     setIsEditorOpen(true);
   };
 
-  const handleEditClick = (item: Testimonial) => {
+  const handleEditClick = (item: any) => {
     setEditingItem(item);
-    setClientName(item.clientName || "");
-    setRole(item.role || "");
+    setClientName(item.clientName || item.name || "");
+    setRole(typeof item.role === "string" ? item.role : (item.role?.en || ""));
     setCompany(item.company || "");
-    setPhotoUrl(item.photoUrl || "");
+    setPhotoUrl(item.photoUrl || item.avatar || "");
     setRating(item.rating || 5);
-    setContentEn(item.content?.en || "");
-    setContentFr(item.content?.fr || "");
+    setContentEn(typeof item.content === "string" ? item.content : (item.content?.en || ""));
+    setContentFr(typeof item.content === "string" ? item.content : (item.content?.fr || ""));
     setErrorMsg(null);
     setIsEditorOpen(true);
   };
@@ -100,9 +100,11 @@ export default function TestimonialsManager() {
 
     const payload = {
       clientName,
+      name: clientName,
       role,
       company,
       photoUrl,
+      avatar: photoUrl,
       rating: Number(rating),
       content: {
         en: contentEn,

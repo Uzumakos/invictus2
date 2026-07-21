@@ -1,4 +1,5 @@
 import { supabase, getSupabaseAdmin } from "./supabaseClient";
+import { initialTestimonials, initialFaqItems } from "./data";
 
 const tableMap: Record<string, string> = {
   settings: "site_settings",
@@ -98,12 +99,15 @@ export async function loadDB(): Promise<Record<string, unknown>> {
       socialLinks: { github: "", linkedin: "", twitter: "" }
     };
 
+    const parsedTestimonials = (testimonials || []).map(t => mapRowToCamelCase(t));
+    const parsedFaqItems = (faqItems || []).map(f => mapRowToCamelCase(f));
+
     return {
       settings: formattedSettings,
       paymentConfig: { methods: (methods || []).map(m => mapRowToCamelCase(m)) },
       projects: (projects || []).map(p => mapRowToCamelCase(p)),
-      testimonials: (testimonials || []).map(t => mapRowToCamelCase(t)),
-      faqItems: (faqItems || []).map(f => mapRowToCamelCase(f)),
+      testimonials: parsedTestimonials.length > 0 ? parsedTestimonials : initialTestimonials,
+      faqItems: parsedFaqItems.length > 0 ? parsedFaqItems : initialFaqItems,
       articles: (articles || []).map(a => mapRowToCamelCase(a)),
       trainingPrograms: (trainingPrograms || []).map(t => mapRowToCamelCase(t)),
       organizations: (organizations || []).map(o => mapRowToCamelCase(o)),
@@ -116,8 +120,8 @@ export async function loadDB(): Promise<Record<string, unknown>> {
       settings: { trainingEnabled: true, profileImageUrl: "", adminPath: "/admin", socialLinks: {} },
       paymentConfig: { methods: [] },
       projects: [],
-      testimonials: [],
-      faqItems: [],
+      testimonials: initialTestimonials,
+      faqItems: initialFaqItems,
       articles: [],
       trainingPrograms: [],
       organizations: [],

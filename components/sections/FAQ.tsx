@@ -12,8 +12,20 @@ interface FAQProps {
 
 function FAQAccordionItem({ item, isOpen, onToggle }: { item: FAQItem; isOpen: boolean; onToggle: () => void }) {
   const locale = useLocale() as "en" | "fr";
-  const question = item.question[locale] || item.question["en"];
-  const answer = item.answer[locale] || item.answer["en"];
+
+  let question = "";
+  if (typeof item.question === "string") {
+    question = item.question;
+  } else if (item.question && typeof item.question === "object") {
+    question = item.question[locale] || item.question["en"] || item.question["fr"] || "";
+  }
+
+  let answer = "";
+  if (typeof item.answer === "string") {
+    answer = item.answer;
+  } else if (item.answer && typeof item.answer === "object") {
+    answer = item.answer[locale] || item.answer["en"] || item.answer["fr"] || "";
+  }
 
   return (
     <div className="border-b border-[var(--color-brand-neutral)]/20 py-4">
