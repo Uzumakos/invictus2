@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Edit2, Trash2, CheckCircle, AlertCircle, Save, X, Globe, DollarSign } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, CheckCircle, AlertCircle, Save, X, Globe, DollarSign, Phone, Mail, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import WhatsAppActions from "./WhatsAppActions";
 
 interface BillingProfile {
   id: string;
@@ -13,6 +14,8 @@ interface BillingProfile {
   primaryContactName: string;
   email: string;
   phone?: string;
+  whatsappNumber?: string;
+  countryCode?: string;
   taxNumber?: string;
   currency: string;
   preferredLanguage: string;
@@ -37,6 +40,8 @@ export default function ClientBillingManager() {
   const [primaryContactName, setPrimaryContactName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [countryCode, setCountryCode] = useState("US");
   const [taxNumber, setTaxNumber] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [preferredLanguage, setPreferredLanguage] = useState("fr");
@@ -74,6 +79,8 @@ export default function ClientBillingManager() {
     setPrimaryContactName(p.primaryContactName || "");
     setEmail(p.email || "");
     setPhone(p.phone || "");
+    setWhatsappNumber(p.whatsappNumber || p.phone || "");
+    setCountryCode(p.countryCode || "US");
     setTaxNumber(p.taxNumber || "");
     setCurrency(p.currency || "USD");
     setPreferredLanguage(p.preferredLanguage || "fr");
@@ -98,6 +105,8 @@ export default function ClientBillingManager() {
     setPrimaryContactName("");
     setEmail("");
     setPhone("");
+    setWhatsappNumber("");
+    setCountryCode("US");
     setTaxNumber("");
     setCurrency("USD");
     setPreferredLanguage("fr");
@@ -122,6 +131,8 @@ export default function ClientBillingManager() {
         primaryContactName,
         email,
         phone,
+        whatsappNumber,
+        countryCode,
         taxNumber,
         currency,
         preferredLanguage,
@@ -302,6 +313,29 @@ export default function ClientBillingManager() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-emerald-950/20 p-4 rounded-2xl border border-emerald-500/20">
+            <div>
+              <label className="block text-[8px] font-bold text-emerald-400 tracking-wider mb-1 uppercase">WhatsApp Number</label>
+              <input
+                type="text"
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                placeholder="+1 509 555-1234"
+                className="w-full bg-[#121A1B] border border-emerald-500/30 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-400"
+              />
+            </div>
+            <div>
+              <label className="block text-[8px] font-bold text-emerald-400 tracking-wider mb-1 uppercase">Country Code</label>
+              <input
+                type="text"
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                placeholder="US / HT / FR"
+                className="w-full bg-[#121A1B] border border-emerald-500/30 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-400"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label className="block text-[8px] font-bold text-[#CDD4DD]/40 tracking-wider mb-1 uppercase">Tax / NIF ID Number</label>
@@ -436,13 +470,14 @@ export default function ClientBillingManager() {
                   <th className="py-3 px-4">Terms</th>
                   <th className="py-3 px-4">Default Disc</th>
                   <th className="py-3 px-4">Preference</th>
+                  <th className="py-3 px-4">Communication</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#CDD4DD]/5">
                 {filteredProfiles.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-10 text-gray-500">
+                    <td colSpan={8} className="text-center py-10 text-gray-500">
                       No client billing profiles registered yet.
                     </td>
                   </tr>
@@ -477,6 +512,19 @@ export default function ClientBillingManager() {
                             <span>Pending</span>
                           </span>
                         )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <WhatsAppActions
+                          client={{
+                            id: p.id,
+                            fullName: p.primaryContactName,
+                            email: p.email,
+                            phone: p.phone,
+                            whatsappNumber: p.whatsappNumber || p.phone,
+                            preferredLanguage: p.preferredLanguage,
+                            companyName: p.companyName
+                          }}
+                        />
                       </td>
                       <td className="py-3 px-4 text-right space-x-2">
                         <button

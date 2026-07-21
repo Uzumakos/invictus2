@@ -404,3 +404,67 @@ export interface FeatureCatalogItem {
   category: string;
   icon: string;
 }
+
+// ─── WhatsApp Quick Contact & Interaction History ─────────────────────────
+export interface Client {
+  id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  whatsappNumber?: string;
+  countryCode?: string;
+  preferredLanguage?: "en" | "fr" | string;
+  companyName?: string;
+  createdAt?: string;
+}
+
+export type WhatsAppCategory =
+  | "booking_confirmation"
+  | "discovery_call_reminder"
+  | "invoice_available"
+  | "payment_reminder"
+  | "payment_confirmation"
+  | "consultation_follow_up"
+  | "testimonial_request"
+  | "project_update"
+  | "custom_message";
+
+export interface WhatsAppTemplate {
+  id: string;
+  name: string;
+  language: "en" | "fr";
+  category: WhatsAppCategory | string;
+  content: string;
+  active: boolean;
+  createdAt?: string;
+}
+
+export interface WhatsAppInteraction {
+  id: string;
+  clientId?: string;
+  clientName?: string;
+  clientEmail?: string;
+  generatedBy?: string;
+  templateName: string;
+  category?: WhatsAppCategory | string;
+  language: "en" | "fr" | string;
+  generatedMessage: string;
+  generatedLink: string;
+  copied: boolean;
+  opened: boolean;
+  shared: boolean;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface WhatsAppAnalyticsSummary {
+  totalGenerated: number;
+  mostUsedTemplate: string;
+  mostContactedClient: string;
+  messagesByLanguage: { en: number; fr: number };
+  copiedCount: number;
+  openedCount: number;
+  sharedCount: number;
+  monthlyActivity: { month: string; count: number }[];
+}
+

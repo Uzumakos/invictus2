@@ -7,7 +7,8 @@ import {
   RefreshCw, Layers, Check, X, AlertCircle, Search, Filter, 
   Download, Brain, Clipboard, ChevronRight, Cpu, Building2, Trash2,
   Settings, Image as ImageIcon, Globe, CheckCircle2, Save, LogOut, Plus, Edit,
-  LayoutDashboard, UserCheck, FileText, BookOpen, HelpCircle, FolderKanban, Link
+  LayoutDashboard, UserCheck, FileText, BookOpen, HelpCircle, FolderKanban, Link,
+  MessageSquare, History, Share2, BarChart3
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Booking, CRMLead, ProjectDiscovery, PaymentConfig, SiteSettings } from "@/lib/types";
@@ -19,6 +20,10 @@ import ClientBillingManager from "@/components/admin/ClientBillingManager";
 import TestimonialsManager from "@/components/admin/TestimonialsManager";
 import BrandAssetsForm from "@/components/admin/BrandAssetsForm";
 import SEOCenterForm from "@/components/admin/SEOCenterForm";
+import WhatsAppTemplatesManager from "@/components/admin/WhatsAppTemplatesManager";
+import WhatsAppHistoryTable from "@/components/admin/WhatsAppHistoryTable";
+import SharedLinksManager from "@/components/admin/SharedLinksManager";
+import WhatsAppAnalyticsDashboard from "@/components/admin/WhatsAppAnalyticsDashboard";
 import { getGoogleCalendarUrl } from "@/lib/googleCalendar";
 
 type DashboardTab = 
@@ -26,6 +31,7 @@ type DashboardTab =
   | "cms_sections" | "cms_case_studies" | "cms_training" | "cms_services" | "cms_faqs" | "cms_translations" | "cms_media"
   | "cms_invoices" | "cms_billing_profiles" | "cms_business_profile"
   | "cms_seo" | "cms_brand" | "cms_testimonials"
+  | "wa_templates" | "wa_history" | "wa_shared_links" | "wa_analytics"
   | "users" | "settings";
 
 export default function AdminDashboardPage() {
@@ -826,6 +832,15 @@ export default function AdminDashboardPage() {
         { id: "payments", label: "Payment Center", icon: DollarSign },
         { id: "cms_invoices", label: "Invoice Center", icon: FileText },
         { id: "cms_billing_profiles", label: "Client Workspace Registry", icon: Users },
+      ]
+    },
+    {
+      title: "Communication Center",
+      items: [
+        { id: "wa_templates", label: "WhatsApp Templates", icon: MessageSquare },
+        { id: "wa_history", label: "WhatsApp History", icon: History },
+        { id: "wa_shared_links", label: "Shared Links", icon: Share2 },
+        { id: "wa_analytics", label: "Analytics", icon: BarChart3 },
       ]
     },
     {
@@ -2724,6 +2739,34 @@ export default function AdminDashboardPage() {
               {activeTab === "cms_testimonials" && (
                 <div className="animate-fadeIn">
                   <TestimonialsManager />
+                </div>
+              )}
+
+              {/* TAB: WhatsApp Templates */}
+              {activeTab === "wa_templates" && (
+                <div className="animate-fadeIn">
+                  <WhatsAppTemplatesManager />
+                </div>
+              )}
+
+              {/* TAB: WhatsApp History */}
+              {activeTab === "wa_history" && (
+                <div className="animate-fadeIn">
+                  <WhatsAppHistoryTable />
+                </div>
+              )}
+
+              {/* TAB: Shared Links */}
+              {activeTab === "wa_shared_links" && (
+                <div className="animate-fadeIn">
+                  <SharedLinksManager />
+                </div>
+              )}
+
+              {/* TAB: WhatsApp Analytics */}
+              {activeTab === "wa_analytics" && (
+                <div className="animate-fadeIn">
+                  <WhatsAppAnalyticsDashboard />
                 </div>
               )}
             </>

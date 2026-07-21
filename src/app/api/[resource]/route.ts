@@ -29,7 +29,10 @@ const ALLOWED_RESOURCES = [
   "client-milestones",
   "client-digital-scores",
   "brand-assets",
-  "seo-metadata"
+  "seo-metadata",
+  "clients",
+  "whatsapp-templates",
+  "whatsapp-interactions"
 ];
 
 export async function GET(
@@ -68,6 +71,9 @@ export async function GET(
     if (resource === "client-digital-scores") collectionKey = "clientDigitalScores";
     if (resource === "brand-assets") collectionKey = "brandAssets";
     if (resource === "seo-metadata") collectionKey = "seoMetadata";
+    if (resource === "clients") collectionKey = "clients";
+    if (resource === "whatsapp-templates") collectionKey = "whatsappTemplates";
+    if (resource === "whatsapp-interactions") collectionKey = "whatsappInteractions";
 
     let items = await getCollection(collectionKey);
 
