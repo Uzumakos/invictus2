@@ -968,5 +968,38 @@
       "role": "admin",
       "createdAt": "2026-07-02T16:00:00.000Z"
     }
+  ],
+  "clientBillingProfiles": [
+    {
+      "id": "fee3caae-5f24-4931-8cfe-5d831cc2e2e1",
+      "email": "kindb@gmail.com",
+      "companyName": "Kind B",
+      "primaryContactName": "Kind B",
+      "currency": "GDS",
+      "paymentTerms": "NET_15",
+      "isApproved": false,
+      "approvalReason": "",
+      "billingAddress": "Port-au-Prince",
+      "country": "Haiti",
+      "phone": "+50948476300",
+      "whatsappNumber": "+50948476300",
+      "countryCode": "US",
+      "preferredLanguage": "fr",
+      "defaultDiscount": 0,
+      "createdAt": "2026-07-18T16:59:37.170Z"
+    }
+  ],
+  "clients": [
+    {
+      "id": "fee3caae-5f24-4931-8cfe-5d831cc2e2e1",
+      "fullName": "Kind B",
+      "name": "Kind B",
+      "email": "kindb@gmail.com",
+      "company": "Kind B",
+      "whatsappNumber": "+50948476300",
+      "countryCode": "US",
+      "preferredLanguage": "fr",
+      "createdAt": "2026-07-21T05:22:39.537Z"
+    }
   ]
 }
