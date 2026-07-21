@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { loadDB, saveDB } from "@/lib/db";
 import { PaymentConfig } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const db = await loadDB();

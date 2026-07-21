@@ -13,22 +13,18 @@ const supabase = createClient(url, serviceKey, {
   realtime: { transport: ws },
 });
 
-async function findKikote() {
+async function dumpAll() {
   const tables = [
-    "clients", "client_billing_profiles", "users", "bookings", "leads",
-    "portal_tasks", "portal_documents", "portal_messages", "portal_projects",
-    "portal_payments", "portal_notifications", "discoveries"
+    "clients", "client_billing_profiles", "users", "bookings", "leads"
   ];
 
   for (const t of tables) {
     const { data, error } = await supabase.from(t).select("*");
-    if (!error && data) {
-      const match = data.filter(row => JSON.stringify(row).toLowerCase().includes("maxine") || JSON.stringify(row).toLowerCase().includes("kikote"));
-      if (match.length > 0) {
-        console.log(`FOUND IN TABLE '${t}':`, JSON.stringify(match, null, 2));
-      }
+    console.log(`=== TABLE: ${t} (${data?.length || 0} rows) ===`);
+    if (data && data.length > 0) {
+      console.log(JSON.stringify(data, null, 2));
     }
   }
 }
 
-findKikote();
+dumpAll();
