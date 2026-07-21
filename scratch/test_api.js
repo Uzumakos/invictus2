@@ -13,21 +13,12 @@ const supabase = createClient(url, serviceKey, {
   realtime: { transport: ws },
 });
 
-async function checkClientAndPayment() {
-  console.log("=== PAYMENT METHODS ===");
-  const { data: pm, error: pmErr } = await supabase.from("payment_methods").select("*");
-  if (pmErr) console.error(pmErr);
-  else console.log(JSON.stringify(pm, null, 2));
-
-  console.log("=== CLIENTS ===");
+async function checkBoth() {
   const { data: clients, error: cErr } = await supabase.from("clients").select("*");
-  if (cErr) console.error(cErr);
-  else console.log(JSON.stringify(clients, null, 2));
+  console.log("=== CLIENTS ===", clients);
 
-  console.log("=== CLIENT BILLING PROFILES ===");
   const { data: cbp, error: cbpErr } = await supabase.from("client_billing_profiles").select("*");
-  if (cbpErr) console.error(cbpErr);
-  else console.log(JSON.stringify(cbp, null, 2));
+  console.log("=== CLIENT BILLING PROFILES ===", cbp);
 }
 
-checkClientAndPayment();
+checkBoth();

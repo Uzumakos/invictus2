@@ -202,6 +202,31 @@ export async function getCollection<T>(key: string): Promise<T[]> {
     }
   }
 
+  // Fallback for clients if clients table is empty by querying client_billing_profiles
+  if (key === "clients" && items.length === 0) {
+    try {
+      const { data: bData } = await dbClient.from("client_billing_profiles").select("*");
+      if (bData && bData.length > 0) {
+        items = bData.map(row => {
+          const camel = mapRowToCamelCase(row) || {};
+          return {
+            id: camel.id,
+            name: camel.primaryContactName || camel.companyName || "Kind B",
+            fullName: camel.primaryContactName || camel.companyName || "Kind B",
+            email: camel.email,
+            company: camel.companyName,
+            whatsappNumber: camel.whatsappNumber || camel.phone || "+50948476300",
+            countryCode: camel.countryCode || "US",
+            preferredLanguage: camel.preferredLanguage || "fr",
+            createdAt: camel.createdAt
+          };
+        }) as T[];
+      }
+    } catch (err) {
+      console.error("Fallback clients from client_billing_profiles failed:", err);
+    }
+  }
+
   return items;
 }
 

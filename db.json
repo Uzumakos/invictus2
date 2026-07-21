@@ -37,6 +37,15 @@
         "accountHolder": "Amedee Erns Baptiste"
       },
       {
+        "id": "unibank_usd",
+        "name": "Unibank USD",
+        "type": "bank",
+        "enabled": true,
+        "logoUrl": "https://ik.imagekit.io/tche25kem/Unibank%20logo%201.png?updatedAt=1752244982369",
+        "accountNumber": "108-2016-27764576",
+        "accountHolder": "Amedee Erns Baptiste"
+      },
+      {
         "id": "sogebank",
         "name": "Sogebank",
         "type": "bank",
