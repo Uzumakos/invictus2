@@ -13,10 +13,11 @@ const supabase = createClient(url, serviceKey, {
   realtime: { transport: ws },
 });
 
-async function checkTestimonials() {
-  const { data: testimonials, error } = await supabase.from("testimonials").select("*");
-  console.log("=== TESTIMONIALS COUNT ===", testimonials?.length);
-  console.log(JSON.stringify(testimonials, null, 2));
+async function checkServices() {
+  const { data: services, error } = await supabase.from("consulting_services").select("*");
+  console.log("=== CONSULTING SERVICES IN SUPABASE ===");
+  if (error) console.error("Error:", error);
+  else console.log(JSON.stringify(services, null, 2));
 }
 
-checkTestimonials();
+checkServices();
