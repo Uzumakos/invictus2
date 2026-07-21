@@ -227,6 +227,37 @@ export async function getCollection<T>(key: string): Promise<T[]> {
     }
   }
 
+  // Fallback for clientBillingProfiles if table is empty by querying clients table
+  if (key === "clientBillingProfiles" && items.length === 0) {
+    try {
+      const { data: cData } = await dbClient.from("clients").select("*");
+      if (cData && cData.length > 0) {
+        items = cData.map(row => {
+          const camel = mapRowToCamelCase(row) || {};
+          return {
+            id: camel.id,
+            companyName: camel.company || camel.fullName || camel.name || "Client",
+            primaryContactName: camel.fullName || camel.name || "Client",
+            email: camel.email,
+            billingAddress: "Port-au-Prince",
+            country: "Haiti",
+            phone: camel.whatsappNumber || camel.phone || "",
+            whatsappNumber: camel.whatsappNumber || camel.phone || "",
+            countryCode: camel.countryCode || "US",
+            currency: "USD",
+            preferredLanguage: camel.preferredLanguage || "fr",
+            paymentTerms: "NET_30",
+            defaultDiscount: 0,
+            isApproved: true,
+            createdAt: camel.createdAt
+          };
+        }) as T[];
+      }
+    } catch (err) {
+      console.error("Fallback clientBillingProfiles from clients failed:", err);
+    }
+  }
+
   return items;
 }
 
@@ -252,6 +283,24 @@ export async function addToCollection<T extends { id: string }>(
     }
     throw error;
   }
+
+  // Dual sync: If adding to clientBillingProfiles, also sync to clients table in Supabase
+  if (key === "clientBillingProfiles" || table === "client_billing_profiles") {
+    try {
+      const clientRow = {
+        id: item.id,
+        full_name: (item as any).primaryContactName || (item as any).companyName || "Client",
+        email: (item as any).email,
+        whatsapp_number: (item as any).whatsappNumber || (item as any).phone || "",
+        country_code: (item as any).countryCode || "US",
+        preferred_language: (item as any).preferredLanguage || "fr"
+      };
+      await dbClient.from("clients").upsert(clientRow);
+    } catch (cErr) {
+      console.error("Dual sync to clients table failed:", cErr);
+    }
+  }
+
   return item;
 }
 
@@ -293,6 +342,23 @@ export async function updateInCollection<T extends { id?: string; key?: string }
     }
     return null;
   }
+
+  // Dual sync: If updating clientBillingProfiles, also sync to clients table in Supabase
+  if (key === "clientBillingProfiles" || table === "client_billing_profiles") {
+    try {
+      const u = updates as any;
+      const clientRow: any = { id };
+      if (u.primaryContactName || u.companyName) clientRow.full_name = u.primaryContactName || u.companyName;
+      if (u.email) clientRow.email = u.email;
+      if (u.whatsappNumber || u.phone) clientRow.whatsapp_number = u.whatsappNumber || u.phone;
+      if (u.countryCode) clientRow.country_code = u.countryCode;
+      if (u.preferredLanguage) clientRow.preferred_language = u.preferredLanguage;
+      await dbClient.from("clients").upsert(clientRow);
+    } catch (cErr) {
+      console.error("Dual sync update to clients table failed:", cErr);
+    }
+  }
+
   return mapRowToCamelCase(data) as T;
 }
 
@@ -301,6 +367,15 @@ export async function deleteFromCollection(key: string, id: string): Promise<boo
   const table = tableMap[key] || key;
   const pkName = table === "translations" ? "key" : "id";
   const { error } = await dbClient.from(table).delete().eq(pkName, id);
+
+  if (key === "clientBillingProfiles" || table === "client_billing_profiles") {
+    try {
+      await dbClient.from("clients").delete().eq("id", id);
+    } catch (cErr) {
+      console.error("Dual sync delete from clients table failed:", cErr);
+    }
+  }
+
   if (error) {
     console.error(`Error deleting from collection ${key} for id ${id}:`, error.message);
     if (error.code === "PGRST205" || error.code === "PGRST204" || error.message?.includes("schema cache")) {
