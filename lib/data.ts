@@ -361,93 +361,212 @@ export const initialArticles: Article[] = [
 
 export const initialTestimonials: Testimonial[] = [
   {
-    id: "t1",
-    name: "Jean-Marc Duval",
-    clientName: "Jean-Marc Duval",
-    company: "NEXA Group",
-    role: "VP of Product Strategy",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256",
-    photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256",
+    id: "4546ce77-2c5d-41b9-87a5-0510e30eecfa",
+    name: "Guerly Laroche",
+    clientName: "Guerly Laroche",
+    role: "CEO of GLCreativedesign",
+    company: "GLCreativedesign",
+    avatar: "https://ik.imagekit.io/tche25kem/Guerly.jpg",
+    photoUrl: "https://ik.imagekit.io/tche25kem/Guerly.jpg",
     rating: 5,
     content: {
-      en: "Amedee delivered an outstanding Web3 gaming platform architecture. His deep technical knowledge and prompt engineering execution saved us months of development.",
-      fr: "Amedee a livré une architecture de plateforme de jeu Web3 exceptionnelle. Ses connaissances techniques approfondies nous ont fait gagner des mois de développement."
+      en: "Great services . Very professional! Thank you for helping revamp my website!",
+      fr: "Grands services . Très professionnel ! Merci de m'avoir aidé à repenser mon site web !"
     }
   },
   {
-    id: "t2",
-    name: "Marie-Claire Laurent",
-    clientName: "Marie-Claire Laurent",
-    company: "CWO Logistics",
-    role: "Director of Operations",
-    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=256&h=256",
-    photoUrl: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=256&h=256",
+    id: "57f78b24-59e2-4ad7-96c5-aee64bbc87de",
+    name: "Isaac Admeus",
+    clientName: "Isaac Admeus",
+    role: "CEO of Edutech | lekòlAlèz",
+    company: "Edutech | lekòlAlèz",
+    avatar: "https://ik.imagekit.io/tche25kem/Isaac56.jpg",
+    photoUrl: "https://ik.imagekit.io/tche25kem/Isaac56.jpg",
     rating: 5,
     content: {
-      en: "The fleet dispatch system designed by Invictus reduced our transit routing conflicts by 26%. Highly recommended for complex systems.",
-      fr: "Le système de répartition logistique conçu par Invictus a réduit nos conflits d’itinéraires de 26%. Hautement recommandé pour les systèmes complexes."
-    }
-  },
-  {
-    id: "t3",
-    name: "Pierre-Yves Etienne",
-    clientName: "Pierre-Yves Etienne",
-    company: "Lyanza Commerce",
-    role: "Chief Technology Officer",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=256&h=256",
-    photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=256&h=256",
-    rating: 5,
-    content: {
-      en: "Incredible speed and security in processing high-volume multi-currency payments. Amedee is a top-tier CTO advisor.",
-      fr: "Vitesse et sécurité incroyables pour le traitement des paiements multi-devises à fort volume. Amedee est un conseiller CTO de premier ordre."
+      en: "Amédée is one of the developers I know who combines talent, dedication and seriousness. His ability to create and respond to client or project requirements is phenomenal. I work with him on lekolalez.com and I can honestly say he went above and beyond what I expected.",
+      fr: "Amédée est l'un des développeurs que je connais qui allie talent, dévouement et sérieux. Sa capacité à créer et à répondre aux exigences des clients ou des projets est phénoménale. Je travaille avec lui sur lekolalez.com et je peux honnêtement dire qu'il est allé au-delà de mes attentes."
     }
   }
 ];
 
 export const initialFaqItems: any[] = [
   {
-    id: "f1",
+    id: "call",
     question: {
-      en: "What consulting packages do you offer?",
-      fr: "Quels forfaits de conseil proposez-vous ?"
+      en: "1- What happens during the Strategy & Discovery session?",
+      fr: "1- Que se passe-t-il pendant la session Stratégie & Découverte ?"
     },
     answer: {
-      en: "We offer Software Architecture & System Design ($350), AI Strategy & Implementation ($450), and Digital Transformation Consulting ($300). Custom retainer programs are also available.",
-      fr: "Nous proposons l’Architecture Logicielle ($350), la Stratégie IA ($450) et le Conseil en Transformation Digitale ($300). Des accompagnements sur mesure sont aussi disponibles."
+      en: "The discovery session is designed to understand your goals, technical constraints, system requirements, and business objectives. We analyze your needs and establish a clear roadmap for execution.",
+      fr: "La session de découverte est conçue pour comprendre vos objectifs, vos contraintes techniques, vos exigences système et vos objectifs commerciaux. Nous analysons vos besoins et établissons une feuille de route claire."
     }
   },
   {
-    id: "f2",
+    id: "team",
     question: {
-      en: "How does the booking process work?",
-      fr: "Comment fonctionne le processus de réservation ?"
+      en: "2- Can you work with existing teams and codebases?",
+      fr: "2- Pouvez-vous travailler avec des équipes et des bases de code existantes ?"
     },
     answer: {
-      en: "Select your service, choose an available date and time, fill out the scoping questionnaire, and select a payment method (MonCash, Natcash, Unibank, Sogebank, Wise, or PayPal). Once submitted, you will receive confirmation and meeting details.",
-      fr: "Sélectionnez votre service, choisissez une date, remplissez le questionnaire et choisissez un moyen de paiement (MonCash, Natcash, Unibank, Sogebank, Wise ou PayPal)."
+      en: "Absolutely. I can collaborate with your in-house team, CTO, product managers, or external partners to improve system architecture, optimize code, and accelerate development.",
+      fr: "Absolument. Je peux collaborer avec votre équipe interne, votre CTO, vos chefs de projet ou des partenaires externes pour améliorer l'architecture du système, optimiser le code et accélérer le développement."
     }
   },
   {
-    id: "f3",
+    id: "remote",
     question: {
-      en: "Do you provide ongoing development after consultation?",
-      fr: "Proposez-vous un développement continu après la consultation ?"
+      en: "3- Do you work internationally?",
+      fr: "3- Travaillez-vous à l'international ?"
     },
     answer: {
-      en: "Yes. Following our strategic discovery session, we can transition into full-stack software development, AI agent deployment, or ongoing Fractional CTO advisory retainers.",
-      fr: "Oui. Après la session de découverte, nous pouvons passer au développement complet, au déploiement d’agents IA ou à un accompagnement CTO."
+      en: "Yes. I work remotely with clients across different countries and time zones, providing consulting, development, and training services worldwide.",
+      fr: "Oui. Je travaille à distance avec des clients situés dans différents pays et fuseaux horaires, en proposant des services de conseil, de développement et de formation à l'échelle internationale."
     }
   },
   {
-    id: "f4",
+    id: "services",
     question: {
-      en: "What payment methods are supported?",
-      fr: "Quels moyens de paiement sont acceptés ?"
+      en: "4- What services do you offer?",
+      fr: "4- Quels services proposez-vous ?"
     },
     answer: {
-      en: "We support local mobile money (MonCash, Natcash), Haitian bank transfers (Unibank, Sogebank), and international options (Wise, PayPal).",
-      fr: "Nous acceptons MonCash, Natcash, Unibank, Sogebank, Wise et PayPal."
+      en: "My services include software architecture, custom web and mobile development, AI integration, digital transformation consulting, product strategy, and professional training.",
+      fr: "Mes services comprennent l'architecture logicielle, le développement d'applications web et mobiles sur mesure, l'intégration de solutions d'intelligence artificielle, le conseil en transformation numérique, la stratégie produit ainsi que la formation professionnelle."
+    }
+  },
+  {
+    id: "works",
+    question: {
+      en: "5- What types of organizations do you work with?",
+      fr: "5- Avec quels types d'organisations travaillez-vous ?"
+    },
+    answer: {
+      en: "I collaborate with startups, SMEs, institutions, NGOs, and established companies seeking digital transformation, custom software development, AI integration, and strategic technology consulting.",
+      fr: "Je collabore avec des startups, des PME, des institutions, des ONG et des entreprises établies souhaitant accélérer leur transformation numérique, développer des solutions sur mesure, intégrer l'intelligence artificielle ou bénéficier d'un accompagnement stratégique."
+    }
+  },
+  {
+    id: "fees",
+    question: {
+      en: "6- Is the Discovery Call fee deductible from future projects?",
+      fr: "6- Les frais de la session de découverte sont-ils déductibles d'un futur projet ?"
+    },
+    answer: {
+      en: "Yes. The consultation fee can be credited toward larger engagements and long-term collaborations.",
+      fr: "Oui. Les frais de consultation peuvent être déduits du coût d'un projet plus important ou d'une collaboration à long terme."
+    }
+  },
+  {
+    id: "process",
+    question: {
+      en: "7- How does your consulting process work?",
+      fr: "7- Comment se déroule votre processus d'accompagnement ?"
+    },
+    answer: {
+      en: "My consulting process typically follows four stages:\n\nDiscovery\nStrategy & Planning\nDevelopment & Implementation\nSupport & Optimization",
+      fr: "Mon processus d'accompagnement s'articule généralement autour de quatre étapes :\n\nDécouverte\nStratégie et planification\nDéveloppement et mise en œuvre\nSupport et optimisation"
+    }
+  },
+  {
+    id: "nda",
+    question: {
+      en: "8- Do you sign NDAs?",
+      fr: "8- Signez-vous des accords de confidentialité (NDA) ?"
+    },
+    answer: {
+      en: "Yes. Confidentiality agreements can be signed before discussing sensitive business or technical information.",
+      fr: "Oui. Des accords de confidentialité peuvent être signés avant toute discussion portant sur des informations sensibles, qu'elles soient commerciales ou techniques."
+    }
+  },
+  {
+    id: "technologies",
+    question: {
+      en: "9- Which technologies do you specialize in?",
+      fr: "9- Quelles technologies maîtrisez-vous ?"
+    },
+    answer: {
+      en: "I primarily work with Next.js, React, TypeScript, Node.js, Supabase, PostgreSQL, WordPress, AI tools, cloud platforms, and modern web technologies.",
+      fr: "Je travaille principalement avec Next.js, React, TypeScript, Node.js, Supabase, PostgreSQL, WordPress, les outils d'intelligence artificielle, les plateformes cloud et les technologies web modernes."
+    }
+  },
+  {
+    id: "ai",
+    question: {
+      en: "10- Can you integrate artificial intelligence into existing products?",
+      fr: "10- Pouvez-vous intégrer l'intelligence artificielle à une plateforme existante ?"
+    },
+    answer: {
+      en: "Yes. I help organizations integrate AI-powered features, automation workflows, and intelligent systems into their existing platforms.",
+      fr: "Oui. J'accompagne les organisations dans l'intégration de fonctionnalités basées sur l'intelligence artificielle, de flux d'automatisation et de systèmes intelligents au sein de leurs plateformes existantes."
+    }
+  },
+  {
+    id: "project",
+    question: {
+      en: "11- Do you build custom software solutions?",
+      fr: "11- Développez-vous des solutions logicielles sur mesure ?"
+    },
+    answer: {
+      en: "Yes. Every project is designed according to your business goals, technical requirements, and long-term growth strategy.",
+      fr: "Oui. Chaque solution est conçue sur mesure en fonction de vos objectifs métier, de vos contraintes techniques et de votre stratégie de croissance."
+    }
+  },
+  {
+    id: "audit",
+    question: {
+      en: "12- Can you audit an existing application?",
+      fr: "12- Pouvez-vous auditer une application existante ?"
+    },
+    answer: {
+      en: "Absolutely. I provide technical audits covering architecture, security, performance, scalability, and user experience.",
+      fr: "Absolument. Je réalise des audits techniques portant sur l'architecture, la sécurité, les performances, la scalabilité et l'expérience utilisateur."
+    }
+  },
+  {
+    id: "price",
+    question: {
+      en: "13- How are your services priced?",
+      fr: "13- Comment vos services sont-ils tarifés ?"
+    },
+    answer: {
+      en: "Pricing depends on the scope, complexity, timeline, and support requirements of each project.",
+      fr: "La tarification dépend de la portée, de la complexité, des délais et des besoins d'accompagnement propres à chaque projet."
+    }
+  },
+  {
+    id: "hourly",
+    question: {
+      en: "14- Do you offer fixed-price and hourly engagements?",
+      fr: "14- Proposez-vous des forfaits et des prestations à l'heure ?"
+    },
+    answer: {
+      en: "Yes. Depending on the project, I offer fixed-price packages, strategic consulting sessions, and long-term support agreements.",
+      fr: "Oui. Selon le projet, je propose des forfaits à prix fixe, des sessions de conseil stratégique ainsi que des contrats d'accompagnement sur le long terme."
+    }
+  },
+  {
+    id: "payment",
+    question: {
+      en: "15- Which payment methods do you accept?",
+      fr: "15- Quels moyens de paiement acceptez-vous ?"
+    },
+    answer: {
+      en: "I accept mobile payment (Moncash, Natcash), bank transfers, and other payment methods depending on the client's location.",
+      fr: "J'accepte les paiements mobiles (Moncash, Natcash), les virements bancaires et d'autres moyens de paiement selon la localisation du client."
+    }
+  },
+  {
+    id: "invoice",
+    question: {
+      en: "16- Can I receive invoices in English or French?",
+      fr: "16- Puis-je recevoir mes factures en anglais ou en français ?"
+    },
+    answer: {
+      en: "Yes. Professional invoices and project documents can be generated in both English and French.",
+      fr: "Oui. Les factures professionnelles ainsi que les documents liés au projet peuvent être générés en anglais comme en français."
     }
   }
 ];
+
 
