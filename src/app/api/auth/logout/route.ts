@@ -5,6 +5,7 @@ export async function POST() {
 
   // Delete admin_token cookie
   response.cookies.delete("admin_token");
+  response.cookies.delete("client_token");
 
   return response;
 }

@@ -6,7 +6,7 @@ const SESSION_EXPIRES = process.env.ADMIN_SESSION_EXPIRES || "8h";
 
 export interface JWTPayload {
   sub: string;
-  role: "admin";
+  role: "admin" | "client";
   iat: number;
   exp: number;
 }
@@ -16,6 +16,15 @@ export interface JWTPayload {
  */
 export function signToken(email: string): string {
   return jwt.sign({ sub: email, role: "admin" }, JWT_SECRET, {
+    expiresIn: SESSION_EXPIRES as jwt.SignOptions["expiresIn"],
+  });
+}
+
+/**
+ * Sign a JWT for the client session
+ */
+export function signClientToken(email: string): string {
+  return jwt.sign({ sub: email, role: "client" }, JWT_SECRET, {
     expiresIn: SESSION_EXPIRES as jwt.SignOptions["expiresIn"],
   });
 }

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseAdmin } from "./supabaseClient";
+import { verifyToken } from "./auth";
 
 export interface AuthenticatedUser {
   email: string;
@@ -36,14 +37,33 @@ export function getAuthToken(req: NextRequest): string | null {
 }
 
 export async function verifyPortalSession(req: NextRequest): Promise<{ user: AuthenticatedUser | null; status: number; error?: string }> {
-  const token = getAuthToken(req);
-  if (!token) {
-    return { user: null, status: 401, error: "Unauthorized" };
+  const dbClient = getSupabaseAdmin();
+  let email: string | null = null;
+  let clientId: string | null = null;
+
+  // 1. Check if there is a client_token cookie (Custom Password Login JWT)
+  const clientToken = req.cookies.get("client_token")?.value;
+  if (clientToken) {
+    const payload = await verifyToken(clientToken);
+    if (payload && payload.role === "client" && payload.sub) {
+      email = payload.sub;
+    }
   }
 
-  const dbClient = getSupabaseAdmin();
-  const { data: { user }, error: authError } = await dbClient.auth.getUser(token);
-  if (authError || !user || !user.email) {
+  // 2. Fallback to Supabase token
+  if (!email) {
+    const token = getAuthToken(req);
+    if (token) {
+      const { data: { user }, error: authError } = await dbClient.auth.getUser(token);
+      if (!authError && user && user.email) {
+        email = user.email;
+        clientId = user.id;
+      }
+    }
+  }
+
+  // If no email found in either session, return unauthorized
+  if (!email) {
     return { user: null, status: 401, error: "Unauthorized" };
   }
 
@@ -51,7 +71,7 @@ export async function verifyPortalSession(req: NextRequest): Promise<{ user: Aut
   const { data: profile, error: profileError } = await dbClient
     .from("client_billing_profiles")
     .select("id, is_approved")
-    .eq("email", user.email)
+    .eq("email", email)
     .maybeSingle();
 
   if (profileError) {
@@ -64,8 +84,8 @@ export async function verifyPortalSession(req: NextRequest): Promise<{ user: Aut
 
   return {
     user: {
-      email: user.email,
-      id: user.id
+      email: email,
+      id: clientId || profile.id
     },
     status: 200
   };
