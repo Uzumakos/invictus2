@@ -166,8 +166,21 @@ export async function saveDB(data: Record<string, unknown>): Promise<void> {
         console.error("Failed to upsert payment_methods:", err.message);
       }
     }
+
+    if (data.users && Array.isArray(data.users)) {
+      try {
+        for (const u of data.users as any[]) {
+          const uRow = mapItemToSnakeCase(u);
+          if (uRow) {
+            await dbClient.from("users").upsert(uRow);
+          }
+        }
+      } catch (uErr: any) {
+        console.error("Failed to save users in Supabase:", uErr.message);
+      }
+    }
   } catch (err) {
-    console.error("Failed to save site_settings or payment_methods in Supabase:", err);
+    console.error("Failed to save site_settings, payment_methods, or users in Supabase:", err);
   }
 }
 
@@ -268,6 +281,14 @@ export async function addToCollection<T extends { id: string }>(
   const dbClient = getSupabaseAdmin();
   const table = tableMap[key] || key;
   const dbRow = mapItemToSnakeCase(item);
+
+  if ((key === "clientBillingProfiles" || table === "client_billing_profiles") && dbRow) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!dbRow.client_id || !uuidRegex.test(String(dbRow.client_id))) {
+      dbRow.client_id = crypto.randomUUID();
+    }
+  }
+
   const { error } = await dbClient.from(table).insert(dbRow);
   if (error) {
     console.error(`Error adding to collection ${key}:`, error.message);
@@ -278,8 +299,8 @@ export async function addToCollection<T extends { id: string }>(
         delete dbRow.tiers;
         const { error: retryErr } = await dbClient.from(table).insert(dbRow);
         if (!retryErr) return item;
+        throw retryErr;
       }
-      return item;
     }
     throw error;
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadDB, saveDB } from "@/lib/db";
+import { loadDB, deleteFromCollection } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 
 async function checkAdmin(req: NextRequest): Promise<boolean> {
@@ -22,19 +22,17 @@ export async function DELETE(
     const db = await loadDB();
     const users = (db.users as any[]) || [];
 
-    const index = users.findIndex((u) => u.id === id);
-    if (index === -1) {
+    const userToDelete = users.find((u) => u.id === id);
+    if (!userToDelete) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const admins = users.filter((u) => u.role === "admin");
-    if (users[index].role === "admin" && admins.length <= 1) {
+    if (userToDelete.role === "admin" && admins.length <= 1) {
       return NextResponse.json({ error: "Cannot delete the last admin user" }, { status: 400 });
     }
 
-    users.splice(index, 1);
-    db.users = users;
-    await saveDB(db);
+    await deleteFromCollection("users", id);
 
     return NextResponse.json({ success: true });
   } catch (err) {

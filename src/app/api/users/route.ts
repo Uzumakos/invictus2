@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
     const newUser = {
-      id: "u_" + Math.random().toString(36).substring(2, 9),
+      id: crypto.randomUUID(),
       name,
       email: email.toLowerCase().trim(),
       passwordHash,
@@ -55,9 +55,43 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    users.push(newUser);
-    db.users = users;
-    await saveDB(db);
+    const { addToCollection } = await import("@/lib/db");
+    await addToCollection("users", newUser);
+
+    if (role === "client") {
+      try {
+        const { getSupabaseAdmin } = await import("@/lib/supabaseClient");
+        const dbClient = getSupabaseAdmin();
+        const { data: existingProfile } = await dbClient
+          .from("client_billing_profiles")
+          .select("id")
+          .eq("email", newUser.email)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          await addToCollection("clientBillingProfiles", {
+            id: crypto.randomUUID(),
+            clientId: newUser.id,
+            companyName: name,
+            primaryContactName: name,
+            email: newUser.email,
+            billingAddress: "Port-au-Prince",
+            country: "Haiti",
+            phone: "",
+            whatsappNumber: "",
+            countryCode: "US",
+            currency: "USD",
+            preferredLanguage: "fr",
+            paymentTerms: "NET_30",
+            defaultDiscount: 0,
+            isApproved: true,
+            createdAt: new Date().toISOString()
+          });
+        }
+      } catch (profileErr) {
+        console.error("Auto-creation of client billing profile failed:", profileErr);
+      }
+    }
 
     const { passwordHash: _, ...publicUser } = newUser;
     return NextResponse.json(publicUser, { status: 201 });

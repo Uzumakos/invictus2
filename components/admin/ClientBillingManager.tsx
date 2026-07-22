@@ -152,8 +152,10 @@ export default function ClientBillingManager() {
         body: JSON.stringify(payload)
       });
 
+      const resData = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        throw new Error("Failed to save billing profile.");
+        throw new Error(resData.error || resData.message || "Failed to save billing profile.");
       }
 
       setToastMsg(editingProfile ? "Billing profile updated." : "Billing profile created.");
