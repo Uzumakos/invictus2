@@ -71,6 +71,23 @@ export default function ClientPortal() {
   const searchParams = useSearchParams();
   const errorParam = searchParams?.get("error");
 
+  // Helper for authenticated requests passing Supabase bearer token
+  const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers = {
+      ...options.headers,
+    } as Record<string, string>;
+
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
+
+    return fetch(url, {
+      ...options,
+      headers,
+    });
+  };
+
   useEffect(() => {
     if (isLoggedIn) {
       fetchPortalData();
@@ -80,7 +97,7 @@ export default function ClientPortal() {
   // Check if client user has a password set
   useEffect(() => {
     if (isLoggedIn) {
-      fetch("/api/portal/password-status")
+      fetchWithAuth("/api/portal/password-status")
         .then(res => res.json())
         .then(data => {
           if (typeof data.hasPassword === "boolean") {
@@ -135,7 +152,7 @@ export default function ClientPortal() {
 
   useEffect(() => {
     // 1. Check local client_token session first
-    fetch("/api/portal/status")
+    fetchWithAuth("/api/portal/status")
       .then(res => {
         if (res.ok) {
           return res.json();
@@ -176,7 +193,7 @@ export default function ClientPortal() {
         setClientName(session.user.user_metadata?.name || session.user.email?.split("@")[0] || "");
       } else if (event === "SIGNED_OUT") {
         // only reset if they sign out of supabase AND don't have a local cookie session
-        fetch("/api/portal/status")
+        fetchWithAuth("/api/portal/status")
           .then(res => res.json())
           .then(data => {
             if (!data.authenticated) {
@@ -364,7 +381,7 @@ export default function ClientPortal() {
     setModalPasswordLoading(true);
 
     try {
-      const res = await fetch("/api/portal/change-password", {
+      const res = await fetchWithAuth("/api/portal/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
