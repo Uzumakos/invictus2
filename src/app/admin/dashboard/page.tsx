@@ -2992,7 +2992,7 @@ export default function AdminDashboardPage() {
                                       </span>
                                     </div>
                                     <p className="text-[11px] text-slate-400 truncate pr-4">
-                                      {c.lastMessage.sender === "admin" ? "You: " : ""}{c.lastMessage.text}
+                                      {c.lastMessage.sender === "amedee" ? "You: " : ""}{c.lastMessage.text}
                                     </p>
                                     <span className="text-[9px] text-slate-600 font-mono truncate">{c.email}</span>
                                   </button>
@@ -3015,7 +3015,7 @@ export default function AdminDashboardPage() {
 
                               <div className="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col bg-slate-950/20">
                                 {activeClientMessages.map(m => {
-                                  const isAdmin = m.sender === "admin";
+                                  const isAdmin = m.sender === "amedee";
                                   return (
                                     <div
                                       key={m.id || m.timestamp}
@@ -3047,7 +3047,7 @@ export default function AdminDashboardPage() {
 
                                   const payload = {
                                     clientEmail: activeClientEmail,
-                                    sender: "admin",
+                                    sender: "amedee",
                                     text,
                                     timestamp: new Date().toISOString()
                                   };
