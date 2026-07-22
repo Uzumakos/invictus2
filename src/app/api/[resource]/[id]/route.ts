@@ -24,7 +24,8 @@ const ALLOWED_RESOURCES = [
   "client-milestones",
   "client-digital-scores",
   "brand-assets",
-  "seo-metadata"
+  "seo-metadata",
+  "projects"
 ];
 
 export async function PATCH(
@@ -47,6 +48,7 @@ export async function PATCH(
     if (resource === "discoveries") collectionKey = "discoveries";
     if (resource === "recommendation-rules") collectionKey = "recommendationRules";
     if (resource === "payments") collectionKey = "portalPayments";
+    if (resource === "projects") collectionKey = "portalProjects";
 
     // CMS, ERP & Telemetry collections
     if (resource === "case-studies") collectionKey = "projects";
@@ -92,6 +94,7 @@ export async function DELETE(
     if (resource === "notifications") collectionKey = "portalNotifications";
     if (resource === "discoveries") collectionKey = "discoveries";
     if (resource === "payments") collectionKey = "portalPayments";
+    if (resource === "projects") collectionKey = "portalProjects";
 
     // CMS, ERP & Telemetry collections
     if (resource === "case-studies") collectionKey = "projects";

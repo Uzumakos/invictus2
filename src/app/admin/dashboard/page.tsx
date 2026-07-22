@@ -32,7 +32,34 @@ type DashboardTab =
   | "cms_invoices" | "cms_billing_profiles" | "cms_business_profile"
   | "cms_seo" | "cms_brand" | "cms_testimonials"
   | "wa_templates" | "wa_history" | "wa_shared_links" | "wa_analytics"
-  | "users" | "settings";
+  | "users" | "settings"
+  | "client_messages" | "client_tasks" | "client_projects";
+
+interface ProjectDescData {
+  text: string;
+  adminFeedback?: string;
+  clientFeedback?: string;
+}
+
+const parseProjectDesc = (desc: string): ProjectDescData => {
+  try {
+    if (desc && desc.trim().startsWith("{")) {
+      const parsed = JSON.parse(desc);
+      return {
+        text: parsed.text || "",
+        adminFeedback: parsed.adminFeedback || "",
+        clientFeedback: parsed.clientFeedback || ""
+      };
+    }
+  } catch (e) {
+    // ignore
+  }
+  return {
+    text: desc || "",
+    adminFeedback: "",
+    clientFeedback: ""
+  };
+};
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -46,6 +73,42 @@ export default function AdminDashboardPage() {
   const [discoveries, setDiscoveries] = useState<ProjectDiscovery[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+
+  // Client portal integrations (messages, tasks, projects)
+  const [portalMessages, setPortalMessages] = useState<any[]>([]);
+  const [portalTasks, setPortalTasks] = useState<any[]>([]);
+  const [clientProjects, setClientProjects] = useState<any[]>([]);
+
+  // Chat panel states
+  const [chatActiveEmail, setChatActiveEmail] = useState<string | null>(null);
+  const [chatInputText, setChatInputText] = useState("");
+
+  // Task filtering & modal states
+  const [taskFilterAssignee, setTaskFilterAssignee] = useState("all");
+  const [taskFilterClient, setTaskFilterClient] = useState("all");
+  const [taskFilterStatus, setTaskFilterStatus] = useState("all");
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<any | null>(null);
+  
+  // Task form fields
+  const [taskFormTitle, setTaskFormTitle] = useState("");
+  const [taskFormDesc, setTaskFormDesc] = useState("");
+  const [taskFormDeadline, setTaskFormDeadline] = useState("");
+  const [taskFormAssignedTo, setTaskFormAssignedTo] = useState<"client" | "amedee">("client");
+  const [taskFormClientEmail, setTaskFormClientEmail] = useState("");
+
+  // Project states
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<any | null>(null);
+  const [projectFormClientEmail, setProjectFormClientEmail] = useState("");
+  const [projectFormTitle, setProjectFormTitle] = useState("");
+  const [projectFormDescText, setProjectFormDescText] = useState("");
+  const [projectFormStatus, setProjectFormStatus] = useState<"not_started" | "in_progress" | "review" | "completed">("not_started");
+  const [projectFormProgress, setProjectFormProgress] = useState(0);
+  const [projectFormStartDate, setProjectFormStartDate] = useState("");
+  const [projectFormTargetLaunch, setProjectFormTargetLaunch] = useState("");
+  const [projectFormAdminFeedback, setProjectFormAdminFeedback] = useState("");
+  const [projectFormClientFeedback, setProjectFormClientFeedback] = useState("");
 
   // BI Center & Consulting states (V3)
   const [biData, setBiData] = useState<any>({
@@ -152,7 +215,7 @@ export default function AdminDashboardPage() {
     try {
       const [
         bookingsRes, leadsRes, discoveriesRes, settingsRes, paymentRes, usersRes, paymentsRes,
-        transRes, projectsRes, trainingRes, faqRes, servicesRes
+        transRes, projectsRes, trainingRes, faqRes, servicesRes, messagesRes, tasksRes, clientProjRes
       ] = await Promise.all([
         fetch("/api/bookings", { cache: "no-store" }),
         fetch("/api/leads", { cache: "no-store" }),
@@ -165,7 +228,10 @@ export default function AdminDashboardPage() {
         fetch("/api/case-studies", { cache: "no-store" }),
         fetch("/api/training-programs", { cache: "no-store" }),
         fetch("/api/faq-items", { cache: "no-store" }),
-        fetch("/api/consulting-services", { cache: "no-store" })
+        fetch("/api/consulting-services", { cache: "no-store" }),
+        fetch("/api/messages", { cache: "no-store" }),
+        fetch("/api/tasks", { cache: "no-store" }),
+        fetch("/api/projects", { cache: "no-store" })
       ]);
 
       setBookings(bookingsRes.ok ? await bookingsRes.json() : []);
@@ -175,6 +241,9 @@ export default function AdminDashboardPage() {
       setPaymentConfig(paymentRes.ok ? await paymentRes.json() : { methods: [] });
       setUsers(usersRes.ok ? await usersRes.json() : []);
       setPayments(paymentsRes.ok ? await paymentsRes.json() : []);
+      setPortalMessages(messagesRes.ok ? await messagesRes.json() : []);
+      setPortalTasks(tasksRes.ok ? await tasksRes.json() : []);
+      setClientProjects(clientProjRes.ok ? await clientProjRes.json() : []);
       
       // V3 BI Fetching
       const biRes = await fetch("/api/analytics/bi", { cache: "no-store" });
@@ -197,6 +266,70 @@ export default function AdminDashboardPage() {
       setConsultingServices(servicesRes.ok ? await servicesRes.json() : []);
     } catch (err: any) {
       setError(err.message || "Failed to load database records.");
+    }
+  };
+
+  // Client Projects CRUD operations
+  const handleSaveClientProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectFormTitle.trim() || !projectFormClientEmail) return;
+
+    const descObj = {
+      text: projectFormDescText,
+      adminFeedback: projectFormAdminFeedback,
+      clientFeedback: projectFormClientFeedback
+    };
+
+    const payload = {
+      clientEmail: projectFormClientEmail,
+      title: projectFormTitle,
+      description: JSON.stringify(descObj),
+      status: projectFormStatus,
+      progress: Number(projectFormProgress),
+      startDate: projectFormStartDate,
+      targetLaunch: projectFormTargetLaunch
+    };
+
+    try {
+      let res;
+      if (editingProject) {
+        res = await fetch(`/api/projects/${editingProject.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        const newProj = {
+          id: "p_" + crypto.randomUUID(),
+          ...payload
+        };
+        res = await fetch("/api/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newProj)
+        });
+      }
+
+      if (res.ok) {
+        setShowProjectModal(false);
+        fetchAdminData();
+      }
+    } catch (err) {
+      console.error("Failed to save client project:", err);
+    }
+  };
+
+  const handleDeleteClientProject = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        fetchAdminData();
+      }
+    } catch (err) {
+      console.error("Failed to delete client project:", err);
     }
   };
 
@@ -827,8 +960,15 @@ export default function AdminDashboardPage() {
       items: [
         { id: "analytics", label: "Executive Dashboard", icon: LayoutDashboard },
         { id: "crm", label: "CRM", icon: TrendingUp },
+      ]
+    },
+    {
+      title: "Client Center & BI",
+      items: [
         { id: "bookings", label: "Client Bookings", icon: Calendar },
         { id: "discoveries", label: "Discovery Roadmaps", icon: Brain },
+        { id: "client_tasks", label: "Client Tasks", icon: CheckCircle2 },
+        { id: "client_projects", label: "Client Projects", icon: Layers },
         { id: "payments", label: "Payment Center", icon: DollarSign },
         { id: "cms_invoices", label: "Invoice Center", icon: FileText },
         { id: "cms_billing_profiles", label: "Client Workspace Registry", icon: Users },
@@ -837,6 +977,7 @@ export default function AdminDashboardPage() {
     {
       title: "Communication Center",
       items: [
+        { id: "client_messages", label: "Client Messages", icon: MessageSquare },
         { id: "wa_templates", label: "WhatsApp Templates", icon: MessageSquare },
         { id: "wa_history", label: "WhatsApp History", icon: History },
         { id: "wa_shared_links", label: "Shared Links", icon: Share2 },
@@ -2769,10 +2910,808 @@ export default function AdminDashboardPage() {
                   <WhatsAppAnalyticsDashboard />
                 </div>
               )}
+
+              {/* TAB: Client Messages */}
+              {activeTab === "client_messages" && (
+                <div className="animate-fadeIn bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-serif font-bold text-white">Client Portal Communications</h2>
+                      <p className="text-xs text-slate-400">View and respond to secure client messages.</p>
+                    </div>
+                    <button
+                      onClick={fetchAdminData}
+                      className="p-2 border border-slate-800 rounded-xl hover:bg-slate-800 text-slate-300 transition-colors cursor-pointer"
+                      title="Refresh messages"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {(() => {
+                    const uniqueClientsMap = new Map<string, { email: string; name: string; lastMessage: any; count: number }>();
+                    portalMessages.forEach(m => {
+                      const email = m.clientEmail?.toLowerCase().trim();
+                      if (!email) return;
+
+                      const profile = billingProfiles.find(p => p.email?.toLowerCase().trim() === email);
+                      const name = profile?.primary_contact_name || profile?.company_name || email.split("@")[0];
+
+                      const existing = uniqueClientsMap.get(email);
+                      if (!existing) {
+                        uniqueClientsMap.set(email, {
+                          email,
+                          name,
+                          lastMessage: m,
+                          count: 1
+                        });
+                      } else {
+                        existing.count++;
+                        if (new Date(m.timestamp) > new Date(existing.lastMessage.timestamp)) {
+                          existing.lastMessage = m;
+                        }
+                      }
+                    });
+
+                    const uniqueClients = Array.from(uniqueClientsMap.values()).sort(
+                      (a, b) => new Date(b.lastMessage.timestamp).getTime() - new Date(a.lastMessage.timestamp).getTime()
+                    );
+
+                    const activeClientEmail = chatActiveEmail || uniqueClients[0]?.email;
+
+                    const activeClientMessages = portalMessages
+                      .filter(m => m.clientEmail?.toLowerCase().trim() === activeClientEmail)
+                      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+                    const activeClientName = uniqueClients.find(c => c.email === activeClientEmail)?.name || activeClientEmail || "";
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[600px] border border-slate-800 rounded-2xl overflow-hidden">
+                        <div className="border-r border-slate-800 bg-slate-950 overflow-y-auto flex flex-col h-full">
+                          <div className="p-4 border-b border-slate-800">
+                            <span className="text-[9px] font-sans font-bold text-indigo-400 tracking-widest uppercase block">CONVERSATIONS</span>
+                          </div>
+                          {uniqueClients.length === 0 ? (
+                            <div className="p-8 text-center text-xs text-slate-500 my-auto">No secure client messages found.</div>
+                          ) : (
+                            <div className="flex-1 divide-y divide-slate-900/50">
+                              {uniqueClients.map(c => {
+                                const isActive = c.email === activeClientEmail;
+                                return (
+                                  <button
+                                    key={c.email}
+                                    onClick={() => setChatActiveEmail(c.email)}
+                                    className={`w-full text-left p-4 transition-colors flex flex-col gap-1 cursor-pointer ${
+                                      isActive ? "bg-slate-900" : "hover:bg-slate-900/40"
+                                    }`}
+                                  >
+                                    <div className="flex justify-between items-center">
+                                      <span className="font-bold text-xs text-white truncate max-w-[150px]">{c.name}</span>
+                                      <span className="text-[9px] text-slate-500 font-mono">
+                                        {new Date(c.lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-400 truncate pr-4">
+                                      {c.lastMessage.sender === "admin" ? "You: " : ""}{c.lastMessage.text}
+                                    </p>
+                                    <span className="text-[9px] text-slate-600 font-mono truncate">{c.email}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="md:col-span-2 flex flex-col h-full bg-slate-900/60 relative">
+                          {activeClientEmail ? (
+                            <>
+                              <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/40">
+                                <div>
+                                  <span className="text-[9px] font-sans font-bold text-emerald-400 tracking-widest uppercase block">SECURE CHANNEL</span>
+                                  <h3 className="font-bold text-xs text-white">{activeClientName}</h3>
+                                  <span className="text-[9px] font-mono text-slate-500">{activeClientEmail}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col bg-slate-950/20">
+                                {activeClientMessages.map(m => {
+                                  const isAdmin = m.sender === "admin";
+                                  return (
+                                    <div
+                                      key={m.id || m.timestamp}
+                                      className={`flex flex-col max-w-[75%] ${isAdmin ? "self-end items-end" : "self-start items-start"}`}
+                                    >
+                                      <div
+                                        className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                                          isAdmin 
+                                            ? "bg-indigo-600 text-white rounded-tr-none" 
+                                            : "bg-slate-800 text-slate-100 rounded-tl-none"
+                                        }`}
+                                      >
+                                        {m.text}
+                                      </div>
+                                      <span className="text-[8px] text-slate-500 font-mono mt-1 px-1">
+                                        {new Date(m.timestamp).toLocaleDateString()} {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              <form
+                                onSubmit={async (e) => {
+                                  e.preventDefault();
+                                  if (!chatInputText.trim()) return;
+                                  const text = chatInputText;
+                                  setChatInputText("");
+
+                                  const payload = {
+                                    clientEmail: activeClientEmail,
+                                    sender: "admin",
+                                    text,
+                                    timestamp: new Date().toISOString()
+                                  };
+
+                                  try {
+                                    const res = await fetch("/api/messages", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify(payload)
+                                    });
+                                    if (res.ok) {
+                                      const newMsg = await res.json();
+                                      setPortalMessages(prev => [...prev, newMsg]);
+                                    }
+                                  } catch (err) {
+                                    console.error("Failed to transmit reply:", err);
+                                  }
+                                }}
+                                className="p-3 border-t border-slate-800 bg-slate-950/40 flex gap-2"
+                              >
+                                <input
+                                  type="text"
+                                  value={chatInputText}
+                                  onChange={(e) => setChatInputText(e.target.value)}
+                                  placeholder={`Reply to ${activeClientName}...`}
+                                  className="flex-1 bg-slate-900 border border-slate-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 placeholder-slate-500 font-semibold"
+                                />
+                                <button
+                                  type="submit"
+                                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase rounded-xl transition-colors cursor-pointer"
+                                >
+                                  Reply
+                                </button>
+                              </form>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-slate-500 text-xs">
+                              Select a conversation on the left to start chatting.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* TAB: Client Tasks */}
+              {activeTab === "client_tasks" && (
+                <div className="animate-fadeIn bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <h2 className="text-xl font-serif font-bold text-white">Client Tasks & Assignments</h2>
+                      <p className="text-xs text-slate-400">Manage tasks and view client assignments.</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditingTask(null);
+                        setTaskFormTitle("");
+                        setTaskFormDesc("");
+                        setTaskFormDeadline("");
+                        setTaskFormAssignedTo("client");
+                        setTaskFormClientEmail("");
+                        setShowTaskModal(true);
+                      }}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase rounded-xl transition-colors cursor-pointer flex items-center gap-2 font-bold"
+                    >
+                      <Plus className="w-4 h-4" /> Create Task
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-950/45 p-4 rounded-2xl border border-slate-800/40">
+                    <div>
+                      <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Assigned To</label>
+                      <select
+                        value={taskFilterAssignee}
+                        onChange={(e) => setTaskFilterAssignee(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
+                      >
+                        <option value="all">All Assignees</option>
+                        <option value="amedee">Assigned to Me (Amedee)</option>
+                        <option value="client">Assigned to Client</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Filter by Client</label>
+                      <select
+                        value={taskFilterClient}
+                        onChange={(e) => setTaskFilterClient(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
+                      >
+                        <option value="all">All Clients</option>
+                        {billingProfiles.map(p => (
+                          <option key={p.email} value={p.email}>{p.primary_contact_name || p.company_name || p.email}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Status</label>
+                      <select
+                        value={taskFilterStatus}
+                        onChange={(e) => setTaskFilterStatus(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="todo">To Do</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="done">Done</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const filteredTasks = portalTasks.filter(t => {
+                      if (taskFilterAssignee !== "all" && t.assignedTo !== taskFilterAssignee) return false;
+                      if (taskFilterClient !== "all" && t.clientEmail?.toLowerCase().trim() !== taskFilterClient.toLowerCase().trim()) return false;
+                      if (taskFilterStatus !== "all" && t.status !== taskFilterStatus) return false;
+                      return true;
+                    });
+
+                    return filteredTasks.length === 0 ? (
+                      <div className="p-12 text-center text-slate-400 text-xs border border-slate-800/50 border-dashed rounded-2xl">
+                        No tasks match the active filters.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredTasks.map(t => {
+                          const clientProfile = billingProfiles.find(p => p.email?.toLowerCase().trim() === t.clientEmail?.toLowerCase().trim());
+                          const clientName = clientProfile?.primary_contact_name || clientProfile?.company_name || t.clientEmail?.split("@")[0];
+
+                          return (
+                            <div key={t.id} className="bg-slate-950 border border-slate-850 p-5 rounded-2xl flex flex-col justify-between gap-4">
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-start gap-2">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-sans font-bold uppercase tracking-wider ${
+                                    t.status === "done" 
+                                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25" 
+                                      : t.status === "in_progress"
+                                      ? "bg-amber-500/10 text-amber-400 border border-amber-500/25"
+                                      : "bg-slate-800 text-slate-400 border border-slate-700"
+                                  }`}>
+                                    {t.status === "done" ? "Done" : t.status === "in_progress" ? "In Progress" : "To Do"}
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-sans font-bold uppercase tracking-wider ${
+                                    t.assignedTo === "amedee" 
+                                      ? "bg-purple-500/10 text-purple-400 border border-purple-500/25" 
+                                      : "bg-blue-500/10 text-blue-400 border border-blue-500/25"
+                                  }`}>
+                                    {t.assignedTo === "amedee" ? "Me (Amedee)" : "Client"}
+                                  </span>
+                                </div>
+                                <h4 className="font-bold text-sm text-white">{t.title?.en || t.title}</h4>
+                                <p className="text-xs text-slate-400 line-clamp-3 font-medium">{t.description?.en || t.description}</p>
+                              </div>
+
+                              <div className="border-t border-slate-900 pt-4 flex flex-col gap-2">
+                                <div className="flex justify-between text-[10px] text-slate-500">
+                                  <span className="font-semibold text-slate-400">Client: {clientName}</span>
+                                  <span className="font-mono">Due: {t.deadline}</span>
+                                </div>
+                                <div className="flex justify-end gap-2 mt-2">
+                                  {t.status !== "done" && (
+                                    <button
+                                      onClick={async () => {
+                                        const nextStatus = t.status === "todo" ? "in_progress" : "done";
+                                        try {
+                                          const res = await fetch(`/api/tasks/${t.id}`, {
+                                            method: "PATCH",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ status: nextStatus })
+                                          });
+                                          if (res.ok) fetchAdminData();
+                                        } catch (err) {
+                                          console.error("Failed to update status:", err);
+                                        }
+                                      }}
+                                      className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-[9px] font-bold uppercase rounded-lg transition-colors cursor-pointer"
+                                    >
+                                      {t.status === "todo" ? "Start" : "Complete"}
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      setEditingTask(t);
+                                      setTaskFormTitle(t.title?.en || t.title || "");
+                                      setTaskFormDesc(t.description?.en || t.description || "");
+                                      setTaskFormDeadline(t.deadline || "");
+                                      setTaskFormAssignedTo(t.assignedTo || "client");
+                                      setTaskFormClientEmail(t.clientEmail || "");
+                                      setShowTaskModal(true);
+                                    }}
+                                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[9px] font-bold uppercase rounded-lg transition-colors cursor-pointer"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (!confirm("Are you sure you want to delete this task?")) return;
+                                      try {
+                                        const res = await fetch(`/api/tasks/${t.id}`, { method: "DELETE" });
+                                        if (res.ok) fetchAdminData();
+                                      } catch (err) {
+                                        console.error("Failed to delete task:", err);
+                                      }
+                                    }}
+                                    className="p-1.5 hover:bg-red-500/10 text-slate-500 hover:text-red-400 rounded-lg transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* TAB: Client Projects */}
+              {activeTab === "client_projects" && (
+                <div className="animate-fadeIn bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <h2 className="text-xl font-serif font-bold text-white">Client Projects Registry</h2>
+                      <p className="text-xs text-slate-400">Track milestones, status, progress, and review feedback loops.</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditingProject(null);
+                        setProjectFormClientEmail("");
+                        setProjectFormTitle("");
+                        setProjectFormDescText("");
+                        setProjectFormStatus("not_started");
+                        setProjectFormProgress(0);
+                        setProjectFormStartDate("");
+                        setProjectFormTargetLaunch("");
+                        setProjectFormAdminFeedback("");
+                        setProjectFormClientFeedback("");
+                        setShowProjectModal(true);
+                      }}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase rounded-xl transition-colors cursor-pointer flex items-center gap-2 font-bold"
+                    >
+                      <Plus className="w-4 h-4" /> Create Project
+                    </button>
+                  </div>
+
+                  {clientProjects.length === 0 ? (
+                    <div className="p-12 text-center text-slate-400 text-xs border border-slate-800/50 border-dashed rounded-2xl">
+                      No active client projects found. Create one to begin tracking.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {clientProjects.map(p => {
+                        const parsedDesc = parseProjectDesc(p.description);
+                        const clientProfile = billingProfiles.find(bp => bp.email?.toLowerCase().trim() === p.clientEmail?.toLowerCase().trim());
+                        const clientName = clientProfile?.primary_contact_name || clientProfile?.company_name || p.clientEmail?.split("@")[0];
+
+                        return (
+                          <div key={p.id} className="bg-slate-950 border border-slate-850 p-6 rounded-2xl flex flex-col justify-between gap-6">
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-start gap-2">
+                                <div>
+                                  <h3 className="font-bold text-base text-white">{p.title}</h3>
+                                  <span className="text-[10px] text-slate-400 font-semibold">Client: {clientName} ({p.clientEmail})</span>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-sans font-bold uppercase tracking-wider ${
+                                  p.status === "completed" 
+                                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25" 
+                                    : p.status === "review"
+                                    ? "bg-purple-500/10 text-purple-400 border border-purple-500/25 animate-pulse"
+                                    : p.status === "in_progress"
+                                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/25"
+                                    : "bg-slate-800 text-slate-400 border border-slate-700"
+                                }`}>
+                                  {p.status === "completed" ? "Completed" : p.status === "review" ? "In Review" : p.status === "in_progress" ? "In Progress" : "Not Started"}
+                                </span>
+                              </div>
+
+                              <p className="text-xs text-slate-300 font-medium leading-relaxed bg-slate-900/30 p-3 rounded-xl border border-slate-900">{parsedDesc.text}</p>
+
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-[10px] font-mono">
+                                  <span className="text-slate-400">Progress</span>
+                                  <span className="text-white font-bold">{p.progress}%</span>
+                                </div>
+                                <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+                                  <div className="bg-indigo-600 h-full rounded-full transition-all duration-500" style={{ width: `${p.progress}%` }} />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 bg-slate-900/20 p-3 rounded-xl">
+                                <div>
+                                  <span className="block text-[8px] uppercase tracking-wider text-slate-400">Start Date</span>
+                                  <span className="font-bold text-slate-300">{p.startDate || "N/A"}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[8px] uppercase tracking-wider text-slate-400">Target Launch</span>
+                                  <span className="font-bold text-slate-300">{p.targetLaunch || "N/A"}</span>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/60 space-y-1">
+                                  <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-indigo-400">Your Feedback (Amedee)</span>
+                                  <p className="text-xs text-slate-300 italic font-medium leading-relaxed">
+                                    {parsedDesc.adminFeedback || "No feedback logged yet."}
+                                  </p>
+                                </div>
+                                <div className="bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/60 space-y-1">
+                                  <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-emerald-400">Client Feedback</span>
+                                  <p className="text-xs text-slate-300 italic font-medium leading-relaxed">
+                                    {parsedDesc.clientFeedback || "No feedback from client yet."}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="border-t border-slate-900 pt-4 flex justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingProject(p);
+                                  setProjectFormClientEmail(p.clientEmail || "");
+                                  setProjectFormTitle(p.title || "");
+                                  setProjectFormDescText(parsedDesc.text || "");
+                                  setProjectFormStatus(p.status || "not_started");
+                                  setProjectFormProgress(p.progress || 0);
+                                  setProjectFormStartDate(p.startDate || "");
+                                  setProjectFormTargetLaunch(p.targetLaunch || "");
+                                  setProjectFormAdminFeedback(parsedDesc.adminFeedback || "");
+                                  setProjectFormClientFeedback(parsedDesc.clientFeedback || "");
+                                  setShowProjectModal(true);
+                                }}
+                                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-bold uppercase rounded-xl transition-colors cursor-pointer"
+                              >
+                                Edit Project
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClientProject(p.id)}
+                                className="p-2 hover:bg-red-500/10 text-slate-500 hover:text-red-400 rounded-xl transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
       </main>
+
+      {/* Task Management Modal */}
+      <AnimatePresence>
+        {showTaskModal && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-serif font-bold text-xl text-white">
+                    {editingTask ? "Edit Task" : "Create New Task"}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {editingTask ? "Modify existing task details." : "Create and assign a task to a client profile."}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowTaskModal(false)}
+                  className="text-slate-400 hover:text-white font-bold text-lg cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!taskFormTitle.trim() || !taskFormClientEmail) return;
+
+                  const payload = {
+                    clientEmail: taskFormClientEmail,
+                    title: { en: taskFormTitle, fr: taskFormTitle },
+                    description: { en: taskFormDesc, fr: taskFormDesc },
+                    deadline: taskFormDeadline,
+                    assignedTo: taskFormAssignedTo,
+                    status: editingTask ? editingTask.status : "todo"
+                  };
+
+                  try {
+                    let res;
+                    if (editingTask) {
+                      res = await fetch(`/api/tasks/${editingTask.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                      });
+                    } else {
+                      const newId = "t_" + crypto.randomUUID();
+                      res = await fetch("/api/tasks", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ id: newId, ...payload })
+                      });
+                    }
+
+                    if (res.ok) {
+                      setShowTaskModal(false);
+                      fetchAdminData();
+                    }
+                  } catch (err) {
+                    console.error("Failed to save task:", err);
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Select Client</label>
+                  <select
+                    required
+                    disabled={!!editingTask}
+                    value={taskFormClientEmail}
+                    onChange={(e) => setTaskFormClientEmail(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                  >
+                    <option value="" disabled>Choose client...</option>
+                    {billingProfiles.map(p => (
+                      <option key={p.email} value={p.email}>{p.primary_contact_name || p.company_name || p.email}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Task Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={taskFormTitle}
+                    onChange={(e) => setTaskFormTitle(e.target.value)}
+                    placeholder="Provide clean deliverables..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Description</label>
+                  <textarea
+                    rows={3}
+                    value={taskFormDesc}
+                    onChange={(e) => setTaskFormDesc(e.target.value)}
+                    placeholder="Detail out tasks..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Deadline</label>
+                    <input
+                      type="date"
+                      required
+                      value={taskFormDeadline}
+                      onChange={(e) => setTaskFormDeadline(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Assigned To</label>
+                    <select
+                      value={taskFormAssignedTo}
+                      onChange={(e) => setTaskFormAssignedTo(e.target.value as any)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                    >
+                      <option value="client">Client</option>
+                      <option value="amedee">Me (Amedee)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowTaskModal(false)}
+                    className="w-1/2 py-3 border border-slate-800 hover:bg-slate-800 text-slate-300 text-xs font-bold uppercase rounded-xl cursor-pointer transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-1/2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase rounded-xl cursor-pointer transition-colors"
+                  >
+                    Save Task
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Project Management Modal */}
+      <AnimatePresence>
+        {showProjectModal && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-serif font-bold text-xl text-white">
+                    {editingProject ? "Edit Project" : "Create Client Project"}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {editingProject ? "Modify project status, progress, or feedback." : "Initiate a portal project for a client."}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowProjectModal(false)}
+                  className="text-slate-400 hover:text-white font-bold text-lg cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveClientProject} className="space-y-4">
+                <div>
+                  <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Select Client</label>
+                  <select
+                    required
+                    disabled={!!editingProject}
+                    value={projectFormClientEmail}
+                    onChange={(e) => setProjectFormClientEmail(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                  >
+                    <option value="" disabled>Choose client...</option>
+                    {billingProfiles.map(p => (
+                      <option key={p.email} value={p.email}>{p.primary_contact_name || p.company_name || p.email}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Project Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={projectFormTitle}
+                    onChange={(e) => setProjectFormTitle(e.target.value)}
+                    placeholder="E.g. Web Platform Overhaul"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Description</label>
+                  <textarea
+                    rows={2}
+                    value={projectFormDescText}
+                    onChange={(e) => setProjectFormDescText(e.target.value)}
+                    placeholder="Summary of scope..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Status</label>
+                    <select
+                      value={projectFormStatus}
+                      onChange={(e) => setProjectFormStatus(e.target.value as any)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                    >
+                      <option value="not_started">Not Started</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="review">In Review</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Progress ({projectFormProgress}%)</label>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={projectFormProgress}
+                      onChange={(e) => setProjectFormProgress(Number(e.target.value))}
+                      className="w-full h-8 accent-indigo-650"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Start Date</label>
+                    <input
+                      type="date"
+                      value={projectFormStartDate}
+                      onChange={(e) => setProjectFormStartDate(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Target Launch</label>
+                    <input
+                      type="date"
+                      value={projectFormTargetLaunch}
+                      onChange={(e) => setProjectFormTargetLaunch(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Your Feedback (Amedee)</label>
+                  <textarea
+                    rows={2}
+                    value={projectFormAdminFeedback}
+                    onChange={(e) => setProjectFormAdminFeedback(e.target.value)}
+                    placeholder="Log progress, notes, or next steps..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold resize-none"
+                  />
+                </div>
+
+                {editingProject && (
+                  <div>
+                    <label className="block text-[8px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1.5">Client Feedback (Read-Only)</label>
+                    <p className="text-xs text-slate-400 italic bg-slate-950 p-2.5 rounded-xl border border-slate-850">
+                      {projectFormClientFeedback || "No client feedback logged yet."}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowProjectModal(false)}
+                    className="w-1/2 py-3 border border-slate-800 hover:bg-slate-800 text-slate-300 text-xs font-bold uppercase rounded-xl cursor-pointer transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-1/2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase rounded-xl cursor-pointer transition-colors"
+                  >
+                    Save Project
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

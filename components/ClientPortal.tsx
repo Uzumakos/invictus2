@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { Shield, Lock, Send, FileText, CheckCircle2, Circle, Calendar, MessageSquare, Plus, Check, Loader2, DollarSign, AlertCircle } from "lucide-react";
+import { Shield, Lock, Send, FileText, CheckCircle2, Circle, Calendar, MessageSquare, Plus, Check, Loader2, DollarSign, AlertCircle, RefreshCw, Briefcase } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "@/lib/supabaseClient";
 import { useSearchParams } from "next/navigation";
@@ -37,7 +37,32 @@ export default function ClientPortal() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [clientEmail, setClientEmail] = useState("");
   const [clientName, setClientName] = useState("");
-  const [activeTab, setActiveTab] = useState<"dashboard" | "tasks" | "consultations" | "documents" | "messages" | "discoveries" | "payments">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "tasks" | "projects" | "consultations" | "documents" | "messages" | "discoveries" | "payments">("dashboard");
+
+  // Client project feedback states & helper
+  const [clientFeedbackText, setClientFeedbackText] = useState("");
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
+
+  const parseProjectDesc = (desc: string) => {
+    try {
+      if (desc && desc.trim().startsWith("{")) {
+        const parsed = JSON.parse(desc);
+        return {
+          text: parsed.text || "",
+          adminFeedback: parsed.adminFeedback || "",
+          clientFeedback: parsed.clientFeedback || ""
+        };
+      }
+    } catch (e) {
+      // ignore
+    }
+    return {
+      text: desc || "",
+      adminFeedback: "",
+      clientFeedback: ""
+    };
+  };
 
   // Portal database states
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -371,6 +396,37 @@ export default function ClientPortal() {
       setClientName("");
       setClientPassword("");
       setHasPassword(null);
+    }
+  };
+
+  const handleSendProjectFeedback = async (projectId: string, existingDesc: string) => {
+    if (!clientFeedbackText.trim()) return;
+    setFeedbackLoading(true);
+    setFeedbackSuccess(null);
+
+    const parsed = parseProjectDesc(existingDesc);
+    const updatedDesc = {
+      text: parsed.text,
+      adminFeedback: parsed.adminFeedback,
+      clientFeedback: clientFeedbackText
+    };
+
+    try {
+      const res = await fetchWithAuth(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: JSON.stringify(updatedDesc) })
+      });
+      if (res.ok) {
+        setFeedbackSuccess("Your feedback has been successfully submitted!");
+        setClientFeedbackText("");
+        fetchPortalData();
+        setTimeout(() => setFeedbackSuccess(null), 3000);
+      }
+    } catch (err) {
+      console.error("Failed to submit project feedback:", err);
+    } finally {
+      setFeedbackLoading(false);
     }
   };
 
@@ -777,6 +833,7 @@ export default function ClientPortal() {
               {[
                 { id: "dashboard", label: t("dashboard") },
                 { id: "tasks", label: t("tasks") },
+                { id: "projects", label: "Project Status" },
                 { id: "consultations", label: t("meetings") },
                 { id: "documents", label: t("documents") },
                 { id: "messages", label: t("messages") },
@@ -857,6 +914,135 @@ export default function ClientPortal() {
                     <PortalDiscoveries
                       discoveries={discoveries}
                     />
+                  )}
+
+                  {activeTab === "projects" && (
+                    <div className="bg-white border border-[var(--color-brand-neutral)]/20 p-6 sm:p-8 rounded-3xl shadow-2xs space-y-6 animate-fadeIn">
+                      <div className="flex justify-between items-center border-b border-[var(--color-brand-neutral)]/15 pb-4">
+                        <div>
+                          <h3 className="font-serif font-bold text-lg text-[var(--color-brand-dark)]">Project Status & Feedback</h3>
+                          <p className="text-xs text-[var(--color-brand-muted)] font-medium">Track your active projects, view Amedee's updates, and leave feedback.</p>
+                        </div>
+                        <button
+                          onClick={fetchPortalData}
+                          className="p-2 border border-[var(--color-brand-neutral)]/45 rounded-xl hover:border-[var(--color-brand-primary)] text-[var(--color-brand-muted)] hover:text-[var(--color-brand-primary)] transition-colors cursor-pointer animate-none"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {(() => {
+                        const targetEmail = clientEmail.toLowerCase().trim();
+                        const activeProjects = projects.filter(
+                          (p) => p.clientEmail.toLowerCase().trim() === targetEmail
+                        );
+
+                        if (activeProjects.length === 0) {
+                          return (
+                            <div className="p-12 text-center bg-[var(--color-brand-bg)] border border-dashed border-[var(--color-brand-neutral)]/20 rounded-2xl">
+                              <Briefcase className="w-8 h-8 text-[var(--color-brand-muted)] mx-auto mb-2 opacity-60" />
+                              <p className="text-xs text-[var(--color-brand-muted)] font-mono">
+                                No active projects registered for this workspace yet.
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-8">
+                            {activeProjects.map((p) => {
+                              const parsedDesc = parseProjectDesc(p.description);
+
+                              return (
+                                <div key={p.id} className="bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/25 p-6 rounded-2xl space-y-6">
+                                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                    <div>
+                                      <h4 className="font-serif font-bold text-base text-[var(--color-brand-dark)]">{p.title}</h4>
+                                      <span className="text-[10px] text-[var(--color-brand-muted)] font-mono">Start Date: {p.startDate || "N/A"} | Target Launch: {p.targetLaunch || "N/A"}</span>
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-xl text-[10px] font-sans font-bold uppercase tracking-wider border ${
+                                      p.status === "completed"
+                                        ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                                        : p.status === "review"
+                                        ? "bg-purple-50 border-purple-100 text-purple-700 animate-pulse"
+                                        : p.status === "in_progress"
+                                        ? "bg-amber-50 border-amber-100 text-amber-700"
+                                        : "bg-gray-50 border-gray-200 text-gray-700"
+                                    }`}>
+                                      {p.status === "completed" ? "Completed" : p.status === "review" ? "In Review" : p.status === "in_progress" ? "In Progress" : "Not Started"}
+                                    </span>
+                                  </div>
+
+                                  <div className="bg-white border border-[var(--color-brand-neutral)]/15 p-4 rounded-xl space-y-3 shadow-3xs">
+                                    <span className="block text-[9px] font-sans font-bold text-[var(--color-brand-primary)] uppercase tracking-widest border-b border-[var(--color-brand-neutral)]/10 pb-1.5">Scope & Description</span>
+                                    <p className="text-xs text-[var(--color-brand-dark)] leading-relaxed font-medium">{parsedDesc.text}</p>
+                                  </div>
+
+                                  {/* Progress bar */}
+                                  <div className="space-y-1.5">
+                                    <div className="flex justify-between text-[10px] font-mono text-[var(--color-brand-muted)]">
+                                      <span>Project Completion Progress</span>
+                                      <span className="font-bold text-[var(--color-brand-dark)]">{p.progress}%</span>
+                                    </div>
+                                    <div className="w-full bg-[var(--color-brand-neutral)]/10 h-3 rounded-full overflow-hidden border border-[var(--color-brand-neutral)]/10">
+                                      <div className="bg-[var(--color-brand-primary)] h-full rounded-full transition-all duration-500" style={{ width: `${p.progress}%` }} />
+                                    </div>
+                                  </div>
+
+                                  {/* Admin Feedback Block */}
+                                  <div className="bg-white border border-[var(--color-brand-neutral)]/20 p-5 rounded-xl space-y-2 shadow-3xs">
+                                    <span className="block text-[9px] font-sans font-bold text-indigo-600 uppercase tracking-widest border-b border-[var(--color-brand-neutral)]/10 pb-1.5 font-bold">Amedee's Latest Notes & Feedback</span>
+                                    <p className="text-xs text-[var(--color-brand-dark)] italic leading-relaxed font-medium">
+                                      {parsedDesc.adminFeedback || "No comments from Amedee yet."}
+                                    </p>
+                                  </div>
+
+                                  {/* Feedback Submission */}
+                                  <div className="bg-white border border-[var(--color-brand-neutral)]/20 p-5 rounded-xl space-y-4 shadow-3xs">
+                                    <span className="block text-[9px] font-sans font-bold text-emerald-600 uppercase tracking-widest border-b border-[var(--color-brand-neutral)]/10 pb-1.5 font-bold">Your Feedback & Client Comments</span>
+                                    
+                                    {parsedDesc.clientFeedback && (
+                                      <div className="bg-[var(--color-brand-bg)] p-3 rounded-xl border border-[var(--color-brand-neutral)]/10 text-xs text-[var(--color-brand-dark)] font-medium">
+                                        <span className="block text-[8px] font-sans font-bold uppercase text-[var(--color-brand-muted)] tracking-wider mb-1">Your Last Comment:</span>
+                                        "{parsedDesc.clientFeedback}"
+                                      </div>
+                                    )}
+
+                                    {feedbackSuccess && (
+                                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl flex items-start gap-2">
+                                        <Check className="w-4 h-4 shrink-0 text-emerald-500 mt-0.5" />
+                                        <span>{feedbackSuccess}</span>
+                                      </div>
+                                    )}
+
+                                    <div className="space-y-2">
+                                      <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] tracking-wider uppercase">Submit New Feedback / Note</label>
+                                      <textarea
+                                        rows={3}
+                                        value={clientFeedbackText}
+                                        onChange={(e) => setClientFeedbackText(e.target.value)}
+                                        placeholder="Add suggestions, requests, or confirmations..."
+                                        className="w-full bg-white border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-3 text-xs text-[var(--color-brand-dark)] focus:border-[var(--color-brand-primary)] focus:outline-none font-semibold resize-none"
+                                      />
+                                      <div className="flex justify-end">
+                                        <button
+                                          type="button"
+                                          disabled={feedbackLoading || !clientFeedbackText.trim()}
+                                          onClick={() => handleSendProjectFeedback(p.id, p.description)}
+                                          className="px-4 py-2 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-dark)] text-white text-[10px] font-bold uppercase rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-bold"
+                                        >
+                                          {feedbackLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin" /> : "Submit Comment"}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   )}
                 </>
               )}
