@@ -179,7 +179,10 @@ export async function POST(
         "seo-metadata",
         "testimonials",
         "sections",
-        "business-profile"
+        "business-profile",
+        "whatsapp-interactions",   // whatsapp_interactions.id is UUID PRIMARY KEY
+        "whatsapp-templates",      // whatsapp_templates.id is VARCHAR but allow UUID override
+        "clients"                  // clients.id is UUID PRIMARY KEY
       ].includes(resource);
 
       const hasNoCreatedAt = [
@@ -198,8 +201,11 @@ export async function POST(
     await addToCollection(collectionKey, newItem);
 
     return NextResponse.json(newItem, { status: 201 });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    // Surface the actual error message for better client-side error display
+    const message = err?.message || "Internal server error";
+    const code = err?.code;
+    return NextResponse.json({ error: message, code }, { status: 500 });
   }
 }

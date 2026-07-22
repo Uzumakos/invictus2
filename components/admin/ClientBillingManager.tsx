@@ -61,7 +61,10 @@ export default function ClientBillingManager() {
 
   const fetchProfiles = async () => {
     try {
-      const res = await fetch("/api/client-billing-profiles", { cache: "no-store" });
+      const res = await fetch("/api/client-billing-profiles", {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" }
+      });
       if (res.ok) {
         const data = await res.json();
         setProfiles(data || []);
@@ -123,8 +126,7 @@ export default function ClientBillingManager() {
     setIsSubmitting(true);
 
     try {
-      const payload = {
-        clientId: editingProfile?.clientId || "00000000-0000-0000-0000-000000000000", // Default dummy UUID
+      const payload: Record<string, unknown> = {
         companyName,
         billingAddress,
         country,
@@ -143,19 +145,31 @@ export default function ClientBillingManager() {
         approvalReason
       };
 
+      // Only include clientId when editing (preserve existing); omit for new so db.ts generates a fresh UUID
+      if (editingProfile?.clientId) {
+        payload.clientId = editingProfile.clientId;
+      }
+
       const url = editingProfile ? `/api/client-billing-profiles/${editingProfile.id}` : "/api/client-billing-profiles";
       const method = editingProfile ? "PATCH" : "POST";
 
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Pragma": "no-cache" },
         body: JSON.stringify(payload)
       });
 
       const resData = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(resData.error || resData.message || "Failed to save billing profile.");
+        // Provide a user-friendly message for duplicate email (Postgres 23505)
+        const rawMsg: string = resData.error || resData.message || "";
+        const isDuplicate = rawMsg.includes("unique") || rawMsg.includes("duplicate") || rawMsg.includes("already exists") || rawMsg.includes("23505");
+        throw new Error(
+          isDuplicate
+            ? `A billing profile with the email "${email}" already exists. Please use a different email.`
+            : rawMsg || "Failed to save billing profile."
+        );
       }
 
       setToastMsg(editingProfile ? "Billing profile updated." : "Billing profile created.");
@@ -169,6 +183,7 @@ export default function ClientBillingManager() {
       setIsSubmitting(false);
     }
   };
+
 
   const handleDeleteProfile = async (id: string) => {
     if (!confirm("Are you sure you want to delete this billing profile?")) return;

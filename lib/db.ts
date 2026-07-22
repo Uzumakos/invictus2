@@ -290,6 +290,22 @@ export async function addToCollection<T extends { id: string }>(
     }
   }
 
+  // Strip fields not present in whatsapp_interactions table schema
+  // Actual columns: id, client_id, client_name, client_email, generated_by, template_name,
+  // category, language, generated_message, generated_link, copied, opened, shared, notes, created_at, updated_at
+  if ((key === "whatsappInteractions" || table === "whatsapp_interactions") && dbRow) {
+    const allowedColumns = new Set([
+      "id", "client_id", "client_name", "client_email", "generated_by",
+      "template_name", "category", "language", "generated_message", "generated_link",
+      "copied", "opened", "shared", "notes", "created_at", "updated_at"
+    ]);
+    for (const col of Object.keys(dbRow)) {
+      if (!allowedColumns.has(col)) {
+        delete dbRow[col];
+      }
+    }
+  }
+
   const { error } = await dbClient.from(table).insert(dbRow);
   if (error) {
     console.error(`Error adding to collection ${key}:`, error.message);
