@@ -1,5 +1,6 @@
 import { supabase, getSupabaseAdmin } from "./supabaseClient";
 import { initialTestimonials, initialFaqItems } from "./data";
+import crypto from "crypto";
 
 const tableMap: Record<string, string> = {
   settings: "site_settings",

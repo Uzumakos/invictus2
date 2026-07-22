@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { loadDB, saveDB } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { verifyToken } from "@/lib/auth";
+import crypto from "crypto";
 
 async function checkAdmin(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get("admin_token")?.value;
