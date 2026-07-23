@@ -36,7 +36,12 @@ const tableSchemas = {
   ],
   leads: [
     "id", "company", "contact_name", "email", "budget", "notes", "source",
-    "status", "created_at"
+    "status", "created_at", "lead_score", "priority", "estimated_value",
+    "probability_of_closing", "acquisition_source", "last_activity", "next_action",
+    "tags", "assigned_consultant", "website", "country", "timeline",
+    "project_type", "expected_deliverables", "preferred_contact_method",
+    "preferred_language", "attachment_url", "company_type", "previous_relationship",
+    "reason"
   ],
   portal_tasks: [
     "id", "client_email", "title", "description", "deadline", "status",

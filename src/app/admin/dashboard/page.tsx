@@ -8,7 +8,7 @@ import {
   Download, Brain, Clipboard, ChevronRight, Cpu, Building2, Trash2,
   Settings, Image as ImageIcon, Globe, CheckCircle2, Save, LogOut, Plus, Edit,
   LayoutDashboard, UserCheck, FileText, BookOpen, HelpCircle, FolderKanban, Link,
-  MessageSquare, History, Share2, BarChart3
+  MessageSquare, History, Share2, BarChart3, Flame, Star, Percent, Phone
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Booking, CRMLead, ProjectDiscovery, PaymentConfig, SiteSettings } from "@/lib/types";
@@ -730,6 +730,64 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleUpdateEstimatedValue = async (leadId: string, currentVal: number) => {
+    const val = prompt("Enter Estimated Revenue Value ($):", String(currentVal));
+    if (val === null) return;
+    const num = Number(val.replace(/[^\d]/g, ""));
+    if (isNaN(num)) {
+      alert("Please enter a valid number");
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estimatedValue: num }),
+      });
+      
+      if (response.ok) {
+        setLeads(leads.map((l) => (l.id === leadId ? { ...l, estimatedValue: num } : l)));
+        showToast("Estimated revenue value updated!");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteLead = async (leadId: string) => {
+    if (!window.confirm("Are you sure you want to archive/delete this inquiry?")) return;
+    try {
+      const response = await fetch(`/api/leads/${leadId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setLeads(leads.filter((l) => l.id !== leadId));
+        showToast("Lead archived successfully.");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handlePromoteToDiscovery = async (leadId: string) => {
+    if (!window.confirm("Promote this inquiry to the CRM pipeline?")) return;
+    try {
+      const response = await fetch(`/api/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "discovery", notes: "Promoted to active pipeline." }),
+      });
+      if (response.ok) {
+        const updatedLead = await response.json();
+        setLeads(leads.map((l) => (l.id === leadId ? updatedLead : l)));
+        showToast("Lead promoted to Discovery stage!");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleConvertToLead = async (disc: ProjectDiscovery) => {
     const payload = {
       company: disc.answers.companyName,
@@ -903,6 +961,27 @@ export default function AdminDashboardPage() {
   const totalRevenue = bookings
     .filter((b) => b.status === "confirmed" || b.status === "completed")
     .reduce((sum, curr) => sum + curr.amount, 0);
+
+  const crmLeads = leads.filter(l => l.status !== "lead");
+  const averageLeadScore = crmLeads.length > 0 
+    ? Math.round(crmLeads.reduce((sum, l) => sum + (l.leadScore || 0), 0) / crmLeads.length) 
+    : 0;
+
+  const hotLeadsCount = crmLeads.filter(l => (l.leadScore || 0) >= 75).length;
+  const proposalRequestsCount = leads.filter(l => l.status === "proposal").length;
+  const discoveryCallsCount = leads.filter(l => l.status === "discovery").length;
+
+  const wonLeadsCount = leads.filter(l => l.status === "won").length;
+  const lostLeadsCount = leads.filter(l => l.status === "lost").length;
+  const conversionRate = (wonLeadsCount + lostLeadsCount) > 0
+    ? Math.round((wonLeadsCount / (wonLeadsCount + lostLeadsCount)) * 100)
+    : 0;
+
+  const weightedRevenueForecast = leads.reduce((sum, l) => {
+    const val = Number(l.estimatedValue) || 0;
+    const prob = Number(l.probabilityOfClosing) || 0;
+    return sum + (val * (prob / 100));
+  }, 0);
 
   const pipelineColumns = [
     { id: "discovery", label: "Discovery" },
@@ -1321,6 +1400,75 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
+                  {/* Lead Qualification & CRM Forecast Metrics (Row 2) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl flex justify-between items-center shadow-md">
+                      <div>
+                        <span className="text-[8px] font-bold text-[#CDD4DD]/40 uppercase block">Avg Lead Score</span>
+                        <h3 className="text-base font-bold font-mono text-amber-400">{averageLeadScore} / 100</h3>
+                      </div>
+                      <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-400">
+                        <Star className="w-4 h-4" />
+                      </div>
+                    </div>
+
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl flex justify-between items-center shadow-md">
+                      <div>
+                        <span className="text-[8px] font-bold text-[#CDD4DD]/40 uppercase block">Hot Leads</span>
+                        <h3 className="text-base font-bold font-mono text-red-400">{hotLeadsCount}</h3>
+                      </div>
+                      <div className="p-2.5 bg-red-500/10 rounded-xl text-red-400">
+                        <Flame className="w-4 h-4" />
+                      </div>
+                    </div>
+
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl flex justify-between items-center shadow-md">
+                      <div>
+                        <span className="text-[8px] font-bold text-[#CDD4DD]/40 uppercase block">Proposal Requests</span>
+                        <h3 className="text-base font-bold font-mono text-purple-400">{proposalRequestsCount}</h3>
+                      </div>
+                      <div className="p-2.5 bg-purple-500/10 rounded-xl text-purple-400">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                    </div>
+
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl flex justify-between items-center shadow-md">
+                      <div>
+                        <span className="text-[8px] font-bold text-[#CDD4DD]/40 uppercase block">Discovery Calls</span>
+                        <h3 className="text-base font-bold font-mono text-blue-400">{discoveryCallsCount}</h3>
+                      </div>
+                      <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-400">
+                        <Phone className="w-4 h-4" />
+                      </div>
+                    </div>
+
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-4 rounded-2xl flex flex-col justify-between shadow-md">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[8px] font-bold text-[#CDD4DD]/40 uppercase">Conversion Rate</span>
+                        <div className="p-1 bg-emerald-500/10 rounded-lg text-emerald-400">
+                          <Percent className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold font-mono text-emerald-400">{conversionRate}%</h3>
+                        <div className="flex justify-between text-[7px] text-[#CDD4DD]/50 font-bold uppercase tracking-tight mt-1 border-t border-[#CDD4DD]/5 pt-1">
+                          <span>Won: {wonLeadsCount}</span>
+                          <span>Lost: {lostLeadsCount}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-5 rounded-2xl flex justify-between items-center shadow-md">
+                      <div>
+                        <span className="text-[8px] font-bold text-[#CDD4DD]/40 uppercase block">Weighted Forecast</span>
+                        <h3 className="text-base font-bold font-mono text-emerald-400">${Math.round(weightedRevenueForecast).toLocaleString()}</h3>
+                      </div>
+                      <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400">
+                        <TrendingUp className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* SVG BI Charts Panel */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* Revenue Monthly Trend Area Graph */}
@@ -1409,6 +1557,129 @@ export default function AdminDashboardPage() {
                             </div>
                           );
                         })}
+                      </div>
+                    </div>
+                  </div>
+
+
+                  {/* Executive CRM Insights Panel (Row 3) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Top Qualified Leads */}
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 shadow-md text-gray-300">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-serif font-bold text-base text-white">Top Prospects</h4>
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-amber-400 bg-amber-950 px-2 py-0.5 rounded border border-amber-500/20">Lead Score</span>
+                      </div>
+                      
+                      <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                        {leads
+                          .filter(l => l.status !== "lead")
+                          .sort((a, b) => (b.leadScore || 0) - (a.leadScore || 0))
+                          .slice(0, 5)
+                          .map((l) => {
+                            const score = l.leadScore ?? 0;
+                            let color = "text-gray-400 bg-gray-950/40 border-gray-500/20";
+                            if (score >= 90) color = "text-purple-400 bg-purple-950/40 border-purple-500/20";
+                            else if (score >= 75) color = "text-red-400 bg-red-950/40 border-red-500/20";
+                            else if (score >= 60) color = "text-amber-400 bg-amber-950/40 border-amber-500/20";
+                            else if (score >= 40) color = "text-blue-400 bg-blue-950/40 border-blue-500/20";
+
+                            return (
+                              <div key={l.id} className="flex justify-between items-center bg-[#121A1B] border border-[#CDD4DD]/5 p-3 rounded-xl hover:border-[#FF7A00]/25 transition-all">
+                                <div className="space-y-0.5">
+                                  <div className="font-bold text-white text-[11px] truncate max-w-[150px]">{l.company}</div>
+                                  <div className="text-[9px] text-[#CDD4DD]/50">{l.contactName} • {l.projectType || "Proposal"}</div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {Number(l.estimatedValue || 0) > 0 && (
+                                    <span className="text-[10px] font-mono font-bold text-emerald-400">${Number(l.estimatedValue).toLocaleString()}</span>
+                                  )}
+                                  <span className={`text-[9px] font-bold font-mono px-2 py-0.5 rounded border ${color}`}>
+                                    {score}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        {leads.filter(l => l.status !== "lead").length === 0 && (
+                          <div className="text-center py-8 text-gray-500 text-xs">No active CRM leads found.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Upcoming Consultations */}
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 shadow-md text-gray-300">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-serif font-bold text-base text-white">Upcoming Sessions</h4>
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-blue-400 bg-blue-950 px-2 py-0.5 rounded border border-blue-500/20">Calendar</span>
+                      </div>
+
+                      <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                        {bookings
+                          .filter(b => b.status === "confirmed" || b.status === "completed")
+                          .sort((a, b) => new Date(`${a.date}T${a.time || "00:00"}`).getTime() - new Date(`${b.date}T${b.time || "00:00"}`).getTime())
+                          .slice(0, 5)
+                          .map((b) => {
+                            const titleText = typeof b.serviceTitle === "object"
+                              ? (b.serviceTitle.en || b.serviceTitle.fr || "Discovery Session")
+                              : (b.serviceTitle || "Discovery Session");
+                            return (
+                              <div key={b.id} className="bg-[#121A1B] border border-[#CDD4DD]/5 p-3 rounded-xl hover:border-[#FF7A00]/25 transition-all space-y-1">
+                                <div className="flex justify-between items-start">
+                                  <span className="font-bold text-white text-[11px] truncate max-w-[150px]">{b.clientName}</span>
+                                  <span className="text-[9px] font-mono text-amber-500 bg-[#FF7A00]/5 border border-[#FF7A00]/10 px-1.5 py-0.2 rounded font-bold">{b.time}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[9px] text-[#CDD4DD]/50">
+                                  <span>{b.date} ({b.timezone})</span>
+                                  <span className="truncate max-w-[120px] italic">{titleText}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        {bookings.filter(b => b.status === "confirmed" || b.status === "completed").length === 0 && (
+                          <div className="text-center py-8 text-gray-500 text-xs">No upcoming sessions scheduled.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Lead Sources Distribution */}
+                    <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 shadow-md text-gray-300">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-serif font-bold text-base text-white">Lead Acquisition Sources</h4>
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/20">Sources Breakdown</span>
+                      </div>
+
+                      <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1 pt-1">
+                        {(() => {
+                          const counts: Record<string, number> = {};
+                          leads.forEach((l) => {
+                            const src = l.acquisitionSource || l.source || "Direct Contact";
+                            counts[src] = (counts[src] || 0) + 1;
+                          });
+                          const total = Object.values(counts).reduce((s, c) => s + c, 0) || 1;
+                          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+                          return sorted.map(([source, count]) => {
+                            const pct = Math.round((count / total) * 100);
+                            return (
+                              <div key={source} className="space-y-1">
+                                <div className="flex justify-between items-center text-[10px]">
+                                  <span className="font-bold text-[#CDD4DD]/70 truncate max-w-[180px]">{source}</span>
+                                  <span className="font-mono text-white font-bold">{count} ({pct}%)</span>
+                                </div>
+                                <div className="w-full bg-[#121A1B] h-2.5 rounded-full overflow-hidden border border-[#CDD4DD]/5">
+                                  <div 
+                                    className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all"
+                                    style={{ width: `${Math.max(pct, 5)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                        {leads.length === 0 && (
+                          <div className="text-center py-8 text-gray-500 text-xs">No lead source statistics available.</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1548,29 +1819,153 @@ export default function AdminDashboardPage() {
                           </div>
 
                           <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
-                            {colLeads.map((l) => (
-                              <div key={l.id} className="bg-[#121A1B] border border-[#CDD4DD]/5 p-3 rounded-2xl space-y-2 relative group hover:border-[#FF7A00]/20 transition-all">
-                                <div>
-                                  <p className="font-bold text-white text-[11px]">{l.company}</p>
-                                  <p className="text-[9px] text-[#CDD4DD]/50">{l.contactName}</p>
-                                  <p className="text-[9px] text-[#CDD4DD]/50">{l.email}</p>
+                            {colLeads.map((l) => {
+                              const score = l.leadScore ?? 0;
+                              const starsCount = score >= 90 ? 5 : score >= 75 ? 4 : score >= 60 ? 3 : score >= 40 ? 2 : 1;
+                              const starsStr = "★".repeat(starsCount) + "☆".repeat(5 - starsCount);
+
+                              let colorClass = "text-gray-400 bg-gray-950/40 border-gray-500/20";
+                              let borderClass = "border-[#CDD4DD]/5 hover:border-gray-600";
+                              if (score >= 90) {
+                                colorClass = "text-purple-400 bg-purple-950/40 border-purple-500/20";
+                                borderClass = "border-purple-500/10 hover:border-purple-500/30";
+                              } else if (score >= 75) {
+                                colorClass = "text-red-400 bg-red-950/40 border-red-500/20";
+                                borderClass = "border-red-500/10 hover:border-red-500/30";
+                              } else if (score >= 60) {
+                                colorClass = "text-amber-400 bg-amber-950/40 border-amber-500/20";
+                                borderClass = "border-amber-500/10 hover:border-amber-500/30";
+                              } else if (score >= 40) {
+                                colorClass = "text-blue-400 bg-blue-950/40 border-blue-500/20";
+                                borderClass = "border-blue-500/10 hover:border-blue-500/30";
+                              }
+
+                              const estValue = Number(l.estimatedValue) || 0;
+                              const probability = l.probabilityOfClosing ?? (score > 0 ? Math.round(score * 0.9 + 5) : 0);
+
+                              return (
+                                <div key={l.id} className={`bg-[#121A1B] border p-3.5 rounded-2xl space-y-3 relative group transition-all ${borderClass}`}>
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <p className="font-bold text-white text-[11px] leading-tight truncate max-w-[120px]">{l.company}</p>
+                                      <p className="text-[9px] text-[#CDD4DD]/40">{l.contactName}</p>
+                                      <p className="text-[9px] text-[#CDD4DD]/40 truncate max-w-[120px]">{l.email}</p>
+                                    </div>
+                                    <span className={`text-[8px] px-1.5 py-0.5 rounded border font-bold font-mono ${colorClass}`}>
+                                      {score} / 100
+                                    </span>
+                                  </div>
+
+                                  <div className="space-y-1 bg-[#1A2324]/40 p-2 rounded-xl border border-[#CDD4DD]/5 text-[9px] font-medium text-[#CDD4DD]/70">
+                                    <div className="text-amber-400 font-bold tracking-wide">
+                                      {starsStr} <span className="text-[7.5px] text-[#CDD4DD]/50 font-sans ml-1 uppercase">{l.priority || "Low Priority"}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Est. Value:</span>
+                                      <span className="text-emerald-400 font-bold font-mono">${estValue.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Probability:</span>
+                                      <span className="text-blue-400 font-bold font-mono">{probability}%</span>
+                                    </div>
+                                    {l.timeline && (
+                                      <div className="flex justify-between text-[8px] text-[#CDD4DD]/40 border-t border-[#CDD4DD]/5 pt-1 mt-1 truncate">
+                                        <span>Timeline: {l.timeline}</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex justify-between items-center pt-1 border-t border-[#CDD4DD]/5 text-[9px] font-sans">
+                                    <button 
+                                      onClick={() => handleUpdateEstimatedValue(l.id, estValue)}
+                                      className="text-emerald-400 hover:text-emerald-300 hover:underline cursor-pointer font-bold"
+                                    >
+                                      Set Value
+                                    </button>
+                                    <button 
+                                      onClick={() => handleLeadCycleStatus(l.id, l.status)} 
+                                      className="text-[#FF7A00] hover:text-[#FF7A00]/80 hover:underline cursor-pointer font-bold"
+                                    >
+                                      Move Stage →
+                                    </button>
+                                  </div>
                                 </div>
-                                {l.budget && (
-                                  <span className="bg-[#FF7A00]/5 text-[#FF7A00] text-[8px] px-1.5 py-0.5 rounded border border-[#FF7A00]/10 font-bold block w-fit">
-                                    {l.budget}
-                                  </span>
-                                )}
-                                <div className="flex justify-between pt-2 border-t border-[#CDD4DD]/5 text-[9px]">
-                                  <button onClick={() => handleLeadCycleStatus(l.id, l.status)} className="text-[#FF7A00] hover:underline cursor-pointer">
-                                    Move Stage
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* General Inquiries Section (Option 1) */}
+                  <div className="bg-[#1A2324] border border-[#CDD4DD]/10 rounded-3xl p-6 shadow-md mt-8 space-y-4">
+                    <div>
+                      <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">INBOX REVIEW</span>
+                      <h3 className="font-serif font-bold text-xl text-white">General Inquiries</h3>
+                      <p className="text-[10px] text-[#CDD4DD]/50">General questions, business networking, or partnerships submitted through the contact form.</p>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[8px] tracking-wider">
+                            <th className="py-2.5 px-3">Date</th>
+                            <th className="py-2.5 px-3">Prospect</th>
+                            <th className="py-2.5 px-3">Company</th>
+                            <th className="py-2.5 px-3">Inquiry Reason</th>
+                            <th className="py-2.5 px-3">Message</th>
+                            <th className="py-2.5 px-3 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#CDD4DD]/5">
+                          {leads.filter((l) => l.status === "lead").length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="text-center py-8 text-gray-500 font-medium">No general inquiries recorded yet.</td>
+                            </tr>
+                          ) : (
+                            leads
+                              .filter((l) => l.status === "lead")
+                              .map((l) => (
+                                <tr key={l.id} className="hover:bg-[#121A1B]/35">
+                                  <td className="py-2.5 px-3 font-mono text-[#CDD4DD]/60">
+                                    {l.createdAt ? new Date(l.createdAt).toLocaleDateString() : "N/A"}
+                                  </td>
+                                  <td className="py-2.5 px-3">
+                                    <div className="font-bold text-white">{l.contactName}</div>
+                                    <a href={`mailto:${l.email}`} className="text-[#FF7A00] hover:underline text-[9px]">{l.email}</a>
+                                  </td>
+                                  <td className="py-2.5 px-3 text-[#CDD4DD]/80">
+                                    {l.company || "N/A"} {l.country ? `(${l.country})` : ""}
+                                  </td>
+                                  <td className="py-2.5 px-3">
+                                    <span className="bg-[#CDD4DD]/5 text-[#CDD4DD]/80 px-2 py-0.5 rounded border border-[#CDD4DD]/10 text-[8px] font-bold">
+                                      {l.reason || "General"}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-3 max-w-[250px] truncate" title={l.notes}>
+                                    {l.notes}
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right space-x-2 shrink-0">
+                                    <button
+                                      onClick={() => handlePromoteToDiscovery(l.id)}
+                                      className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[8px] font-bold cursor-pointer"
+                                    >
+                                      Promote to CRM
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteLead(l.id)}
+                                      className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-2 py-0.5 rounded text-[8px] font-bold cursor-pointer"
+                                    >
+                                      Archive
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}

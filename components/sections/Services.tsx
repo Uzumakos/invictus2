@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Service, Booking, PaymentMethod, PaymentConfig, Language } from "@/lib/types";
 import { consultingOffers } from "@/lib/data";
 import { useRouter } from "@/lib/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 
 interface ServicesProps {
   onSectionChange?: (sectionId: string) => void;
@@ -30,6 +31,7 @@ export default function Services({ onSectionChange }: ServicesProps) {
   const t = useTranslations("services");
   const currentLanguage = useLocale() as Language;
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [bookingStep, setBookingStep] = useState<"none" | "package" | "datetime" | "questionnaire" | "payment" | "success">("none");
@@ -117,6 +119,21 @@ export default function Services({ onSectionChange }: ServicesProps) {
       window.removeEventListener("discovery_book_consultation", handleDiscoveryBooking);
     };
   }, []);
+
+  // Trigger booking flow from search parameters (e.g. ?book=strategy or ?service=strategy)
+  useEffect(() => {
+    if (searchParams && servicesList && servicesList.length > 0) {
+      const bookParam = searchParams.get("book") || searchParams.get("service");
+      if (bookParam) {
+        const matched = servicesList.find(
+          (s) => s.id === bookParam || s.title?.en?.toLowerCase() === bookParam.toLowerCase()
+        );
+        if (matched) {
+          handleOpenBooking(matched);
+        }
+      }
+    }
+  }, [searchParams, servicesList]);
 
   // Interactive Calendar states
   const [calMonth, setCalMonth] = useState(new Date().getMonth());

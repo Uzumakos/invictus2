@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCollection, addToCollection } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
+import { calculateLeadScoreAndMetrics } from "@/lib/leadScoring";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -196,6 +197,31 @@ export async function POST(
         ...(hasNoCreatedAt ? {} : { createdAt: new Date().toISOString() }),
         ...body,
       };
+
+      if (resource === "leads") {
+        const isGeneralInquiry = body.status === "lead";
+        const scoringResult = calculateLeadScoreAndMetrics({
+          budget: body.budget,
+          timeline: body.timeline,
+          notes: body.notes,
+          companyType: body.companyType,
+          projectType: body.projectType,
+          previousRelationship: body.previousRelationship,
+        });
+
+        newItem = {
+          ...newItem,
+          leadScore: isGeneralInquiry ? 0 : scoringResult.leadScore,
+          priority: isGeneralInquiry ? "Low Priority" : scoringResult.priority,
+          estimatedValue: body.estimatedValue !== undefined ? Number(body.estimatedValue) : 0,
+          probabilityOfClosing: isGeneralInquiry ? 0 : scoringResult.probabilityOfClosing,
+          acquisitionSource: isGeneralInquiry ? "General Inquiry" : (body.acquisitionSource || body.source || "Proposal Request"),
+          lastActivity: new Date().toISOString(),
+          nextAction: body.nextAction || (isGeneralInquiry ? "Review general inquiry" : "Review proposal request"),
+          assignedConsultant: body.assignedConsultant || "Amedee Erns Baptiste",
+          tags: body.tags || (body.projectType ? [body.projectType] : []),
+        };
+      }
     }
 
     await addToCollection(collectionKey, newItem);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCollection, addToCollection } from "@/lib/db";
 import { Booking, CRMLead, PortalNotification } from "@/lib/types";
+import { calculateLeadScoreAndMetrics } from "@/lib/leadScoring";
 import crypto from "crypto";
 
 export async function GET() {
@@ -68,6 +69,13 @@ export async function POST(req: NextRequest) {
       ? (serviceTitle.en || serviceTitle.fr || "Consultation")
       : (serviceTitle || "Consultation");
 
+    const scoringInput = {
+      budget: amount ? `Under $1,000` : undefined, // Discovery Call price is $60, which is under $1000
+      notes: questionnaire?.goals || "",
+      projectType: "Discovery Call",
+    };
+    const scoringResult = calculateLeadScoreAndMetrics(scoringInput);
+
     const newLead: CRMLead = {
       id: "lead_" + crypto.randomBytes(8).toString("hex"),
       company: clientName + " Org",
@@ -79,7 +87,18 @@ export async function POST(req: NextRequest) {
       source: "Consultation Booking",
       status: "discovery",
       createdAt: new Date().toISOString(),
-    };
+      // Lead Scoring & CRM Fields
+      leadScore: scoringResult.leadScore,
+      priority: scoringResult.priority,
+      estimatedValue: scoringResult.estimatedValue,
+      probabilityOfClosing: scoringResult.probabilityOfClosing,
+      acquisitionSource: "Discovery Call",
+      lastActivity: new Date().toISOString(),
+      nextAction: "Conduct discovery call session",
+      assignedConsultant: "Amedee Erns Baptiste",
+      tags: ["discovery", "booking"],
+      preferredLanguage: language || "en",
+    } as any;
     await addToCollection("leads", newLead);
 
     // Generate client portal notification

@@ -148,6 +148,26 @@ export interface CRMLead {
   source: string;
   status: CRMStatus;
   createdAt: string;
+  leadScore?: number;
+  priority?: string;
+  estimatedValue?: number;
+  probabilityOfClosing?: number;
+  acquisitionSource?: string;
+  lastActivity?: string;
+  nextAction?: string;
+  tags?: string[];
+  assignedConsultant?: string;
+  website?: string;
+  country?: string;
+  timeline?: string;
+  projectType?: string;
+  expectedDeliverables?: string;
+  preferredContactMethod?: string;
+  preferredLanguage?: string;
+  attachmentUrl?: string;
+  companyType?: string;
+  previousRelationship?: string;
+  reason?: string;
 }
 
 // ─── Client Portal ────────────────────────────────────────────────────────

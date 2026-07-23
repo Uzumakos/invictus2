@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateInCollection, deleteFromCollection } from "@/lib/db";
+import { updateInCollection, deleteFromCollection, getCollection } from "@/lib/db";
+import { calculateLeadScoreAndMetrics } from "@/lib/leadScoring";
 
 const ALLOWED_RESOURCES = [
   "tasks",
@@ -65,7 +66,35 @@ export async function PATCH(
     if (resource === "brand-assets") collectionKey = "brandAssets";
     if (resource === "seo-metadata") collectionKey = "seoMetadata";
 
-    const updated = await updateInCollection(collectionKey, id, body);
+    let bodyToUpdate = { ...body };
+
+    if (resource === "leads") {
+      const leadsList = await getCollection<any>("leads");
+      const currentLead = leadsList.find((l: any) => l.id === id);
+      if (currentLead) {
+        const mergedLead = { ...currentLead, ...body };
+        const isGeneralInquiry = mergedLead.status === "lead";
+        const scoringResult = calculateLeadScoreAndMetrics({
+          budget: mergedLead.budget,
+          timeline: mergedLead.timeline,
+          notes: mergedLead.notes,
+          companyType: mergedLead.companyType,
+          projectType: mergedLead.projectType,
+          previousRelationship: mergedLead.previousRelationship,
+        });
+
+        bodyToUpdate = {
+          ...bodyToUpdate,
+          leadScore: isGeneralInquiry ? 0 : scoringResult.leadScore,
+          priority: isGeneralInquiry ? "Low Priority" : scoringResult.priority,
+          probabilityOfClosing: isGeneralInquiry ? 0 : (body.probabilityOfClosing !== undefined ? Number(body.probabilityOfClosing) : scoringResult.probabilityOfClosing),
+          estimatedValue: body.estimatedValue !== undefined ? Number(body.estimatedValue) : (currentLead.estimatedValue || 0),
+          lastActivity: new Date().toISOString(),
+        };
+      }
+    }
+
+    const updated = await updateInCollection(collectionKey, id, bodyToUpdate);
     if (!updated) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
