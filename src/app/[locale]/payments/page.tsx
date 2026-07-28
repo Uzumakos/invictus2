@@ -7,14 +7,14 @@ import Footer from "@/components/layout/Footer";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ serviceId?: string; amount?: string; email?: string; clientName?: string; currency?: string }>;
+  searchParams: Promise<{ serviceId?: string; amount?: string; email?: string; clientName?: string; currency?: string; invoiceId?: string }>;
 }
 
 export default async function PaymentsPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const { serviceId, amount, email, clientName, currency } = await searchParams;
+  const { serviceId, amount, email, clientName, currency, invoiceId } = await searchParams;
 
   // Fetch enabled payment methods from Supabase using admin client to bypass RLS
   const { data: methods } = await getSupabaseAdmin()
@@ -42,6 +42,7 @@ export default async function PaymentsPage({ params, searchParams }: PageProps) 
             initialEmail={email}
             initialClientName={clientName}
             initialCurrency={currency}
+            initialInvoiceId={invoiceId}
             paymentMethods={methods || []}
             locale={locale as "en" | "fr"}
           />

@@ -28,6 +28,7 @@ interface PaymentCheckoutProps {
   initialEmail?: string;
   initialClientName?: string;
   initialCurrency?: string;
+  initialInvoiceId?: string;
   paymentMethods: PaymentMethod[];
   locale: "en" | "fr";
 }
@@ -38,6 +39,7 @@ export default function PaymentCheckout({
   initialEmail = "",
   initialClientName = "",
   initialCurrency = "USD",
+  initialInvoiceId = "",
   paymentMethods = [],
   locale = "en"
 }: PaymentCheckoutProps) {
@@ -53,7 +55,33 @@ export default function PaymentCheckout({
   const [selectedMethodId, setSelectedMethodId] = useState("");
   const [reference, setReference] = useState("");
 
-  const isPreFilled = !!initialServiceId || !!initialAmount;
+  // Invoice Fetch States
+  const [invoiceDetails, setInvoiceDetails] = useState<any | null>(null);
+  const [loadingInvoice, setLoadingInvoice] = useState(false);
+
+  const isPreFilled = !!initialInvoiceId || !!initialServiceId || !!initialAmount;
+
+  // Fetch invoice details on mount if initialInvoiceId is present
+  useEffect(() => {
+    if (initialInvoiceId) {
+      setLoadingInvoice(true);
+      fetch(`/api/documents/${initialInvoiceId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && !data.error) {
+            setInvoiceDetails(data);
+            setEmail(data.client?.email || "");
+            setName(data.client?.companyName || data.client?.primaryContactName || "");
+            setCurrency(data.currency || "USD");
+            setSelectedServiceId("custom");
+            setCustomServiceTitle(`${locale === "fr" ? "Facture" : "Invoice"} ${data.documentNumber}`);
+            setAmount(String(data.totalAmount));
+          }
+        })
+        .catch((err) => console.error("Failed to fetch checkout invoice details:", err))
+        .finally(() => setLoadingInvoice(false));
+    }
+  }, [initialInvoiceId, locale]);
 
   // Reset selected method when currency changes to avoid showing stale selection
   useEffect(() => {
@@ -89,6 +117,7 @@ export default function PaymentCheckout({
 
   // Sync state from query parameters on load
   useEffect(() => {
+    if (initialInvoiceId) return; // Skip if handled by invoice loader
     if (initialServiceId) {
       const selected = servicesList.find(s => s.id === initialServiceId);
       if (selected) {
@@ -105,7 +134,7 @@ export default function PaymentCheckout({
     } else if (initialAmount) {
       setAmount(initialAmount);
     }
-  }, [initialServiceId, initialAmount, servicesList]);
+  }, [initialServiceId, initialAmount, servicesList, initialInvoiceId]);
 
   const handleServiceChange = (serviceId: string) => {
     setSelectedServiceId(serviceId);
@@ -178,7 +207,7 @@ export default function PaymentCheckout({
 
       const serviceTitle = getActiveServiceTitle();
 
-      // 2. Post payment data to dynamic resource endpoint
+      // 2. Post payment data to dynamic payments endpoint
       const payload = {
         client_email: email,
         client_name: name,
@@ -189,7 +218,9 @@ export default function PaymentCheckout({
         status: "pending",
         invoice_url: screenshotUrl, // Store upload URL in invoice_url column
         payment_method: selectedMethodId,
-        payment_reference: reference
+        payment_reference: reference,
+        invoice_id: initialInvoiceId || null,
+        client_id: invoiceDetails?.clientId || null
       };
 
       const response = await fetch("/api/payments", {
@@ -215,6 +246,15 @@ export default function PaymentCheckout({
       setIsSubmitting(false);
     }
   };
+
+  if (loadingInvoice) {
+    return (
+      <div className="bg-white/80 backdrop-blur-md p-8 rounded-2xl border border-[var(--color-brand-neutral)]/20 shadow-xl flex flex-col items-center justify-center py-20 text-[var(--color-brand-muted)]">
+        <Loader2 className="w-8 h-8 text-[var(--color-brand-primary)] animate-spin mb-3" />
+        <p className="text-sm font-semibold">{locale === "fr" ? "Chargement des détails de la facture..." : "Loading invoice details..."}</p>
+      </div>
+    );
+  }
 
   // Filter payment methods based on selected currency
   const filteredMethods = paymentMethods.filter((method) => {
@@ -268,8 +308,9 @@ export default function PaymentCheckout({
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[var(--color-brand-panel)] border border-[var(--color-brand-neutral)]/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
+                    className="w-full bg-[var(--color-brand-panel)] border border-[var(--color-brand-neutral)]/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--color-brand-primary)] disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="John Doe"
+                    disabled={!!initialInvoiceId}
                   />
                 </div>
                 <div>
@@ -280,8 +321,9 @@ export default function PaymentCheckout({
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[var(--color-brand-panel)] border border-[var(--color-brand-neutral)]/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
+                    className="w-full bg-[var(--color-brand-panel)] border border-[var(--color-brand-neutral)]/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--color-brand-primary)] disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="client@company.com"
+                    disabled={!!initialInvoiceId}
                   />
                 </div>
               </div>

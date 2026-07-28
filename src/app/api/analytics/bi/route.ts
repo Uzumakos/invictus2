@@ -7,43 +7,146 @@ export async function GET() {
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1; // 1-indexed (July = 7)
 
-    // 1. Fetch Paid Invoices for MTD/YTD revenue
-    const { data: invoices, error: invoicesError } = await dbClient
+    // 1. Fetch Invoices and Receipts
+    const { data: documents, error: docsError } = await dbClient
       .from("commercial_documents")
-      .select("*")
-      .eq("document_type", "invoice")
-      .eq("status", "paid");
+      .select(`
+        *,
+        client:client_billing_profiles(*)
+      `)
+      .in("document_type", ["invoice", "receipt"]);
 
-    let mtdRevenue = 0;
-    let ytdRevenue = 0;
-    const monthlyAmounts: Record<string, number> = {};
-
-    if (invoices) {
-      invoices.forEach((inv: any) => {
-        const amt = Number(inv.total_amount) || 0;
-        // Fallback to issue_date if paid_at is not populated yet
-        const dateStr = inv.paid_at || inv.issue_date || "";
-        if (dateStr) {
-          const date = new Date(dateStr);
-          const y = date.getFullYear();
-          const m = date.getMonth() + 1;
-
-          if (y === currentYear) {
-            ytdRevenue += amt;
-            if (m === currentMonth) {
-              mtdRevenue += amt;
-            }
-
-            // Group by abbreviated month name
-            const monthName = date.toLocaleString("en-US", { month: "short" });
-            monthlyAmounts[monthName] = (monthlyAmounts[monthName] || 0) + amt;
-          }
-        }
-      });
+    if (docsError) {
+      return NextResponse.json({ error: docsError.message }, { status: 400 });
     }
 
-    // 2. Fetch CRM Leads for active pipeline value estimation
-    const { data: leads, error: leadsError } = await dbClient
+    // 2. Fetch Recent Transactions
+    const { data: recentTransactions } = await dbClient
+      .from("portal_payments")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    // Initial Metric Accumulators
+    let mtdRevenue = 0;
+    let ytdRevenue = 0;
+
+    let outstandingCount = 0;
+    let outstandingAmount = 0;
+
+    let paidCount = 0;
+    let paidAmount = 0;
+
+    let overdueCount = 0;
+    let overdueAmount = 0;
+
+    let pendingCount = 0;
+    let pendingAmount = 0;
+
+    let totalInvoiceSum = 0;
+    let invoiceCountForAverage = 0;
+
+    let totalPaymentDelayDays = 0;
+    let delayCalculatedCount = 0;
+
+    const clientRevenueMap: Record<string, { companyName: string; email: string; totalPaid: number }> = {};
+    const monthlyAmounts: Record<string, number> = {};
+
+    (documents || []).forEach((doc: any) => {
+      const isInvoice = doc.document_type === "invoice";
+      const amt = Number(doc.total_amount) || 0;
+      const status = doc.status || "draft";
+      
+      // Calculate Revenue Metrics (MTD / YTD based on Paid Invoices or Receipts)
+      const isPaid = status === "paid";
+      if (isPaid && doc.paid_at) {
+        const date = new Date(doc.paid_at);
+        const y = date.getFullYear();
+        const m = date.getMonth() + 1;
+
+        if (y === currentYear) {
+          ytdRevenue += amt;
+          if (m === currentMonth) {
+            mtdRevenue += amt;
+          }
+
+          // Abbreviated Month cash flow
+          const monthName = date.toLocaleString("en-US", { month: "short" });
+          monthlyAmounts[monthName] = (monthlyAmounts[monthName] || 0) + amt;
+        }
+
+        // Top clients aggregation
+        const clientKey = doc.client_id || doc.client?.id || "unknown";
+        const clientName = doc.client?.company_name || doc.client?.companyName || doc.client?.primary_contact_name || doc.client?.primaryContactName || "Anonymous";
+        const clientEmail = doc.client?.email || "";
+        
+        if (!clientRevenueMap[clientKey]) {
+          clientRevenueMap[clientKey] = { companyName: clientName, email: clientEmail, totalPaid: 0 };
+        }
+        clientRevenueMap[clientKey].totalPaid += amt;
+      }
+
+      if (isInvoice) {
+        // Average Invoice Value (exclude drafts and cancelled)
+        if (status !== "draft" && status !== "cancelled") {
+          totalInvoiceSum += amt;
+          invoiceCountForAverage++;
+        }
+
+        // Status counts
+        if (status === "paid") {
+          paidCount++;
+          paidAmount += amt;
+        } else if (status === "pending") {
+          pendingCount++;
+          pendingAmount += amt;
+          outstandingCount++;
+          outstandingAmount += amt;
+        } else if (status === "overdue") {
+          overdueCount++;
+          overdueAmount += amt;
+          outstandingCount++;
+          outstandingAmount += amt;
+        }
+
+        // Average payment delay calculation (days between issue_date and paid_at)
+        if (status === "paid" && doc.issue_date && doc.paid_at) {
+          const issueDate = new Date(doc.issue_date);
+          const paidDate = new Date(doc.paid_at);
+          const diffTime = Math.abs(paidDate.getTime() - issueDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          totalPaymentDelayDays += diffDays;
+          delayCalculatedCount++;
+        }
+      }
+    });
+
+    const averageInvoiceValue = invoiceCountForAverage > 0 ? Number((totalInvoiceSum / invoiceCountForAverage).toFixed(2)) : 0;
+    const averagePaymentDelay = delayCalculatedCount > 0 ? Number((totalPaymentDelayDays / delayCalculatedCount).toFixed(1)) : 0;
+
+    // Sort top clients by revenue
+    const topClients = Object.values(clientRevenueMap)
+      .sort((a, b) => b.totalPaid - a.totalPaid)
+      .slice(0, 5);
+
+    // Format monthly cash flow chronologically
+    const monthsOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const currentMonthIdx = new Date().getMonth();
+    const cashFlowTrend = monthsOrder
+      .map(m => ({ month: m, amount: monthlyAmounts[m] || 0 }))
+      .filter((_, idx) => idx <= currentMonthIdx);
+
+    // Financial Forecast (average of monthly cash flow extended to next 3 months)
+    const activeMonthsCount = cashFlowTrend.length || 1;
+    const monthlyAverage = ytdRevenue / activeMonthsCount;
+    const financialForecast = [
+      { month: monthsOrder[(currentMonthIdx + 1) % 12], projected: Number((monthlyAverage * 1.05).toFixed(2)) },
+      { month: monthsOrder[(currentMonthIdx + 2) % 12], projected: Number((monthlyAverage * 1.1).toFixed(2)) },
+      { month: monthsOrder[(currentMonthIdx + 3) % 12], projected: Number((monthlyAverage * 1.15).toFixed(2)) }
+    ];
+
+    // Fetch CRM Leads for active pipeline value estimation
+    const { data: leads } = await dbClient
       .from("leads")
       .select("*")
       .not("status", "in", '("won","lost")');
@@ -60,12 +163,10 @@ export async function GET() {
       leads.forEach((l: any) => {
         let val = 0;
         if (l.budget) {
-          // split ranges e.g. "$10,000 - $25,000" and strip non-numeric
           const firstPart = l.budget.split("-")[0];
           const digits = firstPart.replace(/[^\d]/g, "");
           val = parseFloat(digits) || 0;
         }
-
         pipelineValue += val;
 
         const statusKey = l.status || "lead";
@@ -76,8 +177,8 @@ export async function GET() {
       });
     }
 
-    // 3. Fetch Telemetry Consulting Hours
-    const { data: hoursData, error: hoursError } = await dbClient
+    // Fetch Consulting Hours
+    const { data: hoursData } = await dbClient
       .from("consulting_hours")
       .select("hours_logged");
 
@@ -86,30 +187,29 @@ export async function GET() {
       consultingHours = hoursData.reduce((acc, curr) => acc + (Number(curr.hours_logged) || 0), 0);
     }
 
-    // 4. Fetch Training metrics (Registrations counts)
-    const { count: trainingRegistrations, error: regError } = await dbClient
-      .from("portal_payments")
-      .select("*", { count: "exact", head: true })
-      .ilike("service", "%training%");
-
-    // Format monthly trend array sorted chronologically
-    const monthsOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const currentMonthIdx = new Date().getMonth();
-    const revenueByMonth = monthsOrder
-      .map(m => ({ month: m, amount: monthlyAmounts[m] || 0 }))
-      .filter((_, idx) => idx <= currentMonthIdx);
-
     return NextResponse.json({
       mtdRevenue,
       ytdRevenue,
       pipelineValue,
       consultingHours,
-      trainingRegistrations: trainingRegistrations || 0,
-      revenueByMonth,
+      revenueByMonth: cashFlowTrend,
       leadsPipeline: Object.entries(leadsPipeline).map(([status, details]) => ({
         status,
         ...details
-      }))
+      })),
+      outstandingCount,
+      outstandingAmount,
+      paidCount,
+      paidAmount,
+      overdueCount,
+      overdueAmount,
+      pendingCount,
+      pendingAmount,
+      averageInvoiceValue,
+      averagePaymentDelay,
+      topClients,
+      financialForecast,
+      recentTransactions: recentTransactions || []
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

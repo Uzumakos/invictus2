@@ -15,8 +15,7 @@ import { Booking, CRMLead, ProjectDiscovery, PaymentConfig, SiteSettings } from 
 import { ProjectEditForm, TrainingEditForm, ServiceEditForm, FAQEditForm, BusinessProfileForm } from "@/components/admin/CMSForms";
 import MediaLibrary from "@/components/admin/MediaLibrary";
 import WebsiteBuilder from "@/components/admin/WebsiteBuilder";
-import InvoiceManager from "@/components/admin/InvoiceManager";
-import ClientBillingManager from "@/components/admin/ClientBillingManager";
+import FinancialCenter from "@/components/admin/FinancialCenter";
 import TestimonialsManager from "@/components/admin/TestimonialsManager";
 import BrandAssetsForm from "@/components/admin/BrandAssetsForm";
 import SEOCenterForm from "@/components/admin/SEOCenterForm";
@@ -27,7 +26,7 @@ import WhatsAppAnalyticsDashboard from "@/components/admin/WhatsAppAnalyticsDash
 import { getGoogleCalendarUrl } from "@/lib/googleCalendar";
 
 type DashboardTab = 
-  | "analytics" | "crm" | "bookings" | "discoveries" | "payments" 
+  | "analytics" | "crm" | "bookings" | "discoveries" | "payments" | "financial_center"
   | "cms_sections" | "cms_case_studies" | "cms_training" | "cms_services" | "cms_faqs" | "cms_translations" | "cms_media"
   | "cms_invoices" | "cms_billing_profiles" | "cms_business_profile"
   | "cms_seo" | "cms_brand" | "cms_testimonials"
@@ -1048,9 +1047,7 @@ export default function AdminDashboardPage() {
         { id: "discoveries", label: "Discovery Roadmaps", icon: Brain },
         { id: "client_tasks", label: "Client Tasks", icon: CheckCircle2 },
         { id: "client_projects", label: "Client Projects", icon: Layers },
-        { id: "payments", label: "Payment Center", icon: DollarSign },
-        { id: "cms_invoices", label: "Invoice Center", icon: FileText },
-        { id: "cms_billing_profiles", label: "Client Workspace Registry", icon: Users },
+        { id: "financial_center", label: "Financial Center", icon: DollarSign },
       ]
     },
     {
@@ -1082,7 +1079,6 @@ export default function AdminDashboardPage() {
       title: "Platform Management",
       items: [
         { id: "users", label: "User Control", icon: UserCheck },
-        { id: "cms_business_profile", label: "Business Profile", icon: Building2 },
         { id: "settings", label: "Console Settings", icon: Settings },
       ]
     }
@@ -2141,176 +2137,7 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
-              {/* TAB 5: Payments Review */}
-              {activeTab === "payments" && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-xs font-sans animate-fadeIn">
-                  {/* Left Form: Generate Invoice Payment Links */}
-                  <div className="lg:col-span-4 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4 self-start">
-                    <div>
-                      <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">INVOICE GENERATOR</span>
-                      <h4 className="font-serif font-bold text-lg text-white">Generate Payment Link</h4>
-                    </div>
-                    <form onSubmit={handleGenerateLink} className="space-y-3.5 text-xs text-gray-300">
-                      <div>
-                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Client Name</label>
-                        <input
-                          type="text"
-                          value={genClientName}
-                          onChange={(e) => setGenClientName(e.target.value)}
-                          placeholder="e.g. John Doe"
-                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Client Email</label>
-                        <input
-                          type="email"
-                          value={genEmail}
-                          onChange={(e) => setGenEmail(e.target.value)}
-                          placeholder="e.g. client@domain.com"
-                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Currency</label>
-                          <select
-                            value={genCurrency}
-                            onChange={(e) => setGenCurrency(e.target.value)}
-                            className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-3 py-2.5 text-white focus:outline-none"
-                          >
-                            <option value="USD">USD ($)</option>
-                            <option value="GDS">GDS (HTG)</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Service Select</label>
-                          <select
-                            value={genServiceId}
-                            onChange={(e) => setGenServiceId(e.target.value)}
-                            className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-3 py-2.5 text-white focus:outline-none"
-                          >
-                            <option value="">Choose Service...</option>
-                            {consultingServices.map((cs) => (
-                              <option key={cs.id} value={cs.id}>{cs.title?.en || cs.title}</option>
-                            ))}
-                            <option value="custom">Custom Service</option>
-                          </select>
-                        </div>
-                      </div>
 
-                      {genServiceId === "custom" && (
-                        <div>
-                          <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Custom Service Title</label>
-                          <input
-                            type="text"
-                            required
-                            value={genCustomTitle}
-                            onChange={(e) => setGenCustomTitle(e.target.value)}
-                            placeholder="e.g. AI Integration Review"
-                            className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
-                          />
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Billing Amount</label>
-                        <input
-                          type="number"
-                          required
-                          value={genAmount}
-                          onChange={(e) => setGenAmount(e.target.value)}
-                          placeholder="e.g. 500"
-                          className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
-                        />
-                      </div>
-
-                      <button type="submit" className="w-full py-3 bg-[#FF7A00] hover:bg-[#121A1B] hover:border-[#FF7A00] hover:text-[#FF7A00] border border-transparent text-white font-bold tracking-wider uppercase rounded-xl transition-all cursor-pointer">
-                        Generate Invoice
-                      </button>
-                    </form>
-
-                    {generatedLink && (
-                      <div className="bg-[#121A1B] p-3 rounded-xl border border-[#CDD4DD]/10 space-y-2">
-                        <span className="text-[8px] font-bold text-[#FF7A00] uppercase block">PRE-PAID SECURE LINK</span>
-                        <input type="text" readOnly value={generatedLink} className="w-full bg-[#1A2324] text-[10px] text-gray-300 font-mono rounded px-2 py-1.5 border border-[#CDD4DD]/5 focus:outline-none" />
-                        <button onClick={handleCopyLink} className="w-full py-2 bg-[#1A2324] hover:bg-[#FF7A00] hover:text-white rounded-lg text-[9px] font-bold tracking-wider uppercase border border-[#CDD4DD]/10 transition-colors cursor-pointer">
-                          Copy Link
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right Side: Ledger Table */}
-                  <div className="lg:col-span-8 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4">
-                    <div>
-                      <span className="text-[9px] font-sans font-bold text-[#CDD4DD]/40 tracking-widest uppercase block">PAYMENT LEDGER</span>
-                      <h4 className="font-serif font-bold text-lg text-white">Submitted Transactions</h4>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="border-b border-[#CDD4DD]/10 text-[#CDD4DD]/40 uppercase text-[9px] tracking-wider">
-                            <th className="py-3 px-4">Client Name / Email</th>
-                            <th className="py-3 px-4">Service</th>
-                            <th className="py-3 px-4">Amount</th>
-                            <th className="py-3 px-4">Method / Ref</th>
-                            <th className="py-3 px-4">Status</th>
-                            <th className="py-3 px-4 text-right">Receipt</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#CDD4DD]/5">
-                          {payments.map((p) => (
-                            <tr key={p.id} className="hover:bg-[#121A1B]/30 align-top">
-                              <td className="py-3 px-4">
-                                <span className="font-semibold text-white block">{p.clientName || "Anonymous"}</span>
-                                <span className="text-[9px] text-[#CDD4DD]/50 font-mono">{p.clientEmail}</span>
-                              </td>
-                              <td className="py-3 px-4 capitalize text-[#CDD4DD]/80">{p.service}</td>
-                              <td className="py-3 px-4 font-bold text-white">
-                                {p.currency === "GDS" ? `${p.amount} GDS` : `$${p.amount} USD`}
-                              </td>
-                              <td className="py-3 px-4 font-mono text-[10px]">
-                                <span className="text-gray-400 capitalize block">{p.paymentMethod || "None"}</span>
-                                <span className="text-[#CDD4DD]/40 block text-[9px]">{p.paymentReference || "No Ref"}</span>
-                              </td>
-                              <td className="py-3 px-4">
-                                <span className={`text-[8px] uppercase px-2 py-0.5 rounded font-bold border ${
-                                  p.status === "paid"
-                                    ? "bg-emerald-950/40 border-emerald-500/20 text-emerald-400"
-                                    : p.status === "overdue"
-                                    ? "bg-red-950/40 border-red-500/20 text-red-400"
-                                    : "bg-amber-950/40 border-amber-500/20 text-amber-400"
-                                }`}>
-                                  {p.status}
-                                </span>
-                              </td>
-                              <td className="py-3 px-4 text-right space-y-1">
-                                {p.invoiceUrl && (
-                                  <a href={p.invoiceUrl} target="_blank" rel="noreferrer" className="text-purple-400 hover:underline block text-[10px]">
-                                    View Receipt Image
-                                  </a>
-                                )}
-                                {p.status === "pending" && (
-                                  <div className="flex gap-1 justify-end mt-1">
-                                    <button onClick={() => handleVerifyPayment(p.id)} className="bg-emerald-900 hover:bg-emerald-800 text-emerald-400 px-2 py-1 rounded text-[8px] font-bold uppercase transition-colors cursor-pointer border border-emerald-500/25">
-                                      Confirm
-                                    </button>
-                                    <button onClick={() => handleRejectPayment(p.id)} className="bg-red-950/40 hover:bg-red-900/35 text-red-400 px-2 py-1 rounded text-[8px] font-bold uppercase transition-colors cursor-pointer border border-red-500/25">
-                                      Reject
-                                    </button>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* TAB: CMS Sections / Website Builder */}
               {activeTab === "cms_sections" && (
@@ -3236,24 +3063,10 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
-              {/* TAB: Invoices & Quotes */}
-              {activeTab === "cms_invoices" && (
+              {/* TAB: Financial Center */}
+              {activeTab === "financial_center" && (
                 <div className="animate-fadeIn">
-                  <InvoiceManager />
-                </div>
-              )}
-
-              {/* TAB: Client Billing Profiles */}
-              {activeTab === "cms_billing_profiles" && (
-                <div className="animate-fadeIn">
-                  <ClientBillingManager />
-                </div>
-              )}
-
-              {/* TAB: Business Profile */}
-              {activeTab === "cms_business_profile" && (
-                <div className="animate-fadeIn">
-                  <BusinessProfileForm />
+                  <FinancialCenter />
                 </div>
               )}
 

@@ -38,13 +38,23 @@ export const styles = StyleSheet.create({
 // React PDF Document structure
 export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; items: any[]; client: any; business: any; lang: "en" | "fr" }) {
   const isInvoice = doc.document_type === "invoice";
-  
+  const isReceipt = doc.document_type === "receipt";
+  const isQuote = doc.document_type === "quote";
+
   // Translation Dictionaries
   const labels = {
-    title: isInvoice ? (lang === "fr" ? "FACTURE" : "INVOICE") : (lang === "fr" ? "DEVIS" : "QUOTE"),
+    title: isReceipt 
+      ? (lang === "fr" ? "REÇU DE PAIEMENT" : "PAYMENT RECEIPT")
+      : isInvoice 
+        ? (lang === "fr" ? "FACTURE" : "INVOICE") 
+        : (lang === "fr" ? "DEVIS" : "QUOTE"),
     invoiceNo: lang === "fr" ? "Facture N°" : "Invoice No",
     quoteNo: lang === "fr" ? "Devis N°" : "Quote No",
-    date: lang === "fr" ? "Date d'émission" : "Issue Date",
+    receiptNo: lang === "fr" ? "Reçu N°" : "Receipt No",
+    relatedInvoice: lang === "fr" ? "Facture Associée" : "Related Invoice",
+    date: isReceipt 
+      ? (lang === "fr" ? "Date de paiement" : "Payment Date") 
+      : (lang === "fr" ? "Date d'émission" : "Issue Date"),
     dueDate: lang === "fr" ? "Date d'échéance" : "Due Date",
     billTo: lang === "fr" ? "Facturé à" : "Bill To",
     from: lang === "fr" ? "Émis par" : "Issued By",
@@ -55,21 +65,27 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
     subtotal: lang === "fr" ? "Sous-total" : "Subtotal",
     discount: lang === "fr" ? "Remise" : "Discount",
     tax: lang === "fr" ? "Taxe" : "Tax",
-    total: lang === "fr" ? "Total Général" : "Grand Total",
-    notes: lang === "fr" ? "Termes & Conditions" : "Terms & Conditions"
+    total: isReceipt 
+      ? (lang === "fr" ? "Montant Payé" : "Amount Paid") 
+      : (lang === "fr" ? "Total Général" : "Grand Total"),
+    notes: lang === "fr" ? "Termes & Conditions" : "Terms & Conditions",
+    paymentMethod: lang === "fr" ? "Moyen de paiement" : "Payment Method",
+    transactionId: lang === "fr" ? "ID Transaction" : "Transaction ID"
   };
 
   const formattedNum = doc.document_number;
-  const numLabel = isInvoice ? `${labels.invoiceNo}: ${formattedNum}` : `${labels.quoteNo}: ${formattedNum}`;
+  let numLabel = `${labels.quoteNo}: ${formattedNum}`;
+  if (isInvoice) numLabel = `${labels.invoiceNo}: ${formattedNum}`;
+  if (isReceipt) numLabel = `${labels.receiptNo}: ${formattedNum}`;
 
-  // Extract client identity (supports camelCase & snake_case)
+  // Extract client identity
   const clientName = client?.company_name || client?.companyName || client?.primary_contact_name || client?.primaryContactName || client?.name || "";
   const clientEmail = client?.email || "";
   const clientAddress = client?.billing_address || client?.billingAddress || "";
   const clientCountry = client?.country || "";
   const clientPhone = client?.phone || "";
 
-  // Extract business identity (supports camelCase & snake_case)
+  // Extract business identity
   const businessName = business?.business_name || business?.businessName || business?.company_name || business?.companyName || "INVICTUS";
   const businessLegalName = business?.legal_name || business?.legalName || businessName;
   const businessTagline = business?.tagline || business?.subtitle || "Digital Transformation Center";
@@ -81,8 +97,9 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
   const businessTaxNumber = business?.tax_number || business?.taxNumber || "N/A";
   const businessLogoUrl = business?.logo_url || business?.logoUrl || "";
   const businessFooter = business?.invoice_footer || business?.invoiceFooter || "";
+  const businessSignatureUrl = business?.signature_url || business?.signatureUrl || "";
 
-  // Bank Info extraction (supports nested object or snake_case/camelCase)
+  // Bank Info extraction
   const bankInfo = typeof business?.bank_information === "object" ? business.bank_information :
                    typeof business?.bankInformation === "object" ? business.bankInformation :
                    typeof business?.bank_info === "object" ? business.bank_info : {};
@@ -121,7 +138,7 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
               <Text style={[styles.text, styles.textMuted]}>{clientAddress}{clientCountry ? `, ${clientCountry}` : ""}</Text>
             )}
             {clientPhone && <Text style={[styles.text, styles.textMuted]}>{clientPhone}</Text>}
-            {(client?.payment_terms || client?.paymentTerms) && (
+            {!isReceipt && (client?.payment_terms || client?.paymentTerms) && (
               <Text style={[styles.text, styles.textMuted]}>Terms: {client.payment_terms || client.paymentTerms}</Text>
             )}
           </View>
@@ -137,11 +154,37 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
             {businessWebsite && <Text style={[styles.text, styles.textMuted]}>{businessWebsite}</Text>}
           </View>
 
-          <View style={{ width: 120 }}>
+          <View style={{ width: 130 }}>
             <Text style={styles.label}>{labels.date}</Text>
             <Text style={[styles.text, { marginBottom: 6 }]}>{doc.issue_date}</Text>
-            <Text style={styles.label}>{labels.dueDate}</Text>
-            <Text style={styles.text}>{doc.due_date || "Upon Receipt"}</Text>
+            
+            {isReceipt ? (
+              <>
+                {doc.relatedInvoiceNumber && (
+                  <>
+                    <Text style={styles.label}>{labels.relatedInvoice}</Text>
+                    <Text style={[styles.text, { marginBottom: 6, fontFamily: "Helvetica-Bold" }]}>{doc.relatedInvoiceNumber}</Text>
+                  </>
+                )}
+                {doc.payment_method && (
+                  <>
+                    <Text style={styles.label}>{labels.paymentMethod}</Text>
+                    <Text style={[styles.text, { marginBottom: 6, textTransform: "uppercase" }]}>{doc.payment_method}</Text>
+                  </>
+                )}
+                {doc.transaction_reference && (
+                  <>
+                    <Text style={styles.label}>{labels.transactionId}</Text>
+                    <Text style={[styles.text, { fontSize: 8 }]}>{doc.transaction_reference}</Text>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <Text style={styles.label}>{labels.dueDate}</Text>
+                <Text style={styles.text}>{doc.due_date || "Upon Receipt"}</Text>
+              </>
+            )}
           </View>
         </View>
 
@@ -209,8 +252,22 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
           </View>
         </View>
 
+        {/* Thank You message for Receipts */}
+        {isReceipt && (
+          <View style={{ marginTop: 25, padding: 12, backgroundColor: "#ECFDF5", borderRadius: 8, borderLeftWidth: 3, borderLeftColor: "#10B981" }}>
+            <Text style={{ fontSize: 9, color: "#065F46", fontFamily: "Helvetica-Bold", marginBottom: 2 }}>
+              {lang === "fr" ? "MERCI POUR VOTRE PAIEMENT !" : "THANK YOU FOR YOUR PAYMENT!"}
+            </Text>
+            <Text style={{ fontSize: 8, color: "#047857" }}>
+              {lang === "fr" 
+                ? "Ce document officiel confirme la bonne réception de vos fonds. Votre projet de transformation digitale est en cours d'exécution."
+                : "This official document confirms successful receipt of your funds. Your digital transformation project is actively in progress."}
+            </Text>
+          </View>
+        )}
+
         {/* Payment Instructions & Terms */}
-        {(doc.terms_conditions || doc.termsConditions) ? (
+        {!isReceipt && (doc.terms_conditions || doc.termsConditions) ? (
           <View style={[styles.section, { marginTop: 25 }]}>
             <Text style={styles.label}>{lang === "fr" ? "INSTRUCTIONS DE PAIEMENT & TERMES" : "PAYMENT INSTRUCTIONS & TERMS"}</Text>
             <Text style={[styles.text, { fontSize: 8.5, color: "#374151", lineHeight: 1.3 }]}>{doc.terms_conditions || doc.termsConditions}</Text>
@@ -222,6 +279,14 @@ export function InvoicePDF({ doc, items, client, business, lang }: { doc: any; i
           <View style={[styles.section, { marginTop: 15 }]}>
             <Text style={styles.label}>{lang === "fr" ? "REMARQUES / NOTES" : "REMARKS / NOTES"}</Text>
             <Text style={[styles.text, styles.textMuted, { fontSize: 8 }]}>{doc.notes}</Text>
+          </View>
+        )}
+
+        {/* Stamp or Authorized Signature */}
+        {businessSignatureUrl && (
+          <View style={{ marginTop: 20, alignSelf: "flex-end", alignItems: "center", marginRight: 10 }}>
+            <Text style={[styles.label, { marginBottom: 2 }]}>{lang === "fr" ? "SIGNATURE AUTORISÉE" : "AUTHORIZED SIGNATURE"}</Text>
+            <Image src={businessSignatureUrl} style={{ width: 80, height: 35, objectFit: "contain" }} />
           </View>
         )}
 
@@ -267,20 +332,35 @@ export async function GET(
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    // 2. Fetch Client Info
+    // 2. Fetch Related Invoice Number if Receipt
+    let relatedInvoiceNumber = null;
+    if (document.related_document_id) {
+      const { data: relDoc } = await dbClient
+        .from("commercial_documents")
+        .select("document_number")
+        .eq("id", document.related_document_id)
+        .maybeSingle();
+      if (relDoc) {
+        relatedInvoiceNumber = relDoc.document_number;
+      }
+    }
+
+    const documentWithRel = { ...document, relatedInvoiceNumber };
+
+    // 3. Fetch Client Info
     const { data: client } = await dbClient
       .from("client_billing_profiles")
       .select("*")
       .eq("id", document.client_id)
       .maybeSingle();
 
-    // 3. Fetch Items
+    // 4. Fetch Items
     const { data: items } = await dbClient
       .from("commercial_document_items")
       .select("*")
       .eq("document_id", id);
 
-    // 4. Fetch Business legal info with fallback to getCollection
+    // 5. Fetch Business legal info
     let business: any = null;
     try {
       const { data } = await dbClient
@@ -301,7 +381,7 @@ export async function GET(
 
     // Generate PDF stream using react-pdf server engine
     const docBlob = React.createElement(InvoicePDF, {
-      doc: document,
+      doc: documentWithRel,
       items: items || [],
       client,
       business,

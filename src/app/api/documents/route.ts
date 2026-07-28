@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseClient";
+import { verifyPortalSession } from "@/lib/portalAuth";
+import { verifyToken } from "@/lib/auth";
 import crypto from "crypto";
 
 export async function GET(req: NextRequest) {
@@ -8,13 +10,50 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const docType = url.searchParams.get("type");
     const status = url.searchParams.get("status");
+    const targetClientId = url.searchParams.get("clientId");
 
+    // 1. Verify Authentication & Role
+    let isClient = false;
+    let clientProfileId = "";
+    
+    // Check Client Portal session
+    try {
+      const portalSession = await verifyPortalSession(req);
+      if (portalSession && portalSession.user) {
+        isClient = true;
+        clientProfileId = portalSession.user.id;
+      }
+    } catch {}
+
+    // Check Admin session
+    const adminToken = req.cookies.get("admin_token")?.value;
+    let isAdmin = false;
+    if (adminToken) {
+      try {
+        const payload = await verifyToken(adminToken);
+        if (payload) isAdmin = true;
+      } catch {}
+    }
+
+    if (!isAdmin && !isClient) {
+      return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
+    }
+
+    // 2. Build Query
     let query = dbClient
       .from("commercial_documents")
       .select(`
         *,
         client:client_billing_profiles(*)
       `);
+
+    // Enforce client scoping
+    if (isClient) {
+      query = query.eq("client_id", clientProfileId);
+    } else if (targetClientId) {
+      // Admin can filter by client
+      query = query.eq("client_id", targetClientId);
+    }
 
     if (docType) {
       query = query.eq("document_type", docType);
@@ -57,6 +96,20 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const dbClient = getSupabaseAdmin();
+    
+    // Enforce Admin/Consultant session for creation
+    const adminToken = req.cookies.get("admin_token")?.value;
+    let isAdmin = false;
+    if (adminToken) {
+      try {
+        const payload = await verifyToken(adminToken);
+        if (payload) isAdmin = true;
+      } catch {}
+    }
+    if (!isAdmin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
 
     const {
@@ -82,17 +135,41 @@ export async function POST(req: NextRequest) {
       items = []
     } = body;
 
-    // 1. Insert master commercial document
+    if (!clientId) {
+      return NextResponse.json({ error: "Client billing profile ID is required" }, { status: 400 });
+    }
+
+    // 1. Auto-generate document number sequence if not specified or placeholder
+    let finalDocNumber = documentNumber;
+    const prefix = documentType === "quote" ? "Q" : "INV";
+    const currentYear = new Date().getFullYear();
+
+    if (!finalDocNumber || finalDocNumber.includes("placeholder") || finalDocNumber.startsWith("QT-") || finalDocNumber.startsWith("INV-")) {
+      const { count, error: countError } = await dbClient
+        .from("commercial_documents")
+        .select("*", { count: "exact", head: true })
+        .eq("document_type", documentType)
+        .like("document_number", `${prefix}-${currentYear}-%`);
+
+      if (countError) {
+        return NextResponse.json({ error: countError.message }, { status: 400 });
+      }
+
+      const nextSeq = (count || 0) + 1;
+      finalDocNumber = `${prefix}-${currentYear}-${String(nextSeq).padStart(4, "0")}`;
+    }
+
+    // 2. Insert master commercial document
     const docId = crypto.randomUUID();
     const docRow = {
       id: docId,
       document_type: documentType,
-      document_number: documentNumber,
+      document_number: finalDocNumber,
       client_id: clientId,
       project_id: projectId || null,
       consultation_id: consultationId || null,
-      issue_date: issueDate,
-      due_date: dueDate,
+      issue_date: issueDate || new Date().toISOString().split("T")[0],
+      due_date: dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       currency,
       language,
       template_style: templateStyle,
@@ -115,7 +192,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: docError.message }, { status: 400 });
     }
 
-    // 2. Insert detail rows (items)
+    // 3. Insert detail rows (items)
     if (items && items.length > 0) {
       const itemRows = items.map((item: any, idx: number) => ({
         id: crypto.randomUUID(),
@@ -141,7 +218,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ id: docId, ...body }, { status: 201 });
+    return NextResponse.json({ id: docId, ...body, documentNumber: finalDocNumber }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

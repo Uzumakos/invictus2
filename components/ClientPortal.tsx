@@ -907,6 +907,8 @@ export default function ClientPortal() {
                   {activeTab === "payments" && (
                     <PortalPayments
                       payments={payments}
+                      documents={documents}
+                      onReload={fetchPortalData}
                     />
                   )}
 
