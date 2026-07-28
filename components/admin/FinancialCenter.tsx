@@ -132,6 +132,8 @@ export default function FinancialCenter() {
   const [items, setItems] = useState<DocumentItem[]>([]);
   const [itemLangTab, setItemLangTab] = useState<"en" | "fr">("fr");
   const [selectedPaymentGatewayId, setSelectedPaymentGatewayId] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [transactionReference, setTransactionReference] = useState("");
 
   // Payment Link Generator State
   const [genEmail, setGenEmail] = useState("");
@@ -348,6 +350,8 @@ export default function FinancialCenter() {
     setNotes("");
     setTermsConditions("");
     setItems([createEmptyItem()]);
+    setPaymentMethod("");
+    setTransactionReference("");
     setIsEditorOpen(true);
   };
 
@@ -370,6 +374,8 @@ export default function FinancialCenter() {
       setNotes(fullDoc.notes || "");
       setTermsConditions(fullDoc.termsConditions || "");
       setItems(fullDoc.items || [createEmptyItem()]);
+      setPaymentMethod(fullDoc.paymentMethod || "");
+      setTransactionReference(fullDoc.transactionReference || "");
       setIsEditorOpen(true);
     } catch (err: any) {
       alert(err.message);
@@ -479,7 +485,9 @@ export default function FinancialCenter() {
         totalAmount: totals.totalAmount,
         notes,
         termsConditions,
-        items
+        items,
+        paymentMethod,
+        transactionReference
       };
 
       const url = editingDoc ? `/api/documents/${editingDoc.id}` : "/api/documents";
@@ -851,6 +859,39 @@ export default function FinancialCenter() {
                 </select>
               </div>
             </div>
+
+            {(documentType === "invoice" || documentType === "receipt") && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[8px] font-bold text-[#CDD4DD]/40 tracking-wider mb-1 uppercase">Payment Method</label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-3 py-2.5 text-white focus:outline-none"
+                  >
+                    <option value="">Select Method...</option>
+                    <option value="moncash">MonCash</option>
+                    <option value="natcash">NatCash</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="stripe">Stripe</option>
+                    <option value="paypal">PayPal</option>
+                    <option value="wise">Wise</option>
+                    <option value="cash">Cash</option>
+                    <option value="manual">Manual / Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[8px] font-bold text-[#CDD4DD]/40 tracking-wider mb-1 uppercase">Transaction Reference ID (Ref)</label>
+                  <input
+                    type="text"
+                    value={transactionReference}
+                    onChange={(e) => setTransactionReference(e.target.value)}
+                    className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+                    placeholder="e.g. TXN-12345-MONCASH"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Document Line Items */}
             <div className="pt-4 border-t border-[#CDD4DD]/5 space-y-3">

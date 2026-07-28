@@ -159,6 +159,7 @@ export async function PATCH(
       templateStyle,
       status,
       paymentLink,
+      paymentMethod,
       transactionReference,
       discountTotal,
       taxTotal,
@@ -183,6 +184,7 @@ export async function PATCH(
     if (templateStyle !== undefined) updates.template_style = templateStyle;
     if (status !== undefined) updates.status = status;
     if (paymentLink !== undefined) updates.payment_link = paymentLink || null;
+    if (paymentMethod !== undefined) updates.payment_method = paymentMethod || null;
     if (transactionReference !== undefined) updates.transaction_reference = transactionReference || null;
     if (discountTotal !== undefined) updates.discount_total = discountTotal;
     if (taxTotal !== undefined) updates.tax_total = taxTotal;
