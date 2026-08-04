@@ -26,7 +26,14 @@ const ALLOWED_RESOURCES = [
   "client-digital-scores",
   "brand-assets",
   "seo-metadata",
-  "projects"
+  "projects",
+  "revenues",
+  "expenses",
+  "subscriptions",
+  "budgets",
+  "funding-goals",
+  "funding-contributions",
+  "asset-registry"
 ];
 
 export async function PATCH(
@@ -65,6 +72,13 @@ export async function PATCH(
     if (resource === "client-digital-scores") collectionKey = "clientDigitalScores";
     if (resource === "brand-assets") collectionKey = "brandAssets";
     if (resource === "seo-metadata") collectionKey = "seoMetadata";
+    if (resource === "revenues") collectionKey = "revenues";
+    if (resource === "expenses") collectionKey = "expenses";
+    if (resource === "subscriptions") collectionKey = "subscriptions";
+    if (resource === "budgets") collectionKey = "budgets";
+    if (resource === "funding-goals") collectionKey = "fundingGoals";
+    if (resource === "funding-contributions") collectionKey = "fundingContributions";
+    if (resource === "asset-registry") collectionKey = "assetRegistry";
 
     let bodyToUpdate = { ...body };
 
@@ -139,6 +153,13 @@ export async function DELETE(
     if (resource === "client-digital-scores") collectionKey = "clientDigitalScores";
     if (resource === "brand-assets") collectionKey = "brandAssets";
     if (resource === "seo-metadata") collectionKey = "seoMetadata";
+    if (resource === "revenues") collectionKey = "revenues";
+    if (resource === "expenses") collectionKey = "expenses";
+    if (resource === "subscriptions") collectionKey = "subscriptions";
+    if (resource === "budgets") collectionKey = "budgets";
+    if (resource === "funding-goals") collectionKey = "fundingGoals";
+    if (resource === "funding-contributions") collectionKey = "fundingContributions";
+    if (resource === "asset-registry") collectionKey = "assetRegistry";
 
     const deleted = await deleteFromCollection(collectionKey, id);
     if (!deleted) {

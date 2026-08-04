@@ -356,6 +356,46 @@ export async function PATCH(
           };
           await dbClient.from("portal_payments").insert(paymentRow);
 
+          // Sync to BI Revenues center
+          const revenueId = crypto.randomUUID();
+          const revenueRow = {
+            id: revenueId,
+            client_id: document.client_id || null,
+            client_name: clientProfile?.company_name || clientProfile?.primary_contact_name || "Client",
+            project_id: document.project_id || null,
+            project_name: serviceTitleDesc,
+            category: serviceTitleDesc.toLowerCase().includes("consulting") ? "AI Consulting"
+                      : serviceTitleDesc.toLowerCase().includes("discovery") ? "Discovery Calls"
+                      : serviceTitleDesc.toLowerCase().includes("transformation") ? "Digital Transformation"
+                      : serviceTitleDesc.toLowerCase().includes("training") ? "Training"
+                      : serviceTitleDesc.toLowerCase().includes("speaking") ? "Speaking"
+                      : serviceTitleDesc.toLowerCase().includes("maintenance") ? "Maintenance Contracts"
+                      : "Software Development", // Fallback mapping based on description
+            invoice_id: document.id,
+            receipt_id: receiptId,
+            invoice_number: document.document_number,
+            receipt_number: receiptNumber,
+            amount: document.total_amount,
+            currency: document.currency,
+            payment_method: payMethod,
+            date: new Date().toISOString().split("T")[0],
+            status: "paid",
+            notes: `Auto-synced payment from Invoice ${document.document_number}`
+          };
+          await dbClient.from("revenues").insert(revenueRow);
+
+          // Trigger the Automatic Savings Engine
+          try {
+            const { triggerSavingsAllocations } = await import("@/lib/savingsEngine");
+            await triggerSavingsAllocations(
+              document.total_amount,
+              `Invoice Payment: ${document.document_number} (${clientProfile?.company_name || "Client"})`,
+              revenueId
+            );
+          } catch (e: any) {
+            console.error("Failed to run savings engine:", e.message);
+          }
+
           // E. CRM Activity & Lead status update
           if (clientProfile?.email) {
             const { data: lead } = await dbClient

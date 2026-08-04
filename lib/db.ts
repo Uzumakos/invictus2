@@ -36,7 +36,14 @@ const tableMap: Record<string, string> = {
   seoMetadata: "seo_metadata",
   clients: "clients",
   whatsappTemplates: "whatsapp_templates",
-  whatsappInteractions: "whatsapp_interactions"
+  whatsappInteractions: "whatsapp_interactions",
+  revenues: "revenues",
+  expenses: "expenses",
+  subscriptions: "subscriptions",
+  budgets: "budgets",
+  fundingGoals: "funding_goals",
+  fundingContributions: "funding_contributions",
+  assetRegistry: "asset_registry"
 };
 
 // Helper to map snake_case database columns to camelCase JSON keys

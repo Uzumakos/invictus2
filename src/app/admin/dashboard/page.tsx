@@ -16,6 +16,7 @@ import { ProjectEditForm, TrainingEditForm, ServiceEditForm, FAQEditForm, Busine
 import MediaLibrary from "@/components/admin/MediaLibrary";
 import WebsiteBuilder from "@/components/admin/WebsiteBuilder";
 import FinancialCenter from "@/components/admin/FinancialCenter";
+import BusinessIntelligence from "@/components/admin/BusinessIntelligence";
 import TestimonialsManager from "@/components/admin/TestimonialsManager";
 import BrandAssetsForm from "@/components/admin/BrandAssetsForm";
 import SEOCenterForm from "@/components/admin/SEOCenterForm";
@@ -26,7 +27,7 @@ import WhatsAppAnalyticsDashboard from "@/components/admin/WhatsAppAnalyticsDash
 import { getGoogleCalendarUrl } from "@/lib/googleCalendar";
 
 type DashboardTab = 
-  | "analytics" | "crm" | "bookings" | "discoveries" | "payments" | "financial_center"
+  | "analytics" | "crm" | "bookings" | "discoveries" | "payments" | "financial_center" | "bi_hub"
   | "cms_sections" | "cms_case_studies" | "cms_training" | "cms_services" | "cms_faqs" | "cms_translations" | "cms_media"
   | "cms_invoices" | "cms_billing_profiles" | "cms_business_profile"
   | "cms_seo" | "cms_brand" | "cms_testimonials"
@@ -1048,6 +1049,7 @@ export default function AdminDashboardPage() {
         { id: "client_tasks", label: "Client Tasks", icon: CheckCircle2 },
         { id: "client_projects", label: "Client Projects", icon: Layers },
         { id: "financial_center", label: "Financial Center", icon: DollarSign },
+        { id: "bi_hub", label: "BI Hub", icon: BarChart3 },
       ]
     },
     {
@@ -3067,6 +3069,13 @@ export default function AdminDashboardPage() {
               {activeTab === "financial_center" && (
                 <div className="animate-fadeIn">
                   <FinancialCenter />
+                </div>
+              )}
+
+              {/* TAB: Business Intelligence Hub */}
+              {activeTab === "bi_hub" && (
+                <div className="animate-fadeIn">
+                  <BusinessIntelligence />
                 </div>
               )}
 

@@ -36,7 +36,14 @@ const ALLOWED_RESOURCES = [
   "seo-metadata",
   "clients",
   "whatsapp-templates",
-  "whatsapp-interactions"
+  "whatsapp-interactions",
+  "revenues",
+  "expenses",
+  "subscriptions",
+  "budgets",
+  "funding-goals",
+  "funding-contributions",
+  "asset-registry"
 ];
 
 export async function GET(
@@ -78,6 +85,13 @@ export async function GET(
     if (resource === "clients") collectionKey = "clients";
     if (resource === "whatsapp-templates") collectionKey = "whatsappTemplates";
     if (resource === "whatsapp-interactions") collectionKey = "whatsappInteractions";
+    if (resource === "revenues") collectionKey = "revenues";
+    if (resource === "expenses") collectionKey = "expenses";
+    if (resource === "subscriptions") collectionKey = "subscriptions";
+    if (resource === "budgets") collectionKey = "budgets";
+    if (resource === "funding-goals") collectionKey = "fundingGoals";
+    if (resource === "funding-contributions") collectionKey = "fundingContributions";
+    if (resource === "asset-registry") collectionKey = "assetRegistry";
 
     let items = await getCollection(collectionKey);
 
@@ -146,6 +160,13 @@ export async function POST(
     if (resource === "client-digital-scores") { collectionKey = "clientDigitalScores"; prefix = "ds"; }
     if (resource === "brand-assets") { collectionKey = "brandAssets"; prefix = "brand"; }
     if (resource === "seo-metadata") { collectionKey = "seoMetadata"; prefix = "seo"; }
+    if (resource === "revenues") { collectionKey = "revenues"; prefix = "rev"; }
+    if (resource === "expenses") { collectionKey = "expenses"; prefix = "exp"; }
+    if (resource === "subscriptions") { collectionKey = "subscriptions"; prefix = "sub"; }
+    if (resource === "budgets") { collectionKey = "budgets"; prefix = "bud"; }
+    if (resource === "funding-goals") { collectionKey = "fundingGoals"; prefix = "fg"; }
+    if (resource === "funding-contributions") { collectionKey = "fundingContributions"; prefix = "fc"; }
+    if (resource === "asset-registry") { collectionKey = "assetRegistry"; prefix = "ast"; }
 
     let newItem: any;
     if (resource === "translations") {
@@ -183,7 +204,14 @@ export async function POST(
         "business-profile",
         "whatsapp-interactions",   // whatsapp_interactions.id is UUID PRIMARY KEY
         "whatsapp-templates",      // whatsapp_templates.id is VARCHAR but allow UUID override
-        "clients"                  // clients.id is UUID PRIMARY KEY
+        "clients",                  // clients.id is UUID PRIMARY KEY
+        "revenues",
+        "expenses",
+        "subscriptions",
+        "budgets",
+        "funding-goals",
+        "funding-contributions",
+        "asset-registry"
       ].includes(resource);
 
       const hasNoCreatedAt = [
