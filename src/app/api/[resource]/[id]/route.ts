@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateInCollection, deleteFromCollection, getCollection } from "@/lib/db";
 import { calculateLeadScoreAndMetrics } from "@/lib/leadScoring";
+import {
+  getAdminFromRequest,
+  getPortalUserFromRequest,
+  PORTAL_PATCH_RESOURCES,
+  PORTAL_DELETE_RESOURCES,
+  assertPortalOwnsItem,
+  unauthorizedResponse,
+  forbiddenResponse,
+} from "@/lib/apiAuth";
 
 const ALLOWED_RESOURCES = [
   "tasks",
@@ -36,6 +45,72 @@ const ALLOWED_RESOURCES = [
   "asset-registry"
 ];
 
+async function resolveCollectionKey(resource: string): Promise<string> {
+  let collectionKey = resource;
+  if (resource === "tasks") collectionKey = "portalTasks";
+  if (resource === "messages") collectionKey = "portalMessages";
+  if (resource === "consultations") collectionKey = "portalConsultations";
+  if (resource === "leads") collectionKey = "leads";
+  if (resource === "notifications") collectionKey = "portalNotifications";
+  if (resource === "discoveries") collectionKey = "discoveries";
+  if (resource === "recommendation-rules") collectionKey = "recommendationRules";
+  if (resource === "payments") collectionKey = "portalPayments";
+  if (resource === "projects") collectionKey = "portalProjects";
+  if (resource === "case-studies") collectionKey = "projects";
+  if (resource === "faq-items") collectionKey = "faqItems";
+  if (resource === "training-programs") collectionKey = "trainingPrograms";
+  if (resource === "consulting-services") collectionKey = "consultingServices";
+  if (resource === "media") collectionKey = "mediaLibrary";
+  if (resource === "sections") collectionKey = "pageSections";
+  if (resource === "business-profile") collectionKey = "businessProfile";
+  if (resource === "client-billing-profiles") collectionKey = "clientBillingProfiles";
+  if (resource === "consulting-hours") collectionKey = "consultingHours";
+  if (resource === "client-milestones") collectionKey = "clientMilestones";
+  if (resource === "client-digital-scores") collectionKey = "clientDigitalScores";
+  if (resource === "brand-assets") collectionKey = "brandAssets";
+  if (resource === "seo-metadata") collectionKey = "seoMetadata";
+  if (resource === "revenues") collectionKey = "revenues";
+  if (resource === "expenses") collectionKey = "expenses";
+  if (resource === "subscriptions") collectionKey = "subscriptions";
+  if (resource === "budgets") collectionKey = "budgets";
+  if (resource === "funding-goals") collectionKey = "fundingGoals";
+  if (resource === "funding-contributions") collectionKey = "fundingContributions";
+  if (resource === "asset-registry") collectionKey = "assetRegistry";
+  return collectionKey;
+}
+
+async function authorizeMutation(
+  req: NextRequest,
+  resource: string,
+  id: string,
+  mode: "patch" | "delete"
+): Promise<NextResponse | null> {
+  const admin = await getAdminFromRequest(req);
+  if (admin) return null;
+
+  const allowedSet =
+    mode === "patch" ? PORTAL_PATCH_RESOURCES : PORTAL_DELETE_RESOURCES;
+  if (!allowedSet.has(resource)) {
+    return unauthorizedResponse();
+  }
+
+  const portalUser = await getPortalUserFromRequest(req);
+  if (!portalUser) {
+    return unauthorizedResponse();
+  }
+
+  const collectionKey = await resolveCollectionKey(resource);
+  const owns = await assertPortalOwnsItem(
+    collectionKey,
+    id,
+    portalUser.email
+  );
+  if (!owns) {
+    return forbiddenResponse();
+  }
+  return null;
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ resource: string; id: string }> }
@@ -46,39 +121,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Resource not found or read-only" }, { status: 404 });
     }
 
+    const authError = await authorizeMutation(req, resource, id, "patch");
+    if (authError) return authError;
+
     const body = await req.json();
 
-    let collectionKey = resource;
-    if (resource === "tasks") collectionKey = "portalTasks";
-    if (resource === "consultations") collectionKey = "portalConsultations";
-    if (resource === "leads") collectionKey = "leads";
-    if (resource === "notifications") collectionKey = "portalNotifications";
-    if (resource === "discoveries") collectionKey = "discoveries";
-    if (resource === "recommendation-rules") collectionKey = "recommendationRules";
-    if (resource === "payments") collectionKey = "portalPayments";
-    if (resource === "projects") collectionKey = "portalProjects";
-
-    // CMS, ERP & Telemetry collections
-    if (resource === "case-studies") collectionKey = "projects";
-    if (resource === "faq-items") collectionKey = "faqItems";
-    if (resource === "training-programs") collectionKey = "trainingPrograms";
-    if (resource === "consulting-services") collectionKey = "consultingServices";
-    if (resource === "media") collectionKey = "mediaLibrary";
-    if (resource === "sections") collectionKey = "pageSections";
-    if (resource === "business-profile") collectionKey = "businessProfile";
-    if (resource === "client-billing-profiles") collectionKey = "clientBillingProfiles";
-    if (resource === "consulting-hours") collectionKey = "consultingHours";
-    if (resource === "client-milestones") collectionKey = "clientMilestones";
-    if (resource === "client-digital-scores") collectionKey = "clientDigitalScores";
-    if (resource === "brand-assets") collectionKey = "brandAssets";
-    if (resource === "seo-metadata") collectionKey = "seoMetadata";
-    if (resource === "revenues") collectionKey = "revenues";
-    if (resource === "expenses") collectionKey = "expenses";
-    if (resource === "subscriptions") collectionKey = "subscriptions";
-    if (resource === "budgets") collectionKey = "budgets";
-    if (resource === "funding-goals") collectionKey = "fundingGoals";
-    if (resource === "funding-contributions") collectionKey = "fundingContributions";
-    if (resource === "asset-registry") collectionKey = "assetRegistry";
+    let collectionKey = await resolveCollectionKey(resource);
 
     let bodyToUpdate = { ...body };
 
@@ -130,36 +178,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Resource not found or read-only" }, { status: 404 });
     }
 
-    let collectionKey = resource;
-    if (resource === "tasks") collectionKey = "portalTasks";
-    if (resource === "consultations") collectionKey = "portalConsultations";
-    if (resource === "leads") collectionKey = "leads";
-    if (resource === "notifications") collectionKey = "portalNotifications";
-    if (resource === "discoveries") collectionKey = "discoveries";
-    if (resource === "payments") collectionKey = "portalPayments";
-    if (resource === "projects") collectionKey = "portalProjects";
+    const authError = await authorizeMutation(req, resource, id, "delete");
+    if (authError) return authError;
 
-    // CMS, ERP & Telemetry collections
-    if (resource === "case-studies") collectionKey = "projects";
-    if (resource === "faq-items") collectionKey = "faqItems";
-    if (resource === "training-programs") collectionKey = "trainingPrograms";
-    if (resource === "consulting-services") collectionKey = "consultingServices";
-    if (resource === "media") collectionKey = "mediaLibrary";
-    if (resource === "sections") collectionKey = "pageSections";
-    if (resource === "business-profile") collectionKey = "businessProfile";
-    if (resource === "client-billing-profiles") collectionKey = "clientBillingProfiles";
-    if (resource === "consulting-hours") collectionKey = "consultingHours";
-    if (resource === "client-milestones") collectionKey = "clientMilestones";
-    if (resource === "client-digital-scores") collectionKey = "clientDigitalScores";
-    if (resource === "brand-assets") collectionKey = "brandAssets";
-    if (resource === "seo-metadata") collectionKey = "seoMetadata";
-    if (resource === "revenues") collectionKey = "revenues";
-    if (resource === "expenses") collectionKey = "expenses";
-    if (resource === "subscriptions") collectionKey = "subscriptions";
-    if (resource === "budgets") collectionKey = "budgets";
-    if (resource === "funding-goals") collectionKey = "fundingGoals";
-    if (resource === "funding-contributions") collectionKey = "fundingContributions";
-    if (resource === "asset-registry") collectionKey = "assetRegistry";
+    let collectionKey = await resolveCollectionKey(resource);
 
     const deleted = await deleteFromCollection(collectionKey, id);
     if (!deleted) {

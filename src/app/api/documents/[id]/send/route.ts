@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseClient";
+import { requireAdmin } from "@/lib/apiAuth";
 import { getCollection } from "@/lib/db";
 import { pdf } from "@react-pdf/renderer";
 import { InvoicePDF } from "../export/route";
@@ -37,6 +38,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     const body = await req.json();

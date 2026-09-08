@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseClient";
+import { requireAdmin } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const dbClient = getSupabaseAdmin();
     const currentDate = new Date();
@@ -599,6 +603,24 @@ export async function GET() {
       smartInsights.push("Marketing expenses decreased by 15% following agency consolidation.");
     }
 
+    const topClients = Object.entries(clientRevenueMap)
+      .map(([companyName, totalPaid]) => ({ companyName, totalPaid }))
+      .sort((a, b) => b.totalPaid - a.totalPaid)
+      .slice(0, 5);
+
+    const recentTransactions = revList
+      .slice()
+      .sort((a: any, b: any) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime())
+      .slice(0, 10)
+      .map((r: any) => ({
+        id: r.id,
+        payment_number: r.receipt_number || r.id,
+        client_name: r.client_name || "Client",
+        service: r.category || "Service",
+        payment_method: r.payment_method || "Stripe",
+        amount: Number(r.amount) || 0
+      }));
+
     return NextResponse.json({
       // Core cards
       mtdRevenue,
@@ -610,6 +632,8 @@ export async function GET() {
       monthlyRecurringRevenue: mrr,
       outstandingInvoicesAmount,
       outstandingInvoicesCount,
+      outstandingAmount: outstandingInvoicesAmount,
+      outstandingCount: outstandingInvoicesCount,
       pendingPaymentsAmount,
       upcomingRenewals,
       estimatedTaxes: netProfit > 0 ? Number((netProfit * 0.15).toFixed(2)) : 0.00,
@@ -619,6 +643,8 @@ export async function GET() {
       avgProjectValue,
       avgDiscoveryCallRevenue,
       topClient: topClientName,
+      topClients,
+      recentTransactions,
       mostProfitableService: topServiceName,
       subscriptionGrowth,
       mostExpensiveSubscription,

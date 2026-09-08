@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { verifyToken } from "@/lib/auth";
+import { verifyAdminToken } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,16 +9,15 @@ export async function POST(req: NextRequest) {
 
     let isAuthorized = false;
 
-    // 1. Check via secret token
-    if (secret && secret === process.env.ADMIN_JWT_SECRET) {
+    const revalidateSecret = process.env.REVALIDATE_SECRET;
+    if (secret && revalidateSecret && secret === revalidateSecret) {
       isAuthorized = true;
     }
 
-    // 2. Check via browser cookie session
     if (!isAuthorized) {
       const token = req.cookies.get("admin_token")?.value;
       if (token) {
-        const payload = await verifyToken(token);
+        const payload = await verifyAdminToken(token);
         if (payload) {
           isAuthorized = true;
         }
@@ -33,13 +32,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Path parameter is required" }, { status: 400 });
     }
 
-    // Trigger Incremental Static Regeneration (ISR) revalidation
-    // Revalidates specified locale routes
     revalidatePath(path, type || "page");
 
     return NextResponse.json({ revalidated: true, now: Date.now() });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Cache revalidation error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

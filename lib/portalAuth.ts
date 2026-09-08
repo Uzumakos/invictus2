@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseAdmin } from "./supabaseClient";
-import { verifyToken } from "./auth";
+import { verifyClientToken } from "./auth";
 
 export interface AuthenticatedUser {
   email: string;
@@ -44,8 +44,8 @@ export async function verifyPortalSession(req: NextRequest): Promise<{ user: Aut
   // 1. Check if there is a client_token cookie (Custom Password Login JWT)
   const clientToken = req.cookies.get("client_token")?.value;
   if (clientToken) {
-    const payload = await verifyToken(clientToken);
-    if (payload && payload.role === "client" && payload.sub) {
+    const payload = await verifyClientToken(clientToken);
+    if (payload && payload.sub) {
       email = payload.sub;
     }
   }

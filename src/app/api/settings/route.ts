@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadDB, saveDB } from "@/lib/db";
-import { SiteSettings } from "@/lib/types";
+import { requireAdmin } from "@/lib/apiAuth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const db = await loadDB();
     const settings = db.settings || {};
@@ -14,6 +17,9 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const db = await loadDB();
@@ -33,4 +39,3 @@ export async function PATCH(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   return PATCH(req);
 }
-

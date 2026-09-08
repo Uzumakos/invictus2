@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCollection, addToCollection } from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
 import { calculateLeadScoreAndMetrics } from "@/lib/leadScoring";
+import {
+  getAdminFromRequest,
+  getPortalUserFromRequest,
+  PUBLIC_READ_RESOURCES,
+  PUBLIC_POST_RESOURCES,
+  PORTAL_READ_RESOURCES,
+  PORTAL_POST_RESOURCES,
+  filterItemsForPortalClient,
+  unauthorizedResponse,
+  forbiddenResponse,
+} from "@/lib/apiAuth";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -95,21 +105,41 @@ export async function GET(
 
     let items = await getCollection(collectionKey);
 
-    // Dynamic filtering for public users vs administrators
-    const adminToken = req.cookies.get("admin_token")?.value;
-    let isAdmin = false;
-    if (adminToken) {
-      try {
-        const payload = await verifyToken(adminToken);
-        if (payload) isAdmin = true;
-      } catch {}
+    const admin = await getAdminFromRequest(req);
+
+    if (PUBLIC_READ_RESOURCES.has(resource)) {
+      if (!admin) {
+        if (
+          ["projects", "trainingPrograms", "consultingServices"].includes(
+            collectionKey
+          )
+        ) {
+          items = items.filter(
+            (item: { status?: string }) =>
+              item.status === "published" || !item.status
+          );
+        }
+      }
+      return NextResponse.json(items);
     }
 
-    // If public request, filter out draft or archived status records
-    if (!isAdmin) {
-      if (["projects", "trainingPrograms", "consultingServices"].includes(collectionKey)) {
-        items = items.filter((item: any) => item.status === "published" || !item.status);
+    if (PORTAL_READ_RESOURCES.has(resource)) {
+      if (admin) {
+        return NextResponse.json(items);
       }
+      const portalUser = await getPortalUserFromRequest(req);
+      if (!portalUser) {
+        return unauthorizedResponse();
+      }
+      items = filterItemsForPortalClient(
+        items as Record<string, unknown>[],
+        portalUser.email
+      );
+      return NextResponse.json(items);
+    }
+
+    if (!admin) {
+      return unauthorizedResponse();
     }
 
     return NextResponse.json(items);
@@ -129,7 +159,40 @@ export async function POST(
       return NextResponse.json({ error: "Resource not found" }, { status: 404 });
     }
 
-    const body = await req.json();
+    const admin = await getAdminFromRequest(req);
+    const portalUser = await getPortalUserFromRequest(req);
+
+    if (PUBLIC_POST_RESOURCES.has(resource)) {
+      // Public form submissions (no session required)
+    } else if (PORTAL_POST_RESOURCES.has(resource)) {
+      if (!admin && !portalUser) {
+        return unauthorizedResponse();
+      }
+    } else if (!admin) {
+      return unauthorizedResponse();
+    }
+
+    let body = await req.json();
+
+    if (
+      PORTAL_POST_RESOURCES.has(resource) &&
+      portalUser &&
+      !admin
+    ) {
+      const targetEmail = portalUser.email.toLowerCase().trim();
+      const bodyEmail = (
+        body.clientEmail ??
+        body.client_email ??
+        ""
+      )
+        .toString()
+        .toLowerCase()
+        .trim();
+      if (bodyEmail && bodyEmail !== targetEmail) {
+        return forbiddenResponse("Cannot create records for another client");
+      }
+      body = { ...body, clientEmail: targetEmail };
+    }
 
     let collectionKey = resource;
     let prefix = "item";

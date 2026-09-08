@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseClient";
+import { requireAdmin } from "@/lib/apiAuth";
 import crypto from "crypto";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { id: quoteId } = await params;
     const dbClient = getSupabaseAdmin();

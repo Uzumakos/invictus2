@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateInCollection } from "@/lib/db";
 import { Booking } from "@/lib/types";
+import { requireAdmin } from "@/lib/apiAuth";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     const body = await req.json();

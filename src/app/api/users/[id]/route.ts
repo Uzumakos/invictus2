@@ -1,26 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadDB, deleteFromCollection } from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
-
-async function checkAdmin(req: NextRequest): Promise<boolean> {
-  const token = req.cookies.get("admin_token")?.value;
-  if (!token) return false;
-  const payload = await verifyToken(token);
-  return payload?.role === "admin";
-}
+import { deleteFromCollection, loadDB } from "@/lib/db";
+import { requireAdmin } from "@/lib/apiAuth";
 
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!(await checkAdmin(req))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
     const { id } = await params;
     const db = await loadDB();
-    const users = (db.users as any[]) || [];
+    const users = (db.users as { id: string; role?: string }[]) || [];
 
     const userToDelete = users.find((u) => u.id === id);
     if (!userToDelete) {
@@ -40,4 +32,3 @@ export async function DELETE(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-

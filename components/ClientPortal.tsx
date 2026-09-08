@@ -246,15 +246,15 @@ export default function ClientPortal() {
     setLoading(true);
     try {
       const [bookingsRes, tasksRes, docsRes, msgsRes, projRes, payRes, conRes, notifRes, discoveriesRes] = await Promise.all([
-        fetch("/api/bookings"),
-        fetch("/api/tasks"),
-        fetch("/api/documents"),
-        fetch("/api/messages"),
-        fetch("/api/projects"),
-        fetch("/api/payments"),
-        fetch("/api/consultations"),
-        fetch("/api/notifications"),
-        fetch("/api/discoveries"),
+        fetchWithAuth("/api/bookings"),
+        fetchWithAuth("/api/tasks"),
+        fetchWithAuth("/api/documents"),
+        fetchWithAuth("/api/messages"),
+        fetchWithAuth("/api/projects"),
+        fetchWithAuth("/api/payments"),
+        fetchWithAuth("/api/consultations"),
+        fetchWithAuth("/api/notifications"),
+        fetchWithAuth("/api/discoveries"),
       ]);
 
       if (
@@ -474,7 +474,7 @@ export default function ClientPortal() {
     const nextStatus = nextStatusMap[task.status] || "todo";
 
     try {
-      const response = await fetch(`/api/tasks/${task.id}`, {
+      const response = await fetchWithAuth(`/api/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextStatus }),
@@ -504,7 +504,7 @@ export default function ClientPortal() {
     };
 
     try {
-      const res = await fetch("/api/tasks", {
+      const res = await fetchWithAuth("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -514,7 +514,7 @@ export default function ClientPortal() {
         setTasks(prev => [...prev, newTaskItem]);
 
         // Post a notification
-        await fetch("/api/notifications", {
+        await fetchWithAuth("/api/notifications", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

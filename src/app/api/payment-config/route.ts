@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadDB, saveDB } from "@/lib/db";
 import { PaymentConfig } from "@/lib/types";
+import { requireAdmin } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -17,8 +18,11 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
-    const body = await req.json(); // Expected Partial<PaymentConfig> or { methods: PaymentMethod[] }
+    const body = await req.json();
     const db = await loadDB();
 
     if (!db.paymentConfig) {
@@ -40,4 +44,3 @@ export async function PATCH(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   return PATCH(req);
 }
-

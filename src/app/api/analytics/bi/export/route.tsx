@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseClient";
+import { requireAdmin } from "@/lib/apiAuth";
 import { pdf, Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import React from "react";
 
@@ -80,6 +81,9 @@ function BIReportPDF({ title, headers, rows, summary }: { title: string; headers
 }
 
 export async function GET(req: NextRequest) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const url = new URL(req.url);
     const reportType = url.searchParams.get("reportType") || "monthly_financial";

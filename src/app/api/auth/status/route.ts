@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
+import { verifyAdminToken } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get("admin_token")?.value;
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const payload = await verifyToken(token);
+    const payload = await verifyAdminToken(token);
     if (!payload) {
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }

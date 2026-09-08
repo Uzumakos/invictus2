@@ -211,7 +211,21 @@ export default function FinancialCenter() {
     try {
       const res = await fetch("/api/analytics/bi");
       if (res.ok) {
-        setBiData(await res.json());
+        const data = await res.json();
+        setBiData((prev: any) => ({
+          ...prev,
+          ...data,
+          topClients: Array.isArray(data?.topClients) ? data.topClients : prev.topClients || [],
+          revenueByMonth: Array.isArray(data?.revenueByMonth) ? data.revenueByMonth : prev.revenueByMonth || [],
+          financialForecast: Array.isArray(data?.financialForecast) ? data.financialForecast : prev.financialForecast || [],
+          recentTransactions: Array.isArray(data?.recentTransactions) ? data.recentTransactions : prev.recentTransactions || [],
+          outstandingCount: data?.outstandingCount ?? data?.outstandingInvoicesCount ?? prev.outstandingCount ?? 0,
+          outstandingAmount: data?.outstandingAmount ?? data?.outstandingInvoicesAmount ?? prev.outstandingAmount ?? 0,
+          overdueCount: data?.overdueCount ?? prev.overdueCount ?? 0,
+          overdueAmount: data?.overdueAmount ?? prev.overdueAmount ?? 0,
+          pipelineValue: data?.pipelineValue ?? prev.pipelineValue ?? 0,
+          consultingHours: data?.consultingHours ?? prev.consultingHours ?? 0,
+        }));
       }
     } catch (err) {
       console.error("BI Analytics fetch failed:", err);
@@ -1140,17 +1154,17 @@ export default function FinancialCenter() {
                     <h3 className="font-serif font-bold text-sm text-white">Monthly Cash Flow</h3>
                     
                     <div className="h-48 flex items-end justify-between pt-4 pb-2 border-b border-[#CDD4DD]/5 font-mono text-[9px] text-gray-500">
-                      {biData.revenueByMonth?.length === 0 ? (
+                      {(!biData?.revenueByMonth || biData.revenueByMonth.length === 0) ? (
                         <div className="w-full text-center text-gray-500">No cash flow recorded this year.</div>
                       ) : (
-                        biData.revenueByMonth.map((bar: any, idx: number) => {
+                        (biData.revenueByMonth || []).map((bar: any, idx: number) => {
                           // Find max to scale
-                          const maxVal = Math.max(...biData.revenueByMonth.map((b: any) => b.amount), 1);
-                          const pct = (bar.amount / maxVal) * 100;
+                          const maxVal = Math.max(...(biData.revenueByMonth || []).map((b: any) => b.amount || 0), 1);
+                          const pct = ((bar.amount || 0) / maxVal) * 100;
                           return (
                             <div key={idx} className="flex flex-col items-center space-y-2 flex-grow group">
                               <span className="opacity-0 group-hover:opacity-100 transition-opacity font-bold text-[#FF7A00] -translate-y-1">
-                                ${Math.round(bar.amount)}
+                                ${Math.round(bar.amount || 0)}
                               </span>
                               <div className="w-8 bg-[#1E2E30] rounded-t-lg relative flex items-end overflow-hidden" style={{ height: "120px" }}>
                                 <motion.div 
@@ -1172,17 +1186,17 @@ export default function FinancialCenter() {
                   <div className="bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4">
                     <h3 className="font-serif font-bold text-sm text-white">Top Clients by Revenue</h3>
                     <div className="space-y-4">
-                      {biData.topClients?.length === 0 ? (
+                      {(!biData?.topClients || biData.topClients.length === 0) ? (
                         <p className="text-gray-500 text-center font-mono">No customer billing accounts recorded.</p>
                       ) : (
-                        biData.topClients.map((client: any, idx: number) => {
-                          const maxRev = biData.topClients[0]?.totalPaid || 1;
-                          const barPct = (client.totalPaid / maxRev) * 100;
+                        (biData.topClients || []).map((client: any, idx: number) => {
+                          const maxRev = biData.topClients?.[0]?.totalPaid || 1;
+                          const barPct = ((client.totalPaid || 0) / maxRev) * 100;
                           return (
                             <div key={idx} className="space-y-1.5">
                               <div className="flex justify-between items-center text-xs">
-                                <span className="font-bold text-white truncate max-w-[120px]">{client.companyName}</span>
-                                <span className="font-mono text-[#FF7A00] font-bold">${client.totalPaid?.toLocaleString()}</span>
+                                <span className="font-bold text-white truncate max-w-[120px]">{client.companyName || client.clientName || "Client"}</span>
+                                <span className="font-mono text-[#FF7A00] font-bold">${client.totalPaid?.toLocaleString() || 0}</span>
                               </div>
                               <div className="w-full bg-[#121A1B] h-2 rounded-full overflow-hidden border border-[#CDD4DD]/5">
                                 <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${barPct}%` }} />
@@ -1204,15 +1218,19 @@ export default function FinancialCenter() {
                       Historical cash flow averages projected for the next 3 months, assuming a standard 5% baseline expansion coefficient:
                     </p>
                     <div className="space-y-3 pt-2 font-mono">
-                      {biData.financialForecast?.map((f: any, idx: number) => (
-                        <div key={idx} className="flex justify-between items-center bg-[#121A1B] p-3.5 rounded-xl border border-[#CDD4DD]/5">
-                          <div>
-                            <span className="text-gray-500 uppercase tracking-widest text-[8px] font-bold block">Projected for</span>
-                            <span className="text-white font-bold">{f.month}</span>
+                      {(!biData?.financialForecast || biData.financialForecast.length === 0) ? (
+                        <p className="text-gray-500 text-center text-xs py-4">No projections available.</p>
+                      ) : (
+                        (biData.financialForecast || []).map((f: any, idx: number) => (
+                          <div key={idx} className="flex justify-between items-center bg-[#121A1B] p-3.5 rounded-xl border border-[#CDD4DD]/5">
+                            <div>
+                              <span className="text-gray-500 uppercase tracking-widest text-[8px] font-bold block">Projected for</span>
+                              <span className="text-white font-bold">{f.period || f.month}</span>
+                            </div>
+                            <span className="text-emerald-500 font-bold text-sm">${f.projected?.toLocaleString() || 0}</span>
                           </div>
-                          <span className="text-emerald-500 font-bold text-sm">${f.projected?.toLocaleString()}</span>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </div>
 
@@ -1231,18 +1249,18 @@ export default function FinancialCenter() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#CDD4DD]/5">
-                          {biData.recentTransactions?.length === 0 ? (
+                          {((biData?.recentTransactions && biData.recentTransactions.length > 0) ? biData.recentTransactions : transactions.slice(0, 5)).length === 0 ? (
                             <tr>
                               <td colSpan={5} className="py-4 text-center text-gray-500">No payment logs found.</td>
                             </tr>
                           ) : (
-                            biData.recentTransactions.map((tx: any, idx: number) => (
+                            ((biData?.recentTransactions && biData.recentTransactions.length > 0) ? biData.recentTransactions : transactions.slice(0, 5)).map((tx: any, idx: number) => (
                               <tr key={tx.id || idx} className="text-[10px]">
-                                <td className="py-2.5 font-bold text-white">{tx.payment_number || tx.id?.substring(0, 8)}</td>
-                                <td className="py-2.5 text-gray-400">{tx.client_name}</td>
-                                <td className="py-2.5 text-gray-400 truncate max-w-[140px]">{tx.service}</td>
-                                <td className="py-2.5 text-gray-500 text-[9px] uppercase">{tx.payment_method || tx.gateway}</td>
-                                <td className="py-2.5 text-right font-bold text-emerald-500">${tx.amount?.toLocaleString()}</td>
+                                <td className="py-2.5 font-bold text-white">{tx.payment_number || tx.paymentNumber || tx.id?.substring(0, 8)}</td>
+                                <td className="py-2.5 text-gray-400">{tx.client_name || tx.clientName || "Client"}</td>
+                                <td className="py-2.5 text-gray-400 truncate max-w-[140px]">{tx.service || "Service"}</td>
+                                <td className="py-2.5 text-gray-500 text-[9px] uppercase">{tx.payment_method || tx.gateway || tx.paymentMethod || "Stripe"}</td>
+                                <td className="py-2.5 text-right font-bold text-emerald-500">${tx.amount?.toLocaleString() || 0}</td>
                               </tr>
                             ))
                           )}

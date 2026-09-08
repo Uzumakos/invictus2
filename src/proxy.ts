@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
+import { verifyAdminToken } from "@/lib/auth";
 import createMiddleware from "next-intl/middleware";
 import { routing } from "@/lib/i18n/routing";
 
@@ -28,7 +28,7 @@ export default async function proxy(request: NextRequest) {
     }
 
     try {
-      const payload = await verifyToken(token);
+      const payload = await verifyAdminToken(token);
       if (!payload) {
         const response = NextResponse.redirect(
           new URL("/admin/login", request.url)

@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadDB, saveDB } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import { verifyToken } from "@/lib/auth";
+import { requireAdmin } from "@/lib/apiAuth";
 import crypto from "crypto";
 
-async function checkAdmin(req: NextRequest): Promise<boolean> {
-  const token = req.cookies.get("admin_token")?.value;
-  if (!token) return false;
-  const payload = await verifyToken(token);
-  return payload?.role === "admin";
-}
-
 export async function GET(req: NextRequest) {
-  if (!(await checkAdmin(req))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
     const db = await loadDB();
@@ -28,15 +20,18 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await checkAdmin(req))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
     const { name, email, password, role } = await req.json();
 
     if (!name || !email || !password || !role) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    if (role !== "admin" && role !== "client") {
+      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 
     const db = await loadDB();
