@@ -21,9 +21,9 @@ export async function GET(req: NextRequest) {
         return unauthorizedResponse();
       }
       bookings = filterItemsForPortalClient(
-        bookings as Record<string, unknown>[],
+        bookings as unknown as Record<string, unknown>[],
         portalUser.email
-      ) as Booking[];
+      ) as unknown as Booking[];
     }
 
     return NextResponse.json(bookings);

@@ -114,9 +114,9 @@ export async function GET(
             collectionKey
           )
         ) {
-          items = items.filter(
-            (item: { status?: string }) =>
-              item.status === "published" || !item.status
+          items = (items as any[]).filter(
+            (item: any) =>
+              item?.status === "published" || !item?.status
           );
         }
       }
