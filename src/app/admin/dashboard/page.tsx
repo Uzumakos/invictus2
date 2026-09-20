@@ -790,7 +790,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleConvertToLead = async (disc: ProjectDiscovery) => {
-    const a = disc.answers || ({} as any);
+    const a: any = disc.answers || {};
     const org = a.organization || {};
     const sit = a.currentSituation || {};
     const s = disc.summary || ({} as any);

@@ -46,7 +46,7 @@ export default function DiscoveryRoadmapManager({
   // Filtered discoveries list
   const filteredDiscoveries = useMemo(() => {
     return discoveries.filter((disc) => {
-      const a = disc.answers || ({} as any);
+      const a: any = disc.answers || {};
       const s = disc.summary || ({} as any);
       const company = (a.companyName || "").toLowerCase();
       const industry = (a.industry || "").toLowerCase();
@@ -112,7 +112,7 @@ export default function DiscoveryRoadmapManager({
     ];
 
     const rows = discoveries.map((d) => {
-      const a = d.answers || ({} as any);
+      const a: any = d.answers || {};
       const org = a.organization || {};
       const s = d.summary || ({} as any);
       return [
@@ -143,7 +143,7 @@ export default function DiscoveryRoadmapManager({
   };
 
   // Helper for safe nested extraction
-  const a = selectedDisc?.answers || ({} as any);
+  const a: any = selectedDisc?.answers || {};
   const org = a.organization || {};
   const currentSit = a.currentSituation || {};
   const targetAud = a.targetAudience || {};

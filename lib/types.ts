@@ -362,6 +362,15 @@ export interface DiscoveryState {
   // Additional
   links: string;
   notes: string;
+  // Nested structure compatibility
+  organization?: Record<string, any>;
+  currentSituation?: Record<string, any>;
+  targetAudience?: Record<string, any>;
+  technicalPreferences?: Record<string, any>;
+  budget?: Record<string, any>;
+  language?: Record<string, any>;
+  additionalInfo?: Record<string, any>;
+  [key: string]: any;
 }
 
 export interface ProjectDiscovery {
