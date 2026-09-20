@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
       console.error("DB read error in login:", dbErr);
     }
 
-    const adminHash = process.env.ADMIN_PASSWORD_HASH;
+    const rawAdminHash = process.env.ADMIN_PASSWORD_HASH;
+    const adminHash = rawAdminHash ? rawAdminHash.replace(/\\$/g, "$") : undefined;
     if (!isCorrect && adminHash && !adminHash.includes("placeholder")) {
       try {
         isCorrect = await comparePassword(password, adminHash);
@@ -99,8 +100,13 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Auth login error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { 
+        error: err?.message || "Internal server error" 
+      },
+      { status: 500 }
+    );
   }
 }

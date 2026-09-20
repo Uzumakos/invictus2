@@ -313,8 +313,11 @@ export type ProjectComplexity = "Low" | "Medium" | "High" | "Critical";
 export interface DiscoveryState {
   projectTypes: string[];
   customAnswers?: Record<string, string>;
-  // Organization
+  // Organization & Contact
   companyName: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   industry: string;
   country: string;
   orgType: string;

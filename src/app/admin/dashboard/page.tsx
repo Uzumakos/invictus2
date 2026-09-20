@@ -24,6 +24,7 @@ import WhatsAppTemplatesManager from "@/components/admin/WhatsAppTemplatesManage
 import WhatsAppHistoryTable from "@/components/admin/WhatsAppHistoryTable";
 import SharedLinksManager from "@/components/admin/SharedLinksManager";
 import WhatsAppAnalyticsDashboard from "@/components/admin/WhatsAppAnalyticsDashboard";
+import DiscoveryRoadmapManager from "@/components/admin/DiscoveryRoadmapManager";
 import { getGoogleCalendarUrl } from "@/lib/googleCalendar";
 
 type DashboardTab = 
@@ -789,14 +790,44 @@ export default function AdminDashboardPage() {
   };
 
   const handleConvertToLead = async (disc: ProjectDiscovery) => {
+    const a = disc.answers || ({} as any);
+    const org = a.organization || {};
+    const sit = a.currentSituation || {};
+    const s = disc.summary || ({} as any);
+
+    const company = a.companyName || org.companyName || "Client Project";
+    const contactName = a.contactName || org.contactName || `${company} Contact`;
+    const email = a.contactEmail || org.contactEmail || a.socialLinks || `${company.toLowerCase().replace(/[^a-z0-9]/g, "") || "client"}@workspace.com`;
+    const budget = a.budgetRange || a.budget?.range || "Under $2k";
+
+    const detailedNotes = [
+      `Discovery converted lead: ${s.title || company}.`,
+      a.projectTypes?.length ? `Project Types: ${a.projectTypes.join(", ")}` : null,
+      a.industry ? `Industry: ${a.industry}` : null,
+      a.country ? `Country: ${a.country}` : null,
+      a.timeline ? `Timeline: ${a.timeline}` : null,
+      a.expectedROI ? `Expected ROI: ${a.expectedROI}` : null,
+      a.techStack ? `Tech Stack: ${a.techStack}` : null,
+      a.challenges || sit.challenges ? `Challenges: ${a.challenges || sit.challenges}` : null,
+      a.businessGoals?.length ? `Goals: ${a.businessGoals.join(", ")}` : null,
+      a.notes ? `Client Notes: ${a.notes}` : null,
+      s.complexity ? `Assessed Complexity: ${s.complexity}` : null,
+    ].filter(Boolean).join("\n• ");
+
     const payload = {
-      company: disc.answers.companyName,
-      contactName: disc.answers.companyName + " Contact",
-      email: disc.answers.socialLinks || "unknown@domain.com",
-      budget: disc.answers.budgetRange,
-      notes: `Discovery converted lead. Type: ${disc.answers.projectTypes?.join(", ")}. Timeline: ${disc.answers.timeline}. ROI expected: ${disc.answers.expectedROI}`,
+      company,
+      contactName,
+      email,
+      budget,
+      notes: `• ${detailedNotes}`,
       source: "Scoping Conversion",
-      status: "discovery"
+      status: "discovery",
+      website: a.website || org.website || "",
+      country: a.country || org.country || "",
+      timeline: a.timeline || "",
+      projectType: a.projectTypes?.[0] || "",
+      preferredLanguage: a.preferredLanguage || a.language?.locale || "English",
+      tags: a.projectTypes || ["Discovery"],
     };
 
     try {
@@ -809,7 +840,7 @@ export default function AdminDashboardPage() {
       if (res.ok) {
         const newLead = await res.json();
         setLeads((prev) => [newLead, ...prev]);
-        showToast("Converted scoping submission into CRM Prospect.");
+        showToast("Converted scoping submission into CRM Prospect with full project brief.");
       }
     } catch (err) {
       console.error(err);
@@ -2050,93 +2081,12 @@ export default function AdminDashboardPage() {
 
               {/* TAB 4: Discovery Sessions */}
               {activeTab === "discoveries" && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-xs font-sans">
-                  {/* Left Side: List */}
-                  <div className="lg:col-span-5 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">SUBMISSION FEED</span>
-                        <h4 className="font-serif font-bold text-lg text-white">Discovery Submissions</h4>
-                      </div>
-                      <button onClick={handleExportCSV} className="bg-white/5 border border-white/10 hover:bg-white/10 p-2 rounded-xl text-gray-300 cursor-pointer">
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
-                      {discoveries.map((disc) => (
-                        <div
-                          key={disc.id}
-                          onClick={() => setSelectedDisc(disc)}
-                          className={`p-3.5 rounded-2xl border transition-all cursor-pointer text-left ${
-                            selectedDisc?.id === disc.id
-                              ? "bg-[#FF7A00]/10 border-[#FF7A00]/30"
-                              : "bg-[#121A1B] border-[#CDD4DD]/5 hover:border-gray-700"
-                          }`}
-                        >
-                          <p className="font-bold text-white text-[11px]">{disc.answers.companyName}</p>
-                          <p className="text-[9px] text-[#CDD4DD]/40">Scoped: {new Date(disc.createdAt).toLocaleDateString()}</p>
-                          <p className="text-[9px] text-gray-400 mt-1 capitalize">Types: {disc.answers.projectTypes?.join(", ")}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Right Side: Details View */}
-                  <div className="lg:col-span-7 bg-[#1A2324] border border-[#CDD4DD]/10 p-6 rounded-3xl space-y-5">
-                    {selectedDisc ? (
-                      <div className="space-y-4 animate-fadeIn">
-                        <div className="flex justify-between items-start gap-4">
-                          <div>
-                            <span className="text-[9px] font-sans font-bold text-[#FF7A00] tracking-widest uppercase block">DISCOVERY CARD</span>
-                            <h3 className="font-serif font-bold text-xl text-white">{selectedDisc.answers.companyName}</h3>
-                            <span className="text-[9px] text-gray-500 font-mono">ID: {selectedDisc.id}</span>
-                          </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => handleConvertToLead(selectedDisc)} className="bg-emerald-950 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-900/35 px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider text-[9px] cursor-pointer">
-                              Accept Prospect
-                            </button>
-                            <button onClick={() => handleDeleteDiscovery(selectedDisc.id)} className="bg-red-950/20 border border-red-500/20 text-red-400 hover:bg-red-900/30 px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider text-[9px] cursor-pointer">
-                              Archive
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="bg-[#121A1B] p-4 rounded-2xl border border-[#CDD4DD]/5 space-y-3">
-                          <h5 className="font-serif font-bold text-sm text-[#FF7A00]">Answers Summary</h5>
-                          <div className="grid grid-cols-2 gap-3 text-[10px]">
-                            <div><span className="text-gray-500">Industry:</span> <span className="font-bold">{selectedDisc.answers.industry}</span></div>
-                            <div><span className="text-gray-500">Expected ROI:</span> <span className="font-bold">{selectedDisc.answers.expectedROI}</span></div>
-                            <div><span className="text-gray-500">Timeline:</span> <span className="font-bold">{selectedDisc.answers.timeline}</span></div>
-                            <div><span className="text-gray-500">Budget Range:</span> <span className="font-bold text-emerald-400">{selectedDisc.answers.budgetRange}</span></div>
-                          </div>
-                        </div>
-
-                        <div className="bg-[#121A1B] p-4 rounded-2xl border border-[#CDD4DD]/5 space-y-3">
-                          <h5 className="font-serif font-bold text-sm text-[#FF7A00]">Automated AI Recommendation</h5>
-                          <div className="space-y-2">
-                            <div>
-                              <span className="text-[9px] font-bold text-[#CDD4DD]/40 block uppercase">Project Complexity</span>
-                              <span className="bg-amber-950/40 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-bold uppercase text-[9px]">{selectedDisc.summary.complexity || "Medium"}</span>
-                            </div>
-                            <div>
-                              <span className="text-[9px] font-bold text-[#CDD4DD]/40 block uppercase">Recommended Services</span>
-                              <div className="flex flex-wrap gap-1.5 mt-1">
-                                {selectedDisc.summary.recommendedServices?.map((srv: string) => (
-                                  <span key={srv} className="bg-[#1A2324] text-white border border-[#CDD4DD]/10 px-2 py-0.5 rounded text-[9px] font-medium">{srv}</span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="h-full flex items-center justify-center py-20 text-[#CDD4DD]/30 border border-dashed border-[#CDD4DD]/10 rounded-2xl">
-                        Select a scoping submission from the feed list.
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <DiscoveryRoadmapManager
+                  discoveries={discoveries}
+                  onConvertLead={handleConvertToLead}
+                  onDeleteDiscovery={handleDeleteDiscovery}
+                  onRefresh={fetchAdminData}
+                />
               )}
 
 

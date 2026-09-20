@@ -20,6 +20,9 @@ const INITIAL_STATE: DiscoveryState = {
   projectTypes: [],
   customAnswers: {},
   companyName: "",
+  contactName: "",
+  contactEmail: "",
+  contactPhone: "",
   industry: "",
   country: "",
   orgType: "Startup",
@@ -387,6 +390,9 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
         ...formData,
         organization: {
           companyName: formData.companyName,
+          contactName: formData.contactName,
+          contactEmail: formData.contactEmail,
+          contactPhone: formData.contactPhone,
           industry: formData.industry,
           country: formData.country,
           orgType: formData.orgType,
@@ -461,8 +467,11 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
       
       // Auto-save info for secure client portal login matching
       if (formData.companyName) {
-        localStorage.setItem("portal_autologin_email", `${formData.companyName.toLowerCase().replace(/[^a-z0-9]/g, "")}@workspace.com`);
-        localStorage.setItem("portal_autologin_name", formData.companyName);
+        const portalEmail = (formData.contactEmail && formData.contactEmail.trim()) 
+          || `${formData.companyName.toLowerCase().replace(/[^a-z0-9]/g, "")}@workspace.com`;
+        const portalName = (formData.contactName && formData.contactName.trim()) || formData.companyName;
+        localStorage.setItem("portal_autologin_email", portalEmail);
+        localStorage.setItem("portal_autologin_name", portalName);
       }
     } catch (err: any) {
       console.error(err);
@@ -476,9 +485,14 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
     const goalsString = `Business goals: ${formData.businessGoals.join(", ")}. Challenges: ${formData.challenges}`;
     const contextString = `Technology preferences: ${formData.techStack || "None"}. Budget Bracket: ${formData.budgetRange}. Overview Draft:\n${currentSummary.overviewMarkdown}`;
     
+    const clientEmail = (formData.contactEmail && formData.contactEmail.trim()) 
+      || `${formData.companyName.toLowerCase().replace(/[^a-z0-9]/g, "") || "client"}@workspace.com`;
+    const clientName = (formData.contactName && formData.contactName.trim()) 
+      || formData.companyName || "Private Client";
+
     const payload = {
-      clientName: formData.companyName || "Private Client",
-      clientEmail: `${formData.companyName.toLowerCase().replace(/[^a-z0-9]/g, "") || "client"}@workspace.com`,
+      clientName,
+      clientEmail,
       goals: goalsString,
       context: contextString,
       serviceId: "software-architecture",
@@ -748,6 +762,59 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                             placeholder="e.g. Haiti, Canada"
                             className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
                           />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{locale === "fr" ? "Personne de Contact" : "Contact Person Name"}</label>
+                          <input
+                            type="text"
+                            value={formData.contactName || ""}
+                            onChange={(e) => updateField("contactName", e.target.value)}
+                            placeholder={locale === "fr" ? "ex: Marc Dupond" : "e.g. Marc Dupond"}
+                            className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{locale === "fr" ? "Email Professionnel" : "Business Email Address"}</label>
+                          <input
+                            type="email"
+                            value={formData.contactEmail || ""}
+                            onChange={(e) => updateField("contactEmail", e.target.value)}
+                            placeholder="contact@company.com"
+                            className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{locale === "fr" ? "Téléphone / WhatsApp" : "Phone / WhatsApp"}</label>
+                          <input
+                            type="tel"
+                            value={formData.contactPhone || ""}
+                            onChange={(e) => updateField("contactPhone", e.target.value)}
+                            placeholder="+509 3700 0000"
+                            className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{locale === "fr" ? "Site Web (Optionnel)" : "Website URL (Optional)"}</label>
+                          <input
+                            type="url"
+                            value={formData.website || ""}
+                            onChange={(e) => updateField("website", e.target.value)}
+                            placeholder="https://company.com"
+                            className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{locale === "fr" ? "Taille de l'équipe" : "Team Size"}</label>
+                          <select
+                            value={formData.teamSize || "1-10"}
+                            onChange={(e) => updateField("teamSize", e.target.value)}
+                            className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
+                          >
+                            <option value="1-5">1 - 5 {locale === "fr" ? "personnes" : "members"}</option>
+                            <option value="1-10">1 - 10 {locale === "fr" ? "personnes" : "members"}</option>
+                            <option value="11-50">11 - 50 {locale === "fr" ? "personnes" : "members"}</option>
+                            <option value="50+">50+ {locale === "fr" ? "personnes" : "members"}</option>
+                          </select>
                         </div>
                         <div>
                           <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{t("organization.orgType")}</label>
@@ -1062,6 +1129,30 @@ We advise scheduling a consultation for **${uniqueServices[0] || "Software Archi
                             <option value="Yes">{locale === "fr" ? "Oui, je suis le décideur" : "Yes, I am decision maker"}</option>
                             <option value="No">{locale === "fr" ? "Non, j'évalue pour un tiers / conseil" : "No, evaluating for board"}</option>
                           </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{locale === "fr" ? "Disponibilité des Fonds" : "Funding Availability"}</label>
+                          <select
+                            value={formData.isFundingAvailable || "Yes"}
+                            onChange={(e) => updateField("isFundingAvailable", e.target.value)}
+                            className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none font-semibold"
+                          >
+                            <option value="Yes">{locale === "fr" ? "Oui — Budget déjà alloué" : "Yes — Capital Allocated"}</option>
+                            <option value="Securing">{locale === "fr" ? "En cours de levée / Subvention" : "In Progress / Seeking Grant"}</option>
+                            <option value="Exploring">{locale === "fr" ? "Évaluation préliminaire" : "Preliminary Evaluation"}</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[9px] font-sans font-bold text-[var(--color-brand-muted)] uppercase mb-1">{locale === "fr" ? "ROI Attendu / Métrique de Succès" : "Expected ROI / Primary Success Metric"}</label>
+                          <input
+                            type="text"
+                            value={formData.expectedROI || ""}
+                            onChange={(e) => updateField("expectedROI", e.target.value)}
+                            placeholder={locale === "fr" ? "ex: Réduire les coûts de 30%, 10k utilisateurs" : "e.g. 2x conversion rate, automate 80% ops"}
+                            className="w-full bg-[var(--color-brand-bg)] border border-[var(--color-brand-neutral)]/45 rounded-xl px-4 py-2.5 text-xs focus:border-[var(--color-brand-primary)] focus:outline-none"
+                          />
                         </div>
                       </div>
                     </motion.div>
