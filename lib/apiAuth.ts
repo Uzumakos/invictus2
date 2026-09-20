@@ -46,6 +46,7 @@ export const PUBLIC_READ_RESOURCES = new Set([
   "faq-items",
   "testimonials",
   "recommendation-rules",
+  "brand-assets",
 ]);
 
 /** Anonymous POST (forms, checkout). */

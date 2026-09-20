@@ -1,11 +1,30 @@
 "use client";
 
+import { useState } from "react";
+
 interface LogoProps {
   className?: string;
   size?: number;
+  logoUrl?: string | null;
+  alt?: string;
 }
 
-export default function Logo({ className = "", size = 40 }: LogoProps) {
+export default function Logo({ className = "", size = 40, logoUrl, alt = "Logo" }: LogoProps) {
+  const [imgError, setImgError] = useState(false);
+
+  if (logoUrl && !imgError) {
+    return (
+      <img
+        src={logoUrl}
+        alt={alt}
+        onError={() => setImgError(true)}
+        style={{ height: size, width: "auto", maxHeight: size }}
+        className={`object-contain select-none ${className}`}
+        id="custom-brand-logo-img"
+      />
+    );
+  }
+
   return (
     <svg
       width={size}

@@ -149,6 +149,7 @@ export default function AdminDashboardPage() {
     socialLinks: { github: "", linkedin: "", twitter: "" }
   });
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig>({ methods: [] });
+  const [brandAssets, setBrandAssets] = useState<any>(null);
 
   // Error/Success state
   const [error, setError] = useState<string | null>(null);
@@ -216,7 +217,7 @@ export default function AdminDashboardPage() {
     try {
       const [
         bookingsRes, leadsRes, discoveriesRes, settingsRes, paymentRes, usersRes, paymentsRes,
-        transRes, projectsRes, trainingRes, faqRes, servicesRes, messagesRes, tasksRes, clientProjRes
+        transRes, projectsRes, trainingRes, faqRes, servicesRes, messagesRes, tasksRes, clientProjRes, brandRes
       ] = await Promise.all([
         fetch("/api/bookings", { cache: "no-store" }),
         fetch("/api/leads", { cache: "no-store" }),
@@ -232,7 +233,8 @@ export default function AdminDashboardPage() {
         fetch("/api/consulting-services", { cache: "no-store" }),
         fetch("/api/messages", { cache: "no-store" }),
         fetch("/api/tasks", { cache: "no-store" }),
-        fetch("/api/projects", { cache: "no-store" })
+        fetch("/api/projects", { cache: "no-store" }),
+        fetch("/api/brand-assets", { cache: "no-store" })
       ]);
 
       setBookings(bookingsRes.ok ? await bookingsRes.json() : []);
@@ -245,6 +247,8 @@ export default function AdminDashboardPage() {
       setPortalMessages(messagesRes.ok ? await messagesRes.json() : []);
       setPortalTasks(tasksRes.ok ? await tasksRes.json() : []);
       setClientProjects(clientProjRes.ok ? await clientProjRes.json() : []);
+      const brandData = brandRes.ok ? await brandRes.json() : [];
+      setBrandAssets(Array.isArray(brandData) && brandData.length > 0 ? brandData[0] : null);
       
       // V3 BI Fetching
       const biRes = await fetch("/api/analytics/bi", { cache: "no-store" });
@@ -1138,7 +1142,15 @@ export default function AdminDashboardPage() {
       <aside className="w-64 bg-[#1A2324] border-r border-[#CDD4DD]/10 flex flex-col h-screen sticky top-0 shrink-0">
         {/* Brand Header */}
         <div className="p-6 border-b border-[#CDD4DD]/10 flex items-center space-x-2.5">
-          <Shield className="w-6 h-6 text-[#FF7A00]" />
+          {brandAssets?.logoLightUrl ? (
+            <img
+              src={brandAssets.logoLightUrl}
+              alt="Brand Logo"
+              className="w-7 h-7 object-contain rounded bg-white/5 p-0.5"
+            />
+          ) : (
+            <Shield className="w-6 h-6 text-[#FF7A00]" />
+          )}
           <div>
             <h2 className="font-serif font-bold text-sm tracking-wider text-white uppercase">INVICTUS CORE</h2>
             <span className="text-[8px] text-gray-500 font-mono tracking-widest uppercase">CONTROL CENTER</span>
@@ -2626,6 +2638,27 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
+              {/* TAB: CMS Brand Assets */}
+              {activeTab === "cms_brand" && (
+                <div className="space-y-6">
+                  <BrandAssetsForm />
+                </div>
+              )}
+
+              {/* TAB: CMS SEO Center */}
+              {activeTab === "cms_seo" && (
+                <div className="space-y-6">
+                  <SEOCenterForm />
+                </div>
+              )}
+
+              {/* TAB: CMS Testimonials */}
+              {activeTab === "cms_testimonials" && (
+                <div className="space-y-6">
+                  <TestimonialsManager />
+                </div>
+              )}
+
               {/* TAB 7: Users Control */}
               {activeTab === "users" && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-xs font-sans animate-fadeIn">
@@ -2773,6 +2806,34 @@ export default function AdminDashboardPage() {
                           onChange={(e) => setSiteSettings({ ...siteSettings, profileImageUrl: e.target.value })}
                           className="w-full bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl px-4 py-2.5 text-white focus:outline-none"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-[8px] font-sans font-bold text-[#CDD4DD]/40 tracking-wider mb-1.5 uppercase">Site Logo Integration</label>
+                        <div className="p-3 bg-[#121A1B] border border-[#CDD4DD]/10 rounded-xl flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {brandAssets?.logoLightUrl ? (
+                              <img src={brandAssets.logoLightUrl} alt="Logo" className="w-8 h-8 object-contain rounded bg-white/5 p-1" />
+                            ) : (
+                              <div className="w-8 h-8 rounded bg-[#FF7A00]/10 border border-[#FF7A00]/20 flex items-center justify-center text-[#FF7A00] font-bold text-[10px]">
+                                LOGO
+                              </div>
+                            )}
+                            <div>
+                              <span className="block text-[10px] font-bold text-white">Custom Brand Logo</span>
+                              <span className="text-[9px] text-[#CDD4DD]/40">
+                                {brandAssets?.logoLightUrl ? "Custom logo configured via link" : "Default SVG logo currently active"}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab("cms_brand")}
+                            className="px-2.5 py-1 bg-[#FF7A00]/10 hover:bg-[#FF7A00] text-[#FF7A00] hover:text-white border border-[#FF7A00]/30 rounded-lg text-[9px] font-bold transition-all cursor-pointer"
+                          >
+                            Edit Brand Assets
+                          </button>
+                        </div>
                       </div>
 
                       <div className="pt-2 border-t border-[#CDD4DD]/5 space-y-3">

@@ -27,6 +27,24 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("");
   const [langOpen, setLangOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  // Fetch custom logo from Brand Assets
+  useEffect(() => {
+    fetch("/api/brand-assets")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const brand = data[0];
+          if (brand?.logoLightUrl) {
+            setLogoUrl(brand.logoLightUrl);
+          } else if (brand?.logoDarkUrl) {
+            setLogoUrl(brand.logoDarkUrl);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Scroll handler for navbar background
   useEffect(() => {
@@ -118,7 +136,7 @@ export default function Header() {
             aria-label="Back to homepage"
             id="header-logo-btn"
           >
-            <Logo size={36} />
+            <Logo size={36} logoUrl={logoUrl} />
             <span className="font-serif font-medium text-sm text-[var(--color-brand-dark)] hidden sm:block group-hover:text-[var(--color-brand-primary)] transition-colors">
               Amedee Erns Baptiste
             </span>
